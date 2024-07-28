@@ -1,22 +1,24 @@
 import json
 import numpy as np
-
+import pickle
+from datetime import datetime
+import os
 import sys
 sys.path.append('build/')
-
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
-
 import simulation
 from time import perf_counter
 
 # parameters
-T_step = 0.1
-T_simulation = 1
+T_step = 0.05
+T_simulation = 20
 
 # Initialize the simulation
-sim = simulation.Simulation(T_step=T_step, N_humans=1, N_robots=1)
+N_humans = 1
+N_robots = 1
+sim = simulation.Simulation(T_step=T_step, N_humans=N_humans, N_robots=N_robots)
 
 # load graph
 with open('graph_data.json', 'r') as f:
@@ -30,7 +32,7 @@ fig, ax = plt.subplots()
 
 # Initialize scatter plots
 scat_graph = ax.scatter(node_positions[:, 0], node_positions[:, 1], s=100, c='skyblue', zorder=2)
-scat_agents = ax.scatter([], [])
+scat_agents = ax.scatter([], [], s=100, c='red', zorder=3)
 
 # Plot the edges
 for edge in edges:
@@ -57,5 +59,15 @@ for i in range(N):
         plt.pause(1e3)
     else:
         plt.pause(T_step - (perf_counter() - start))
+
+LOG_FOLDER = 'logs'
+with open(os.path.join(LOG_FOLDER, 'log_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.pkl'), 'wb') as outp:
+    pickle.dump({
+        'T_step': T_step,
+        'T_simulation': T_simulation,
+        'N_humans': N_humans,
+        'N_robots': N_robots,
+        'sim_state': sim_state
+    }, outp, pickle.HIGHEST_PROTOCOL)
 
 plt.show()

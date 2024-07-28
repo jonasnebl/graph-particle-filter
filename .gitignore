@@ -3,3 +3,4 @@ venv/
 build/
 .vscode
 src/graph_data.h
+logs/

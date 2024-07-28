@@ -1,5 +1,6 @@
 import json
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 import numpy as np
 
 # Load the graph data from the JSON file
@@ -10,7 +11,14 @@ nodes = graph_data['nodes']
 edges = graph_data['edges']
 edge_weights = graph_data['edge_weights']
 
-### --- Generate the C++ header file --- ###
+# load rack data from JSON file
+with open('rack_data.json', 'r') as f:
+    rack_data = json.load(f)
+polygons = rack_data["polygons"]
+
+
+
+### --- Generate the C++ header file for the graph --- ###
 
 # Generate the C++ header file content
 header_content = """#ifndef GRAPH_DATA_H
@@ -42,20 +50,30 @@ for weight in edge_weights:
     header_content += f"        {weight},\n"
 
 header_content += """    };
+    std::vector<std::vector<std::pair<double, double>>> racks = {
+"""
+
+# Add racks (polygons) to the header content
+for polygon in polygons:
+    header_content += "        {\n"
+    for point in polygon:
+        header_content += f"            {{{point[0]}, {point[1]}}},\n"
+    header_content += "        },\n"
+
+header_content += """    };
 }
 
 #endif
 """
 
-# Write the header content to a file
-with open('src/graph_data.h', 'w') as f:
-    f.write(header_content)
-
-print("C++ header file 'graph_data.h' generated successfully.")
+# Save the header content to a file
+with open("src/warehouse_data.h", "w") as header_file:
+    header_file.write(header_content)
 
 
 
-### --- Visualize the graph --- ###
+
+### --- Visualize the warehouse --- ###
 
 # Extract node positions
 node_positions = np.array([(node['x'], node['y']) for node in nodes])
@@ -77,7 +95,13 @@ for edge in edges:
 for i, (x, y) in enumerate(node_positions):
     plt.text(x, y, str(i), fontsize=12, ha='right', color='black')
 
-plt.title('Graph Visualization')
+# Plot the polygons for the racks
+for polygon in polygons:
+    polygon_points = np.array(polygon)
+    poly = Polygon(polygon_points, closed=True, fill=True, edgecolor='r', facecolor='lightcoral', alpha=0.5, zorder=0)
+    plt.gca().add_patch(poly)
+
+plt.title('Warehouse Visualization')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.grid(True)

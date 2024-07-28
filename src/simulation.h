@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <queue>
+#include <random>
 #include <pybind11/pybind11.h>
 #include <pybind11/iostream.h>
 #include <pybind11/stl.h>
@@ -18,7 +19,11 @@ namespace py = pybind11;
 class Simulation {
     public:
         Simulation(double T_step, int N_humans, int N_robots);
-        std::vector<std::vector<py::dict>> step(std::size_t N_steps);
+        // agent attributes
+        std::size_t _N_humans;
+        std::size_t _N_robots;
+        const double _T_step;
+        std::vector<Agent> agents;
 
         // warehouse structure
         std::vector<std::pair<double, double>> nodes;
@@ -26,14 +31,14 @@ class Simulation {
         std::vector<double> edge_weights;
 
         // utility functions 
+        std::vector<std::vector<py::dict>> step(std::size_t N_steps);
+        std::size_t get_random_node_index();
         std::vector<std::size_t> dijkstra(std::size_t start, std::size_t end);   
-               
+
     private:
-        // agent attributes
-        const double _T_step;
-        std::size_t _N_humans;
-        std::size_t _N_robots;
-        std::vector<Agent*> agents;
+        // utility function helper variables
+        std::mt19937 mt;
+        std::uniform_int_distribution<std::size_t> dist;
 };
 
 #endif

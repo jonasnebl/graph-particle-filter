@@ -3,7 +3,7 @@
 
 #include "simulation.h"
 #include <pybind11/pybind11.h>
-#include <queue>
+#include <deque>
 
 namespace py = pybind11;
 
@@ -11,15 +11,20 @@ class Simulation;
 
 class Agent {
     public:
-        Agent(double T_step, Simulation* simulation);
+        Agent(double T_step, bool is_human, Simulation* simulation);
+        bool _is_human;
         void step();
-        virtual py::dict log_state() = 0;
+        py::dict log_state();
     protected:
         Simulation* _simulation;
         double _T_step;
         std::array<double, 3> pose;
-        std::queue<std::size_t> path;
-        void add_new_job_to_queue(std::size_t start_node);
+        double speed = 1.0;
+        std::deque<std::size_t> path;
+        void add_new_job_to_deque();
+        std::size_t DROPOFF_HUMANS = 1;
+        std::size_t DROPOFF_ROBOTS = 2;
+        std::vector<std::pair<double, double>> perceive_humans();
 };
 
 #endif
