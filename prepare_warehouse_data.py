@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import numpy as np
+import random
 
 # Load the graph data from the JSON file
 with open('graph_data.json', 'r') as f:
@@ -9,7 +10,8 @@ with open('graph_data.json', 'r') as f:
 
 nodes = graph_data['nodes']
 edges = graph_data['edges']
-edge_weights = graph_data['edge_weights']
+edge_weights = [np.sqrt((nodes[edge[0]]['x'] - nodes[edge[1]]['x'])**2 + (nodes[edge[0]]['y'] - nodes[edge[1]]['y'])**2) for edge in edges]
+# edge_weights = graph_data['edge_weights']
 
 # load rack data from JSON file
 with open('rack_data.json', 'r') as f:
@@ -100,6 +102,13 @@ for polygon in polygons:
     polygon_points = np.array(polygon)
     poly = Polygon(polygon_points, closed=True, fill=True, edgecolor='r', facecolor='lightcoral', alpha=0.5, zorder=0)
     plt.gca().add_patch(poly)
+
+# Plot the areas for each node in random shades of gray
+for node in nodes:
+    if 'area' in node:
+        area_points = np.array(node['area'])
+        poly = Polygon(area_points, closed=True, fill=True, edgecolor='black', facecolor="gray", alpha=0.5, zorder=1)
+        plt.gca().add_patch(poly)
 
 plt.title('Warehouse Visualization')
 plt.xlabel('X')

@@ -77,12 +77,46 @@ std::vector<std::pair<double, double>> Agent::perceive_humans() {
     for(std::size_t i = 0; i< _simulation->_N_humans + _simulation->_N_robots; i++) {
         if ((_simulation->agents)[i]._is_human) {
             auto pose_human = (_simulation->agents[i]).pose;
-            // calculate sight connection
-            // if (sight_connection(pose_human, pose)) {
-            if (true) {
+            std::pair<double, double> robot_pos = {pose[0], pose[1]};
+            std::pair<double, double> human_pos = {pose_human[0], pose_human[1]};
+            bool observable = true;
+
+            for (const auto& polygon : _simulation->racks) {
+                for (size_t i = 0; i < polygon.size(); ++i) {
+                    std::pair<double, double> p1 = polygon[i];
+                    std::pair<double, double> p2 = polygon[(i + 1) % polygon.size()];
+
+                    if (do_intersect(robot_pos, human_pos, p1, p2)) {
+                        observable = false; // Obstruction found
+                        break;
+                    }
+                }
+            }
+            if (observable) {
                 result.push_back({pose_human[0], pose_human[1]});
             }
         }
     }
     return result;
+}
+
+// Function to check if two line segments intersect
+bool Agent::do_intersect(std::pair<double, double> p1, 
+                         std::pair<double, double> q1, 
+                         std::pair<double, double> p2, 
+                         std::pair<double, double> q2) {
+    auto orientation = [](std::pair<double, double> p, std::pair<double, double> q, std::pair<double, double> r) {
+        double val = (q.second - p.second) * (r.first - q.first) - (q.first - p.first) * (r.second - q.second);
+        if (val == 0) return 0;  // collinear
+        return (val > 0) ? 1 : 2; // clock or counterclock wise
+    };
+
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+
+    if (o1 != o2 && o3 != o4) return true;
+
+    return false;
 }

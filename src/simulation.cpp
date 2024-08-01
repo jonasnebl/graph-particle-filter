@@ -1,5 +1,5 @@
 #include "simulation.h"
-#include "graph_data.h"
+#include "warehouse_data.h"
 #include <algorithm>
 #include <limits>
 #include <queue>
@@ -12,9 +12,10 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
 : _T_step(T_step), _N_humans(N_humans), _N_robots(N_robots) {
 
     // load graph
-    nodes = graph_data::nodes;
-    edges = graph_data::edges;
-    edge_weights = graph_data::edge_weights;
+    nodes = warehouse_data::nodes;
+    edges = warehouse_data::edges;
+    edge_weights = warehouse_data::edge_weights;
+    racks = warehouse_data::racks;
 
     // random node index generator
     std::random_device rd;

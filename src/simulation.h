@@ -29,6 +29,7 @@ class Simulation {
         std::vector<std::pair<double, double>> nodes;
         std::vector<std::pair<std::size_t, std::size_t>> edges;
         std::vector<double> edge_weights;
+        std::vector<std::vector<std::pair<double, double>>> racks;
 
         // utility functions 
         std::vector<std::vector<py::dict>> step(std::size_t N_steps);
