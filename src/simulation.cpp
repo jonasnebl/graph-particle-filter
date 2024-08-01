@@ -16,6 +16,7 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     edges = warehouse_data::edges;
     edge_weights = warehouse_data::edge_weights;
     racks = warehouse_data::racks;
+    node_polygons = warehouse_data::node_polygons;
 
     // random node index generator
     std::random_device rd;

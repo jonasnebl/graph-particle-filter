@@ -1,6 +1,8 @@
 #include "agent.h"
 #include "simulation.h"
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 Agent::Agent(double T_step, bool is_human, Simulation* simulation) 
     : _T_step(T_step), _is_human(is_human), _simulation(simulation) {
@@ -44,7 +46,9 @@ py::dict Agent::log_state() {
         state["type"] = "human";
     } else {
         state["type"] = "robot";
-        state["perception"] = perceive_humans();
+        auto perceived_humans = perceive_humans();
+        state["perception"] = perceived_humans;
+        state["perception_extended"] = extend_perception(perceived_humans);
     }
 
     return state;
@@ -101,6 +105,22 @@ std::vector<std::pair<double, double>> Agent::perceive_humans() {
                 result.push_back({pose_human[0], pose_human[1]});
             }
         }
+    }
+    return result;
+}
+
+std::vector<std::pair<double, double>> Agent::extend_perception(std::vector<std::pair<double, double>> perceived_humans) {
+    std::vector<std::pair<double, double>> result((_simulation->nodes).size());
+    std::fill(result.begin(), result.end(), std::make_pair<double, double>(0.0, 0.0));
+
+    for (const auto& mean_pos_human : perceived_humans) {
+        std::vector<double> distances((_simulation->nodes).size());
+        for(std::size_t i = 0; i<(_simulation->nodes).size(); i++) {
+            distances[i] = std::sqrt(std::pow(mean_pos_human.first - (_simulation->nodes)[i].first, 2) + 
+                                     std::pow(mean_pos_human.second - (_simulation->nodes)[i].second, 2));
+        }
+        auto min_index = std::min_element(distances.begin(), distances.end()) - distances.begin();
+        result[min_index].first = 1;
     }
     return result;
 }
