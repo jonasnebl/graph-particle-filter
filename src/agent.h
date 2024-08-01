@@ -20,8 +20,9 @@ class Agent {
         double _T_step;
         std::array<double, 3> pose;
         double speed = 0.5;
-        std::deque<std::size_t> path;
+        std::deque<std::pair<double, double>> path;
         void add_new_job_to_deque();
+        void add_node_to_deque(std::size_t node_index);
         std::size_t DROPOFF_HUMANS = 1;
         std::size_t DROPOFF_ROBOTS = 2;
         std::vector<std::pair<double, double>> perceive_humans();

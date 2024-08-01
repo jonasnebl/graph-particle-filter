@@ -14,11 +14,11 @@ from time import perf_counter
 
 # parameters
 T_step = 0.05
-T_simulation = 40
+T_simulation = 60
 
 # Initialize the simulation
-N_humans = 100
-N_robots = 100
+N_humans = 3
+N_robots = 1
 sim = simulation.Simulation(T_step=T_step, N_humans=N_humans, N_robots=N_robots)
 
 # load graph
@@ -50,6 +50,17 @@ for edge in edges:
     end_pos = node_positions[end]
     plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], 'b-', zorder=3)
 
+# Annotate the nodes with their indices
+for i, (x, y) in enumerate(node_positions):
+    plt.text(x, y, str(i), fontsize=12, ha='right', color='black')
+
+# Plot the areas for each node in random shades of gray
+for node in nodes:
+    if 'area' in node:
+        area_points = np.array(node['area'])
+        poly = Polygon(area_points, closed=True, fill=True, edgecolor='black', facecolor="gray", alpha=0.5, zorder=1)
+        plt.gca().add_patch(poly)
+
 # List to keep track of perception-related elements
 perception_elements = []
 
@@ -68,21 +79,18 @@ for i in range(N):
     scat_agents.set_offsets(positions)
     scat_agents.set_color(colors)
     
-    # # Clear previous perceptions
-    # for elem in perception_elements:
-    #     elem.remove()
-    # perception_elements.clear()
+    # Clear previous perceptions
+    for elem in perception_elements:
+        elem.remove()
+    perception_elements.clear()
 
-    # # Visualize robot perceptions
-    # for agent in current_state:
-    #     if agent['type'] == 'robot' and 'perception' in agent:
-    #         for perception in agent['perception']:
-    #             # Plot black cross at the perceived location
-    #             cross = ax.scatter(perception[0], perception[1], c='black', marker='x')
-    #             perception_elements.append(cross)
-    #             # Draw a thin black line from the robot to the perceived location
-    #             line = ax.plot([agent['x'], perception[0]], [agent['y'], perception[1]], 'k-', linewidth=0.5)
-    #             perception_elements.extend(line)
+    # Visualize robot perceptions
+    for agent in current_state:
+        if agent['type'] == 'robot' and 'perception' in agent:
+            for perception in agent['perception']:
+                # Draw a thin black line from the robot to the perceived location
+                line = ax.plot([agent['x'], perception[0]], [agent['y'], perception[1]], 'k-', linewidth=0.5)
+                perception_elements.extend(line)
     
     # Pause for realtime simulation
     if perf_counter() - start > T_step:

@@ -34,12 +34,14 @@ class Simulation {
         // utility functions 
         std::vector<std::vector<py::dict>> step(std::size_t N_steps);
         std::size_t get_random_node_index();
+        double get_xy_noise();
         std::vector<std::size_t> dijkstra(std::size_t start, std::size_t end);   
 
     private:
         // utility function helper variables
         std::mt19937 mt;
         std::uniform_int_distribution<std::size_t> dist;
+        std::normal_distribution<double> xy_noise;
 };
 
 #endif

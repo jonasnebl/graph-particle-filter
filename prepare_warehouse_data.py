@@ -27,7 +27,7 @@ header_content = """#ifndef GRAPH_DATA_H
 #define GRAPH_DATA_H
 
 #include <vector>
-namespace graph_data {
+namespace warehouse_data {
     std::vector<std::pair<double, double>> nodes = {
 """
 

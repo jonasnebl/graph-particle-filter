@@ -8,8 +8,8 @@ Agent::Agent(double T_step, bool is_human, Simulation* simulation)
     pose = {(_simulation->nodes)[start_node_index].first, 
             (_simulation->nodes)[start_node_index].second, 
             0};
-    path = std::deque<std::size_t>();
-    path.push_front(start_node_index);
+    path = std::deque<std::pair<double, double>>();
+    add_node_to_deque(start_node_index);
 }
 
 void Agent::step() {
@@ -20,9 +20,8 @@ void Agent::step() {
 
     double dist_remaining = speed * _T_step;
     while(dist_remaining > 0) {
-        auto current_destination_index = path.front();
-        double dist_x = (_simulation->nodes)[current_destination_index].first - pose[0];
-        double dist_y = (_simulation->nodes)[current_destination_index].second - pose[1];
+        double dist_x = path.front().first - pose[0];
+        double dist_y = path.front().second - pose[1];
         double dist = std::sqrt(dist_x*dist_x + dist_y*dist_y);
         if(dist < dist_remaining) {
             path.pop_front(); 
@@ -64,12 +63,18 @@ void Agent::add_new_job_to_deque() {
 
     auto path_to_target = _simulation->dijkstra(DROP_INDEX, end_node);
     for(std::size_t i = 1; i<path_to_target.size(); i++) { // exclude first element
-        path.push_back(path_to_target[i]);
+        add_node_to_deque(path_to_target[i]);
     }
     std::reverse(path_to_target.begin(), path_to_target.end());
     for(std::size_t i = 1; i<path_to_target.size(); i++) { // exclude first element
-        path.push_back(path_to_target[i]);
+        add_node_to_deque(path_to_target[i]);
     }
+}
+
+void Agent::add_node_to_deque(std::size_t node_index) {
+    auto node_x = (_simulation->nodes)[node_index].first + _simulation->get_xy_noise();
+    auto node_y = (_simulation->nodes)[node_index].second + _simulation->get_xy_noise();
+    path.push_back({node_x, node_y});
 }
 
 std::vector<std::pair<double, double>> Agent::perceive_humans() {

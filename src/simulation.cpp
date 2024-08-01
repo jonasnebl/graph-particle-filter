@@ -21,6 +21,7 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     std::random_device rd;
     mt = std::mt19937(rd());
     dist = std::uniform_int_distribution<std::size_t>(0, nodes.size()-1);
+    xy_noise = std::normal_distribution<double>(0, 0.05);
 
     // initialize agents
     for(int i = 0; i<_N_humans; i++) {
@@ -29,6 +30,10 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     for(int i = 0; i<_N_robots; i++) {
         agents.push_back(Agent(T_step, true, this));
     }    
+}
+
+double Simulation::get_xy_noise() {
+    return xy_noise(mt);
 }
 
 std::size_t Simulation::get_random_node_index() {
