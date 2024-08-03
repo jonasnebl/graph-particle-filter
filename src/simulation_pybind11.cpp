@@ -3,9 +3,10 @@
 PYBIND11_MODULE(simulation, m) {
     m.doc() = "2D warehouse simulation";
 
-    py::class_<Simulation>(m, "Simulation")
-        .def(py::init<double, int, int>(), "Initialize the simulation",
-             py::arg("T_step"), py::arg("N_humans"), py::arg("N_robots"))
+    pybind11::class_<Simulation>(m, "Simulation")
+        .def(pybind11::init<double, int, int>(), "Initialize the simulation",
+             pybind11::arg("T_step"), pybind11::arg("N_humans"),
+             pybind11::arg("N_robots"))
         .def("step", &Simulation::step, "Perform a simulation step",
-             py::arg("N_steps"));
+             pybind11::arg("N_steps"));
 }

@@ -4,6 +4,7 @@ from matplotlib.patches import Polygon
 import numpy as np
 import random
 from plotter import Plotter
+import os
 
 # Load the graph data from the JSON file
 with open('graph_data.json', 'r') as f:
@@ -25,8 +26,11 @@ header_content = """#ifndef GRAPH_DATA_H
 #define GRAPH_DATA_H
 
 #include <vector>
+
+using Point = std::pair<double, double>;
+
 namespace warehouse_data {
-    std::vector<std::pair<double, double>> nodes = {
+    std::vector<Point> nodes = {
 """
 
 # Add nodes to the header content
@@ -34,7 +38,7 @@ for node in nodes:
     header_content += f"        {{{node['x']}, {node['y']}}},\n"
 
 header_content += """    };
-    std::vector<std::pair<std::size_t, std::size_t>> edges = {
+    std::vector<std::pair<int, int>> edges = {
 """
 
 # Add edges to the header content
@@ -50,7 +54,7 @@ for weight in edge_weights:
     header_content += f"        {weight},\n"
 
 header_content += """    };
-    std::vector<std::vector<std::pair<double, double>>> racks = {
+    std::vector<std::vector<Point>> racks = {
 """
 
 # Add racks (polygons) to the header content
@@ -61,7 +65,7 @@ for polygon in polygons:
     header_content += "        },\n"
 
 header_content += """    };
-    std::vector<std::vector<std::pair<double, double>>> node_polygons = {
+    std::vector<std::vector<Point>> node_polygons = {
 """
 
 # Add node polygons to the header content
@@ -80,6 +84,7 @@ header_content += """    };
 # Save the header content to a file
 with open("src/warehouse_data.h", "w") as header_file:
     header_file.write(header_content)
+os.system("clang-format -i -style=file src/warehouse_data.h")
 
 ### --- Visualize the warehouse --- ###
 
