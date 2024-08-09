@@ -1,14 +1,17 @@
 import json
 import numpy as np
+import os
+from .constants import GRAPH_PATH
 
 class Tracker:
     def __init__(self):
-        with open('graph_data.json', 'r') as f:
+        with open(GRAPH_PATH, 'r') as f:
             graph_data = json.load(f)
         self.nodes = graph_data['nodes']
         self.N_nodes = len(self.nodes)
         self.edges = graph_data['edges']
-        self.probabilites = 0.1 * np.ones((self.N_nodes,))
+
+        self.probabilites = 0.1 * np.ones((self.N_nodes,))        
 
     def add_observation(self, state):
         # extract the perceived probabilities and confidences from the enhanced robot perception provided by the C++ simulation

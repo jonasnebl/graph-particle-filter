@@ -23,7 +23,7 @@ class Simulation {
     // agent attributes
     int _N_humans;
     int _N_robots;
-    const double _T_step;
+    double _T_step;
     std::vector<Agent> agents;
 
     // warehouse structure

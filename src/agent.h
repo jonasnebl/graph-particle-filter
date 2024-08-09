@@ -21,7 +21,7 @@ class Agent {
     Simulation *_simulation;
     double _T_step;
     Point position;
-    double speed = 0.5;
+    double speed = 4;
     std::deque<Point> path;
 
     std::vector<Point> perceive_humans();

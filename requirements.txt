@@ -1,0 +1,5 @@
+matplotlib==3.9.1
+numpy==2.0.1
+simulation==0.1.1.dev80
+torch==2.4.0+cpu
+torch_geometric==2.5.3

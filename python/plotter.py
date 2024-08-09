@@ -4,22 +4,39 @@ from matplotlib.patches import Polygon
 matplotlib.use('TkAgg')
 import json
 import numpy as np
+from moviepy.editor import VideoClip, ImageSequenceClip
+from moviepy.video.io.bindings import mplfig_to_npimage
+from datetime import datetime
+from .constants import *
+import os
 
 class Plotter:
-    def __init__(self, show=False):
+    def __init__(self, show=False, record_frames=False):
+        """Plotter to plot robot and human movement in the warehouse
 
-        with open('graph_data.json', 'r') as f:
+        :param show: Show the warehouse structure after initializing the tracker object. Blocking!
+        :param record_frames: Record one frame every time update() is called. Slows down the plotter heavily.
+        :returns: Plotter object
+        """
+
+        self.record_frames = record_frames
+
+        with open(GRAPH_PATH, 'r') as f:
             graph_data = json.load(f)
         self.nodes = graph_data['nodes']
         self.edges = graph_data['edges']
         self.node_positions = np.array([[node['x'], node['y']] for node in self.nodes])
-        with open('rack_data.json', 'r') as f:
+        with open(RACK_PATH, 'r') as f:
             rack_data = json.load(f)
         self.polygons = rack_data["polygons"]
 
 
         # Create a figure and axis
         self.fig, self.ax = plt.subplots()
+
+        self.ax.set_title('Warehouse Simulation')
+        self.ax.set_xlabel('X in m')
+        self.ax.set_ylabel('Y in m')
 
         # Initialize scatter plots
         self.scat_graph = self.ax.scatter(self.node_positions[:, 0], self.node_positions[:, 1], s=100, c='skyblue', zorder=2)
@@ -53,6 +70,10 @@ class Plotter:
         # List to keep track of perception-related elements
         self.perception_elements = []
 
+        # List to store frames to later generate a video
+        if self.record_frames:
+            self.frames = []
+
         if show:
             plt.show()
 
@@ -84,4 +105,16 @@ class Plotter:
                 color = cmap(probability)
                 self.node_patches[i].set_facecolor(color)
 
+        # Capture the current frame
+        if self.record_frames:
+            self.frames.append(mplfig_to_npimage(self.fig))
+
         plt.pause(1e-4)
+
+    def create_video(self, T_step):
+        if not self.record_frames:
+            raise Exception("You must set option record_frames=True to create a video.")
+        else:
+            fps = int(1 / T_step)
+            clip = ImageSequenceClip(self.frames, fps=fps)
+            clip.write_videofile('logs/video_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.mp4', fps=fps)
