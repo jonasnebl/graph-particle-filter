@@ -8,7 +8,7 @@
 
 Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     : _T_step(T_step), _is_human(is_human), _simulation(simulation) {
-    auto start_node_index = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
+    int start_node_index = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
     position = (_simulation->nodes)[start_node_index];
     path = std::deque<Point>();
     add_node_to_deque(start_node_index);

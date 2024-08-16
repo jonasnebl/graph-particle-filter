@@ -4,3 +4,4 @@ build/
 .vscode
 src/warehouse_data.h
 logs/
+models/

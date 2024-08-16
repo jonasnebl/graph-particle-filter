@@ -23,7 +23,7 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     std::random_device rd;
     mt = std::mt19937(rd());
     dist = std::uniform_int_distribution<int>(0, nodes.size() - 1);
-    xy_noise = std::normal_distribution<double>(0, 0.05);
+    xy_noise = std::normal_distribution<double>(0, 0.5);
 
     // initialize agents
     for (int i = 0; i < _N_humans; i++) {
