@@ -38,6 +38,8 @@ class Simulation {
     int get_random_node_index();
     double get_xy_noise();
     std::vector<int> dijkstra(int start, int end);
+    std::vector<Point> extend_perception(Point robot_position, 
+                                         std::vector<Point> perceived_human_positions); 
 
    private:
     // utility function helper variables

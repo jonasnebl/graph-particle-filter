@@ -79,7 +79,7 @@ class Plotter:
 
     def update(self, state, node_probabilities):
         # Update the scatter plot
-        positions = [(agent['x'], agent['y']) for agent in state]
+        positions = [agent["ego_position"] for agent in state]
         colors = ['blue' if agent['type'] == 'robot' else 'red' for agent in state]
         self.scat_agents.set_offsets(positions)
         self.scat_agents.set_color(colors)
@@ -91,10 +91,11 @@ class Plotter:
 
         # Visualize robot perceptions       
         for agent in state:
-            if agent['type'] == 'robot' and 'perception' in agent:
-                for perception in agent['perception']:
+            if agent['type'] == 'robot' and 'perceived_humans' in agent:
+                for perceived_human in agent['perceived_humans']:
                     # Draw a thin black line from the robot to the perceived location
-                    line = self.ax.plot([agent['x'], perception[0]], [agent['y'], perception[1]], 'k-', linewidth=0.5)
+                    line = self.ax.plot([agent['ego_position'][0], perceived_human['pos_mean'][0]], 
+                                        [agent['ego_position'][1], perceived_human['pos_mean'][1]], 'k-', linewidth=0.5)
                     self.perception_elements.extend(line)
 
         # Update the colors of the polygons based on node_probabilities using a heatmap colormap
@@ -117,4 +118,5 @@ class Plotter:
         else:
             fps = int(1 / T_step)
             clip = ImageSequenceClip(self.frames, fps=fps)
-            clip.write_videofile('logs/video_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.mp4', fps=fps)
+            clip.write_videofile(os.path.join(LOG_FOLDER, 
+                'video_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.mp4', fps=fps))

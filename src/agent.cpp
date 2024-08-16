@@ -19,37 +19,38 @@ void Agent::step() {
         add_new_job_to_deque();
     }
 
-    double dist_remaining = speed * _T_step;
+    double dist_remaining = velocity * _T_step;
     while (dist_remaining > 0) {
         double dist_x = path.front().first - position.first;
         double dist_y = path.front().second - position.second;
-        double dist = std::sqrt(dist_x * dist_x + dist_y * dist_y);
+        heading = std::atan2(dist_y, dist_x);
+        double dist = distance(position, path.front());
         if (dist < dist_remaining) {
             path.pop_front();
         } else {
             position.first += dist_remaining * dist_x / dist;
-            position.second += dist_remaining * dist_y / dist;
+            position.second += dist_remaining * dist_y / dist;        
         }
         dist_remaining -= dist;
     }
 }
 
+double Agent::distance(Point p1, Point p2) {
+    return std::sqrt(std::pow(p1.first - p2.first, 2) +
+                     std::pow(p1.second - p2.second, 2));
+}
+
 pybind11::dict Agent::log_state() {
     pybind11::dict state;
-
-    state["x"] = position.first;
-    state["y"] = position.second;
-
+    state["ego_position"] = position;
     if (_is_human) {
         state["type"] = "human";
     } else {
         state["type"] = "robot";
 
         auto perceived_humans = perceive_humans();
-        state["perception"] = perceived_humans;
-        state["perception_extended"] = extend_perception(perceived_humans);
+        state["perceived_humans"] = perceived_humans;
     }
-
     return state;
 }
 
@@ -84,21 +85,33 @@ void Agent::add_node_to_deque(int node_index) {
     path.push_back({node_x, node_y});
 }
 
-std::vector<Point> Agent::perceive_humans() {
-    std::vector<Point> result;
+std::vector<pybind11::dict> Agent::perceive_humans() {
+    std::vector<pybind11::dict> result;
     for (int i = 0; i < _simulation->_N_humans + _simulation->_N_robots; i++) {
         if ((_simulation->agents)[i]._is_human) {
-            Point position_human = (_simulation->agents[i]).position;
-            if (check_viewline(position, position_human)) {
-                result.push_back(position_human);
+            Agent human = _simulation->agents[i];
+            if (check_viewline(position, human.position, _simulation->racks)) {
+                double dist = distance(position, human.position);
+
+                pybind11::dict perceived_human;
+                perceived_human["pos_mean"] = human.position;
+                perceived_human["pos_cov"] = std::array<std::array<double, 2>, 2>(
+                    {std::array<double, 2>({0.1, 0.0}), 
+                     std::array<double, 2>({0.0, 0.1})});
+                perceived_human["heading_mean"] = human.heading;
+                perceived_human["heading_cov"] = 0.1 * dist;
+                perceived_human["vel_mean"] = human.velocity;
+                perceived_human["vel_cov"] = 0.1 * dist;
+                result.push_back(perceived_human);
             }
         }
     }
     return result;
 }
 
-bool Agent::check_viewline(Point pos1, Point pos2) {
-    for (const auto &polygon : _simulation->racks) {
+bool Agent::check_viewline(Point pos1, Point pos2,
+                           std::vector<std::vector<Point>> racks) {             
+    for (const auto &polygon : racks) {
         for (size_t i = 0; i < polygon.size(); ++i) {
             Point p1 = polygon[i];
             Point p2 = polygon[(i + 1) % polygon.size()];
@@ -127,29 +140,6 @@ bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
     }
 
     return (intersection_count % 2 == 1);
-}
-
-std::vector<Point> Agent::extend_perception(
-    std::vector<Point> perceived_humans) {
-    std::vector<Point> result((_simulation->nodes).size());
-    std::fill(result.begin(), result.end(),
-              std::make_pair<double, double>(0.0, 0.0));
-
-    for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        // 1. Calculate confidence for each node by evaluating visibility
-        result[i].second = static_cast<double>(
-            check_viewline(position, (_simulation->nodes)[i]));
-
-        // 2. Calculate probability of human presence at each node for each
-        // human
-        for (const auto &mean_pos_human : perceived_humans) {
-            if (is_point_in_polygon(mean_pos_human,
-                                    (_simulation->node_polygons)[i])) {
-                result[i].first = 1.0;
-            }
-        }
-    }
-    return result;
 }
 
 // Function to check if two line segments intersect

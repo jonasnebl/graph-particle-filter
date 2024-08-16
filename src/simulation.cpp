@@ -9,6 +9,7 @@
 #include <random>
 
 #include "warehouse_data.h"
+#include "agent.h"
 
 Simulation::Simulation(double T_step, int N_humans, int N_robots)
     : _T_step(T_step), _N_humans(N_humans), _N_robots(N_robots) {
@@ -100,4 +101,26 @@ std::vector<int> Simulation::dijkstra(int start_node, int end_node) {
     }
 
     return optimal_path;
+}
+
+std::vector<std::pair<double, double>> Simulation::extend_perception(Point robot_position, 
+                                                                     std::vector<Point> perceived_human_positions) {
+    std::vector<std::pair<double, double>> result(nodes.size());
+    std::fill(result.begin(), result.end(),
+              std::make_pair<double, double>(0.0, 0.0));
+
+    for (int i = 0; i < nodes.size(); i++) {
+        // 1. Calculate confidence for each node by evaluating visibility
+        result[i].second = static_cast<double>(
+            Agent::check_viewline(robot_position, nodes[i], racks));
+
+        // 2. Calculate probability of human presence at each node for each
+        // human
+        for (const auto &mean_pos_human : perceived_human_positions) {
+            if (Agent::is_point_in_polygon(mean_pos_human, node_polygons[i])) {
+                result[i].first = 1.0;
+            }
+        }
+    }
+    return result;
 }
