@@ -2,7 +2,18 @@ import numpy as np
 from KDEpy import FFTKDE
 import matplotlib.pyplot as plt
 
-class KLD:
+class Confidence:
+    def __init__(self, sim_log):
+        self.sim_log = sim_log
+
+    def per_node(self):
+        pass
+
+    def per_graph(self):
+        return self.per_node().mean()
+
+
+class Accuracy:
     def __init__(self, sim_log):
         """Kullback-Leibler divergence."""
         self.sim_log = sim_log
@@ -50,5 +61,5 @@ class KLD:
         return self.per_node().mean()
     
 if __name__ == '__main__':
-    kld = KLD('dummy')
+    kld = Accuracy('dummy')
     kld.per_node()
