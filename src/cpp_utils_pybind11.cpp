@@ -1,8 +1,7 @@
 #include "simulation.h"
-#include "utils.h"
 
-PYBIND11_MODULE(simulation, m) {
-    m.doc() = "2D warehouse simulation";
+PYBIND11_MODULE(cpp_utils, m) {
+    m.doc() = "cpp utils for the simulation and the tracker";
 
     pybind11::class_<Simulation>(m, "Simulation")
         .def(pybind11::init<double, int, int>(), "Initialize the simulation",

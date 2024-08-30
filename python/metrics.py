@@ -3,63 +3,72 @@ from KDEpy import FFTKDE
 import matplotlib.pyplot as plt
 
 class Confidence:
-    def __init__(self, sim_log):
+    def __init__(self, sim_log, node_probabilities):
+        """Confidence metric. Rewards estimated probabilities close to 0.
+        """
         self.sim_log = sim_log
+        self.node_probabilities = np.array(node_probabilities)
 
-    def per_node(self):
-        pass
+    def per_node(self, only_count_nodes_with_no_humans=True):
+        """Confidence evaluated for each graph node specifically
+        """
+        is_human_at_the_node = np.zeros((self.node_probabilities.shape), dtype=bool)
+        if only_count_nodes_with_no_humans:
+            for i, state in enumerate(self.sim_log['sim_states']):
+                for agent in state:
+                    if agent['type'] == 'human':
+                        is_human_at_the_node[i, agent['belonging_node']] = True
+        return np.mean(~is_human_at_the_node * (1 - np.exp(- self.node_probabilities)), axis=0)
 
-    def per_graph(self):
-        return self.per_node().mean()
+    def per_graph(self, only_count_nodes_with_no_humans=True):
+        """Confidence averaged over the whole graph
+        """
+        return self.per_node(only_count_nodes_with_no_humans).mean()
 
 
 class Accuracy:
-    def __init__(self, sim_log):
-        """Kullback-Leibler divergence."""
+    def __init__(self, sim_log, node_probabilities):
+        """Accuracy metric. Rewards correctly estimated probabilities."""
         self.sim_log = sim_log
+        self.node_probabilities = np.array(node_probabilities)
         self.N_trapezoids = 100
         self.bandwidth = 0.1
+        self.e = 1e-4
 
     def per_node(self):
-        # get the kernel density estimation for every node
-        klds = []
-        x = np.linspace(0, 1, self.N_trapezoids+1)
+        """Accuracy evaluated for each graph node specifically
+        """
+        is_human_at_the_node = np.zeros((self.node_probabilities.shape), dtype=bool)
+        for i, state in enumerate(self.sim_log['sim_states']):
+            for agent in state:
+                if agent['type'] == 'human':
+                    is_human_at_the_node[i, agent['belonging_node']] = True
 
-        test_data = np.array([0,0,0,0,1,0,1,0,1,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1])
-        test_data = np.concatenate(([np.linspace(0,1,test_data.size)], [test_data]), axis=0).T
-        print(test_data)
+        node_accuracies = []
+        for node in range(self.node_probabilities.shape[1]):
+            data_human_at_node = self.node_probabilities[is_human_at_the_node[:,node], node]
+            data_no_human_at_node = self.node_probabilities[~is_human_at_the_node[:,node], node]
 
-        for node in range(1):
-            kde = FFTKDE(kernel='gaussian', bw=0.1).fit(test_data)
-                         
-            # evalute kde on a grid and plot the result
-            # x = np.linspace(-0.1, 1.1, 5)
-            # X,Y = np.meshgrid(x,x)
-            # flattened_grid_points = (np.array([X.ravel(), Y.ravel()]).T)[np.argsort(X.ravel())]
-            # print(flattened_grid_points)
+            # perform kernel density estimation
+            N_p = data_human_at_node.size
+            N_q = data_no_human_at_node.size
+            if N_p != 0:
+                p_kde = FFTKDE(kernel='gaussian', bw=self.bandwidth).fit(data_human_at_node)
+            else: 
+                p_kde = lambda x: np.ones(x.shape)
+            if N_q != 0:
+                q_kde = FFTKDE(kernel='gaussian', bw=self.bandwidth).fit(data_no_human_at_node)
+            else:
+                q_kde = lambda x: np.ones(x.shape)
 
-            grid_points = 40
+            x = np.linspace(-self.e, 1+self.e, self.N_trapezoids)
+            node_accuracies.append(np.trapz(
+                (x - (N_p * p_kde(x))/(N_p * p_kde(x) + N_q * q_kde(x)))**2
+                    * (N_p * p_kde(x) + N_q * q_kde(x)) / (N_p + N_q),
+                x
+            ))
 
-            grid, points = kde.evaluate(grid_points)
-
-            # The grid is of shape (obs, dims), points are of shape (obs, 1)
-            x, y = np.unique(grid[:, 0]), np.unique(grid[:, 1])
-            z = points.reshape(grid_points, grid_points).T
-
-            # Plot the kernel density estimate
-            N = 20
-            # plt.contour(x, y, z, N, linewidths=0.8, colors='k')
-            plt.contourf(x, y, z, N, cmap="RdBu_r")
-            # plt.plot(data[:, 0], data[:, 1], 'ok', ms=3)
-            plt.tight_layout()
-            plt.show()
-
-            
-        return
+        return np.array(node_accuracies)
     
     def per_graph(self):
         return self.per_node().mean()
-    
-if __name__ == '__main__':
-    kld = Accuracy('dummy')
-    kld.per_node()

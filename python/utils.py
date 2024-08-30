@@ -1,23 +1,18 @@
+import json
 import numpy as np
+from .constants import *
 
-def extend_perception(robot_perceptions):
-    """Extend the perception of the robot with the nodes that are observable.
-    """
-    
-    robot_perceptions_extended = []
-    for robot_perception in robot_perceptions:
-        robot_position = robot_perception['ego_position']
-        perceived_humans = robot_perception['perceived_humans']
-        
-        # # calculate if a node is observable from the robot's position
-        # observability = get_observability(robot_position)
+def load_warehouse_data_from_json():
+    with open(GRAPH_PATH, 'r') as f:
+        graph_data = json.load(f)
 
-        # assign the observed humans to a node 
-        human_node_ids = []
-        for human in perceived_humans:
-            human_position = human['pos_mean']
-            # human_node_ids.append(get_belonging_node(human_position))
-            human_node_ids.append(0)
-        robot_perceptions_extended.append(human_node_ids)
+    nodes = graph_data['nodes']
+    edges = graph_data['edges']
+    edge_weights = [np.sqrt((nodes[edge[0]]['x'] - nodes[edge[1]]['x'])**2 + (nodes[edge[0]]['y'] - nodes[edge[1]]['y'])**2) for edge in edges]
 
-    return np.array(robot_perceptions_extended, dtype=int)
+    # Load rack data from JSON file
+    with open(RACK_PATH, 'r') as f:
+        rack_data = json.load(f)
+    polygons = rack_data["polygons"]
+
+    return nodes, edges, edge_weights, polygons

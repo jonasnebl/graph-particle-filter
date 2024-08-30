@@ -7,5 +7,5 @@ project("WarehouseSim")
 
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(simulation src/simulation_pybind11.cpp src/simulation.cpp src/agent.cpp)
-install(TARGETS simulation DESTINATION .)
+pybind11_add_module(cpp_utils src/cpp_utils_pybind11.cpp src/simulation.cpp src/agent.cpp)
+install(TARGETS cpp_utils DESTINATION .)

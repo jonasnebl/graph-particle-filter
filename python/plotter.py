@@ -94,8 +94,8 @@ class Plotter:
             if agent['type'] == 'robot' and 'perceived_humans' in agent:
                 for perceived_human in agent['perceived_humans']:
                     # Draw a thin black line from the robot to the perceived location
-                    line = self.ax.plot([agent['ego_position'][0], perceived_human['pos_mean'][0]], 
-                                        [agent['ego_position'][1], perceived_human['pos_mean'][1]], 'k-', linewidth=0.5)
+                    line = self.ax.plot([agent['ego_position'][0], perceived_human['position'][0]], 
+                                        [agent['ego_position'][1], perceived_human['position'][1]], 'k-', linewidth=0.5)
                     self.perception_elements.extend(line)
 
         # Update the colors of the polygons based on node_probabilities using a heatmap colormap

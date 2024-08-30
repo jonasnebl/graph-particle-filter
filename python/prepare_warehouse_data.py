@@ -1,29 +1,14 @@
-import json
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-import numpy as np
-import random
 from plotter import Plotter
 import os
+from .utils import load_warehouse_data_from_json
 
-# Load the graph data from the JSON file
-with open('warehouse/graph_data.json', 'r') as f:
-    graph_data = json.load(f)
-
-nodes = graph_data['nodes']
-edges = graph_data['edges']
-edge_weights = [np.sqrt((nodes[edge[0]]['x'] - nodes[edge[1]]['x'])**2 + (nodes[edge[0]]['y'] - nodes[edge[1]]['y'])**2) for edge in edges]
-
-# Load rack data from JSON file
-with open('warehouse/rack_data.json', 'r') as f:
-    rack_data = json.load(f)
-polygons = rack_data["polygons"]
+nodes, edges, edge_weights, polygons = load_warehouse_data_from_json()
 
 ### --- Generate the C++ header file for the graph --- ###
 
 # Generate the C++ header file content
-header_content = """#ifndef GRAPH_DATA_H
-#define GRAPH_DATA_H
+header_content = """#ifndef WAREHOUSESIM_SRC_WAREHOUSE_DATA_H
+#define WAREHOUSESIM_SRC_WAREHOUSE_DATA_H
 
 #include <vector>
 

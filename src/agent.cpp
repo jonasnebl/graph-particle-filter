@@ -45,13 +45,34 @@ pybind11::dict Agent::log_state() {
     state["ego_position"] = position;
     if (_is_human) {
         state["type"] = "human";
+        state["belonging_node"] = get_belonging_node();
     } else {
         state["type"] = "robot";
-
         auto perceived_humans = perceive_humans();
         state["perceived_humans"] = perceived_humans;
+        state["observable_nodes"] = get_observable_nodes();
     }
     return state;
+}
+
+int Agent::get_belonging_node() {
+    for (int i = 0; i < (_simulation->nodes).size(); i++) {
+        if (Agent::is_point_in_polygon(position, (_simulation->node_polygons)[i])) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+std::vector<double> Agent::get_observable_nodes() {
+    std::vector<double> result((_simulation->nodes).size());
+    std::fill(result.begin(), result.end(), 0.0);
+
+    for (int i = 0; i < (_simulation->nodes).size(); i++) {
+        result[i] = static_cast<double>(
+            Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
+    }
+    return result;
 }
 
 void Agent::add_new_job_to_deque() {
@@ -94,14 +115,10 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
                 double dist = distance(position, human.position);
 
                 pybind11::dict perceived_human;
-                perceived_human["pos_mean"] = human.position;
-                perceived_human["pos_cov"] = std::array<std::array<double, 2>, 2>(
-                    {std::array<double, 2>({0.1, 0.0}), 
-                     std::array<double, 2>({0.0, 0.1})});
-                perceived_human["heading_mean"] = human.heading;
-                perceived_human["heading_cov"] = 0.1 * dist;
-                perceived_human["vel_mean"] = human.velocity;
-                perceived_human["vel_cov"] = 0.1 * dist;
+                perceived_human["position"] = human.position;
+                perceived_human["belonging_node"] = human.get_belonging_node();
+                perceived_human["heading"] = human.heading;
+                perceived_human["velocity"] = human.velocity;
                 result.push_back(perceived_human);
             }
         }
