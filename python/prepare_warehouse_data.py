@@ -56,7 +56,7 @@ header_content += """    };
 # Add node polygons to the header content
 for node in nodes:
     header_content += "        {\n"
-    for point in node['area']:
+    for point in node["area"]:
         header_content += f"            {{{point[0]}, {point[1]}}},\n"
     header_content += "        },\n"
 

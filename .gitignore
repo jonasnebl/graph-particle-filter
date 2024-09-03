@@ -6,3 +6,5 @@ src/warehouse_data.h
 logs/
 models/
 temp/
+.vscode/
+figures/

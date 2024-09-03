@@ -1,6 +1,7 @@
 from .tracker import Tracker
 import numpy as np
 
+
 class ConfidentTracker(Tracker):
     def __init__(self, N_robots, include_observations=True):
         super().__init__(N_robots)
@@ -10,8 +11,7 @@ class ConfidentTracker(Tracker):
         self.constant_probabilities = np.zeros((self.N_nodes,))
 
     def add_observation(self, robot_perceptions):
-        """Update P based on a set of robot perceptions.
-        """
+        """Update P based on a set of robot perceptions."""
         if self.include_observations:
             perceived_human_node_belongings = self.get_perceived_human_node_belongings(robot_perceptions)
             self.observed_probabilities = np.zeros((self.N_nodes,))

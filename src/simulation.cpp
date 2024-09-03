@@ -8,8 +8,8 @@
 #include <queue>
 #include <random>
 
-#include "warehouse_data.h"
 #include "agent.h"
+#include "warehouse_data.h"
 
 Simulation::Simulation(double T_step, int N_humans, int N_robots)
     : _T_step(T_step), _N_humans(N_humans), _N_robots(N_robots) {

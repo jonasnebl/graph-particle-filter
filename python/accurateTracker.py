@@ -3,6 +3,7 @@ import numpy as np
 import os
 from .constants import *
 
+
 class AccurateTracker(Tracker):
     def __init__(self, N_robots, include_observations=True, train=False):
         super().__init__(N_robots)
@@ -11,8 +12,7 @@ class AccurateTracker(Tracker):
         self.train = train
         self.probabilities = np.zeros((self.N_nodes,))
 
-        self.mean_probabilities_filename = os.path.join(
-            MODEL_PATH, 'accurateTracker_mean_probabilities.txt')
+        self.mean_probabilities_filename = os.path.join(MODEL_PATH, "accurateTracker_mean_probabilities.txt")
         if self.train:
             self.mean_probabilities = np.zeros((self.N_nodes,))
             self.observed_probabilities_list = []
@@ -20,8 +20,7 @@ class AccurateTracker(Tracker):
             self.mean_probabilities = np.loadtxt(self.mean_probabilities_filename)
 
     def add_observation(self, robot_perceptions):
-        """Update P based on a set of robot perceptions.
-        """
+        """Update P based on a set of robot perceptions."""
         if self.train or self.include_observations:
             perceived_human_node_belongings = self.get_perceived_human_node_belongings(robot_perceptions)
             self.observed_probabilities = np.zeros((self.N_nodes,))
@@ -37,13 +36,15 @@ class AccurateTracker(Tracker):
             self.probabilities[self.observed_probabilities > 0.5] = 1
 
         return self.probabilities
-    
+
     def save_trained_model(self):
         if not self.train:
-            raise ValueError('Model needs to be in training mode to save it.')
+            raise ValueError("Model needs to be in training mode to save it.")
         else:
-            np.savetxt(self.mean_probabilities_filename, 
-                       np.array(self.observed_probabilities_list).mean(axis=0))
+            np.savetxt(
+                self.mean_probabilities_filename,
+                np.array(self.observed_probabilities_list).mean(axis=0),
+            )
 
     def predict(self):
         return self.mean_probabilities

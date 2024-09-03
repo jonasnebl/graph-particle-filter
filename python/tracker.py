@@ -2,6 +2,7 @@ import numpy as np
 from .utils import load_warehouse_data_from_json
 # from cpp_utils import get_belonging_node, get_observable_nodes
 
+
 class Tracker:
     def __init__(self, N_robots):
         self.N_robots = N_robots
@@ -20,7 +21,7 @@ class Tracker:
 
         returns: ndarray of shape (N_robots, N_perceived_humans)
         """
-        return np.array([
-            [human["belonging_node"] for human in robot["perceived_humans"]] 
-            for robot in robot_perceptions
-        ], dtype=int)
+        return np.array(
+            [[human["belonging_node"] for human in robot["perceived_humans"]] for robot in robot_perceptions],
+            dtype=int,
+        )

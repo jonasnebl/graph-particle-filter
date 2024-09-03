@@ -29,7 +29,7 @@ void Agent::step() {
             path.pop_front();
         } else {
             position.first += dist_remaining * dist_x / dist;
-            position.second += dist_remaining * dist_y / dist;        
+            position.second += dist_remaining * dist_y / dist;
         }
         dist_remaining -= dist;
     }
@@ -57,7 +57,8 @@ pybind11::dict Agent::log_state() {
 
 int Agent::get_belonging_node() {
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        if (Agent::is_point_in_polygon(position, (_simulation->node_polygons)[i])) {
+        if (Agent::is_point_in_polygon(position,
+                                       (_simulation->node_polygons)[i])) {
             return i;
         }
     }
@@ -69,8 +70,8 @@ std::vector<double> Agent::get_observable_nodes() {
     std::fill(result.begin(), result.end(), 0.0);
 
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        result[i] = static_cast<double>(
-            Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
+        result[i] = static_cast<double>(Agent::check_viewline(
+            position, (_simulation->nodes)[i], _simulation->racks));
     }
     return result;
 }
@@ -127,7 +128,7 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
 }
 
 bool Agent::check_viewline(Point pos1, Point pos2,
-                           std::vector<std::vector<Point>> racks) {             
+                           std::vector<std::vector<Point>> racks) {
     for (const auto &polygon : racks) {
         for (size_t i = 0; i < polygon.size(); ++i) {
             Point p1 = polygon[i];
