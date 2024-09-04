@@ -1,3 +1,4 @@
+#include "particleTracker.h"
 #include "simulation.h"
 
 PYBIND11_MODULE(cpp_utils, m) {
@@ -5,7 +6,8 @@ PYBIND11_MODULE(cpp_utils, m) {
 
     pybind11::class_<Simulation>(m, "Simulation")
         .def(pybind11::init<double, int, int>(), "Initialize the simulation",
-             pybind11::arg("T_step"), pybind11::arg("N_humans"),
+             pybind11::arg("T_step"), 
+             pybind11::arg("N_humans"),
              pybind11::arg("N_robots"))
         .def("step", &Simulation::step, "Perform a simulation step",
              pybind11::arg("N_steps"))
@@ -15,4 +17,13 @@ PYBIND11_MODULE(cpp_utils, m) {
                        "Number of humans in the simulation")
         .def_readwrite("N_robots", &Simulation::_N_robots,
                        "Number of robots in the simulation");
+
+    pybind11::class_<ParticleTracker>(m, "ParticleTracker")
+        .def(pybind11::init<double, int, int>(), "Init the ParticleTracker",
+             pybind11::arg("T_step"),
+             pybind11::arg("N_humans_max"),
+             pybind11::arg("N_particles"))
+        .def("add_observation", &ParticleTracker::add_observation, "Add robot observations",
+             pybind11::arg("robot_perceptions"))
+        .def("predict", &ParticleTracker::predict, "Predict by one T_step");
 }

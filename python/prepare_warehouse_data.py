@@ -15,7 +15,7 @@ header_content = """#ifndef WAREHOUSESIM_SRC_WAREHOUSE_DATA_H
 using Point = std::pair<double, double>;
 
 namespace warehouse_data {
-    std::vector<Point> nodes = {
+    inline std::vector<Point> nodes = {
 """
 
 # Add nodes to the header content
@@ -23,7 +23,7 @@ for node in nodes:
     header_content += f"        {{{node['x']}, {node['y']}}},\n"
 
 header_content += """    };
-    std::vector<std::pair<int, int>> edges = {
+    inline std::vector<std::pair<int, int>> edges = {
 """
 
 # Add edges to the header content
@@ -31,7 +31,7 @@ for edge in edges:
     header_content += f"        {{{edge[0]}, {edge[1]}}},\n"
 
 header_content += """    };
-    std::vector<double> edge_weights = {
+    inline std::vector<double> edge_weights = {
 """
 
 # Add edge weights to the header content
@@ -39,7 +39,7 @@ for weight in edge_weights:
     header_content += f"        {weight},\n"
 
 header_content += """    };
-    std::vector<std::vector<Point>> racks = {
+    inline std::vector<std::vector<Point>> racks = {
 """
 
 # Add racks (polygons) to the header content
@@ -50,7 +50,7 @@ for polygon in polygons:
     header_content += "        },\n"
 
 header_content += """    };
-    std::vector<std::vector<Point>> node_polygons = {
+    inline std::vector<std::vector<Point>> node_polygons = {
 """
 
 # Add node polygons to the header content

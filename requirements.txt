@@ -1,2 +1,5 @@
-matplotlib == 3.9.1 numpy == 2.0.1 simulation == 0.1.1.dev80 torch ==
-    2.4.0 + cpu torch_geometric == 2.5.3
+KDEpy==1.1.9
+KDEpy==1.1.9
+matplotlib==3.9.2
+moviepy==1.0.3
+numpy==2.1.0
