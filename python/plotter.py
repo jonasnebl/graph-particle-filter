@@ -14,7 +14,7 @@ import os
 
 
 class Plotter:
-    def __init__(self, show=False, record_frames=False):
+    def __init__(self, record_frames=False):
         """Plotter to plot robot and human movement in the warehouse
 
         :param show: Show the warehouse structure after initializing the tracker object. Blocking!
@@ -86,9 +86,6 @@ class Plotter:
         if self.record_frames:
             self.frames = []
 
-        if show:
-            plt.show()
-
     def update(self, state, node_probabilities):
         # Update the scatter plot
         positions = [agent["ego_position"] for agent in state]
@@ -141,3 +138,13 @@ class Plotter:
                     fps=fps,
                 )
             )
+
+    def savefig(self, filename):
+        """Save the currently displayed warehouse as a pdf figure"""
+        if not filename.endswith(".pdf"):
+            filename += ".pdf"
+        plt.savefig(os.path.join(FIGURE_PATH, filename))
+
+    def show(self):
+        """Show the warehouse plot"""
+        plt.show()

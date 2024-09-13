@@ -1,133 +1,127 @@
 #include "particleTracker.h"
 
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <numeric>
+#include <random>
+#include <vector>
+
+#include "agent.h"
+#include "particle.h"
 #include "warehouse_data.h"
 
 ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particles)
     : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles) {
-
-    T_history = 1; // seconds
-    N_history = static_cast<int>(T_history / T_step);
-    START_NODE = 1;
-
-    human_positions.resize(N_history, std::vector<std::vector<uint8_t>>(N_particles, std::vector<uint8_t>(N_humans_max, START_NODE)));
-    particle_weights.resize(N_particles, 1.0 / N_particles);
-    RESAMPLE_THRESHOLD = 1e-4;
-
     // load graph
     nodes = warehouse_data::nodes;
     edges = warehouse_data::edges;
     edge_weights = warehouse_data::edge_weights;
-    N_nodes = nodes.size();
+    racks = warehouse_data::racks;
+
+    // calculate successor edges
+    for (int i = 0; i < edges.size(); i++) {
+        std::vector<int> successor_edges_of_i;
+        for (int j = 0; j < edges.size(); j++) {
+            if (edges[i].second == edges[j].first) {
+                successor_edges_of_i.push_back(j);
+            }
+        }
+        successor_edges.push_back(successor_edges_of_i);
+    }
+
+    // load prediction model parameters
+    try {
+        std::ifstream file(pred_model_params_filename);
+        nlohmann::json json_data;
+        file >> json_data;
+        pred_model_params = json_data.get<std::vector<std::vector<std::array<double, 3>>>>();
+    } catch (const std::exception& e) {
+        // initialize new prediction model parameters
+        for (int i = 0; i < edges.size(); i++) {
+            std::vector<std::array<double, 3>> params_per_edge(
+                successor_edges[i].size(),
+                std::array<double, 3>({1 / static_cast<double>(successor_edges[i].size()), 5.0, 2.0}));
+            pred_model_params.push_back(params_per_edge);
+        }
+        save_pred_model_params();
+    }
+
+    // initialize particles
+    particles = std::vector<Particle>(
+        N_particles, Particle(N_humans_max, &nodes, &edges, &racks, &successor_edges, &pred_model_params));
 
     // init random number generator
     std::random_device rd;
-    mt = std::mt19937(rd());    
+    mt = std::mt19937(rd());
 }
 
 std::vector<double> ParticleTracker::add_observation(std::vector<pybind11::dict> robot_observations) {
-    for (const auto& robot_perception : robot_observations) {
-        // --- parse perceptions ---
-        auto observable_nodes = robot_perception["observable_nodes"].cast<std::vector<double>>();
-        auto perceived_humans = robot_perception["perceived_humans"].cast<std::vector<pybind11::dict>>();
+    std::vector<double> distances;
+    for (int i = 0; i < N_particles; i++) {
+        std::vector<double> robot_specific_distances;
+        for (const auto& robot_perception : robot_observations) {
+            // --- parse perceptions ---
+            Point robot_position = robot_perception["ego_position"].cast<Point>();
+            auto perceived_humans = robot_perception["perceived_humans"].cast<std::vector<pybind11::dict>>();
 
-        std::vector<double> perceived_probabilities(observable_nodes.size(), 0.0);
-        for (const auto& human : perceived_humans) {
-            int belonging_node = human["belonging_node"].cast<int>();
-            perceived_probabilities[belonging_node] = 1.0;
-        }
-
-        // --- sequential importance sampling ---
-        std::vector<double> likelihood(N_particles, 0.0);
-        for (int i = 0; i < N_particles; i++) {
-            std::vector<double> expected_probabilities(observable_nodes.size(), 0.0);
-            for (int j = 0; j < N_humans_max; j++) {
-                int node_index = human_positions[0][i][j];
-                if (observable_nodes[node_index] > 0.5) {
-                    expected_probabilities[node_index] = 1.0;
-                }
+            // --- Simulate the measurement ---
+            auto measurements = particles[i].simulate_measurement(robot_position);
+;
+            // --- Compute the distance metric ---
+            double distance = 0.0;
+            if (perceived_humans.size() != measurements.size()) {
+                distance = 1000.0;
             }
-            likelihood[i] = std::equal(expected_probabilities.begin(), expected_probabilities.end(), perceived_probabilities.begin()) ? 1.0 : 0.0;
+            robot_specific_distances.push_back(distance);
         }
 
-        for (int i = 0; i < N_particles; i++) {
-            particle_weights[i] *= likelihood[i];
-        }
-
-        // --- Resampling ---
-        std::vector<int> particles_to_be_resampled;
-        std::vector<int> particles_to_be_kept;
-        for (int i = 0; i < N_particles; i++) {
-            if (particle_weights[i] < RESAMPLE_THRESHOLD) {
-                particles_to_be_resampled.push_back(i);
-            } else {
-                particles_to_be_kept.push_back(i);
-            }
-        }
-        if (particles_to_be_kept.size() >= 1) {
-            std::uniform_int_distribution<> dis(0, particles_to_be_kept.size() - 1);
-            for (int i = 0; i < particles_to_be_resampled.size(); i++) {
-                    int random_particle = particles_to_be_kept[dis(mt)];
-                    for(int j = 0; j < N_humans_max; j++) {
-                        for(int k = 0; k < N_history; k++) {
-                            human_positions[k][particles_to_be_resampled[i]][j] = human_positions[k][random_particle][j];
-                        }
-                    }
-                    
-            }
-        }
-
-        std::fill(particle_weights.begin(), particle_weights.end(), 1.0 / N_particles);
+        // --- Combine distance metric for all robots ---
+        distances.push_back(std::accumulate(robot_specific_distances.begin(), robot_specific_distances.end(), 0.0) /
+                            robot_specific_distances.size());
     }
 
-    return calculate_node_probabilities();
+    // --- Remove the particles with the highest distance and fill up with particles with lower distance ---
+    int N_keep = N_particles / 2;
+    std::vector<int> range(N_particles);
+    std::iota(range.begin(), range.end(), 0);
+    std::sort(range.begin(), range.end(), [&distances](int i1, int i2) { return distances[i1] < distances[i2]; });
+    for (int i = 0; i < N_keep; i++) {
+        particles[i] = particles[range[i]];
+    }
+    for (int i = N_keep; i < N_particles; i++) {
+        int random_particle = std::uniform_int_distribution<int>(0, N_keep - 1)(mt);
+        particles[i] = Particle(particles[random_particle]);
+    }
+    return calculate_edge_probabilities();
 }
 
 std::vector<double> ParticleTracker::predict() {
-    std::vector<std::vector<uint8_t>> new_human_positions;
-    for (int i = 0; i < N_particles; i++) {
-        for (int j = 0; j < N_humans_max; j++) {
-            std::vector<int> history;
-            for (int k = 0; k < N_history-1; k++) {
-                human_positions[k+1][i][j] = human_positions[k][i][j];
-                history.push_back(human_positions[k][i][j]);
-            }
-            human_positions[0][i][j] = prediction_model(history);
-        }
+    for (auto& particle : particles) {
+        particle.predict(T_step);
     }
-    return calculate_node_probabilities();
+    return calculate_edge_probabilities();
 }
 
-int ParticleTracker::prediction_model(std::vector<int> history) {
-    int current_node = history[0];
-    std::vector<int> adjacent_nodes;
-    for (const auto& edge : edges) {
-        if (edge.first == current_node) {
-            adjacent_nodes.push_back(edge.second);
-        }
-    }
-
-    std::vector<int> candidate_nodes = {current_node};
-    candidate_nodes.insert(candidate_nodes.end(), adjacent_nodes.begin(), adjacent_nodes.end());
-
-    std::vector<double> candidate_probabilities(candidate_nodes.size(), 0.0);
-    candidate_probabilities[0] = 0.9;
-    for (size_t i = 1; i < candidate_probabilities.size(); ++i) {
-        candidate_probabilities[i] = 0.1 / (candidate_probabilities.size() - 1);
-    }
-
-    std::discrete_distribution<> dist(candidate_probabilities.begin(), candidate_probabilities.end());
-
-    return candidate_nodes[dist(mt)];
-}
-    
-std::vector<double> ParticleTracker::calculate_node_probabilities() {
-    std::vector<double> node_probabilities(N_nodes, 0.0);
-    for (int i = 0; i < N_nodes; ++i) {
-        for (int j = 0; j < N_particles; ++j) {
-            if (std::any_of(human_positions[0][j].begin(), human_positions[0][j].end(), [&i](int pos){ return pos == i; })) {
-                node_probabilities[i] += particle_weights[j];
+std::vector<double> ParticleTracker::calculate_edge_probabilities() {
+    std::vector<double> edge_probabilities(edges.size(), 0.0);
+    for (int i = 0; i < edges.size(); i++) {
+        for (const auto& particle : particles) {
+            for (const auto& human : particle.humans) {
+                if (human.edge == i) {
+                    edge_probabilities[i] += 1 / N_particles;
+                    break;
+                }
             }
         }
     }
-    return node_probabilities;
+    return edge_probabilities;
+}
+
+void ParticleTracker::save_pred_model_params() const {
+    nlohmann::json json_data = pred_model_params;
+    std::ofstream file(pred_model_params_filename);
+    file << json_data.dump(4);
 }

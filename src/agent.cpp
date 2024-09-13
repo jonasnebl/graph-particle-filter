@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <random>
 
 #include "simulation.h"
 
@@ -12,6 +13,12 @@ Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     position = (_simulation->nodes)[start_node_index];
     path = std::deque<Point>();
     add_node_to_deque(start_node_index);
+
+    std::random_device rd;
+    mt = std::mt19937(rd());
+    position_noise = std::normal_distribution<double>(0, 0.0);
+    heading_noise = std::normal_distribution<double>(0, 0.0);
+    velocity_noise = std::normal_distribution<double>(0, 0.0);
 }
 
 void Agent::step() {
@@ -36,8 +43,7 @@ void Agent::step() {
 }
 
 double Agent::distance(Point p1, Point p2) {
-    return std::sqrt(std::pow(p1.first - p2.first, 2) +
-                     std::pow(p1.second - p2.second, 2));
+    return std::sqrt(std::pow(p1.first - p2.first, 2) + std::pow(p1.second - p2.second, 2));
 }
 
 pybind11::dict Agent::log_state() {
@@ -45,20 +51,25 @@ pybind11::dict Agent::log_state() {
     state["ego_position"] = position;
     if (_is_human) {
         state["type"] = "human";
-        state["belonging_node"] = get_belonging_node();
+        state
+            ["belonging_"
+             "node"] = get_belonging_node();
     } else {
         state["type"] = "robot";
         auto perceived_humans = perceive_humans();
-        state["perceived_humans"] = perceived_humans;
-        state["observable_nodes"] = get_observable_nodes();
+        state
+            ["perceived_"
+             "humans"] = perceived_humans;
+        state
+            ["observable_"
+             "nodes"] = get_observable_nodes();
     }
     return state;
 }
 
 int Agent::get_belonging_node() {
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        if (Agent::is_point_in_polygon(position,
-                                       (_simulation->node_polygons)[i])) {
+        if (Agent::is_point_in_polygon(position, (_simulation->node_polygons)[i])) {
             return i;
         }
     }
@@ -70,17 +81,22 @@ std::vector<double> Agent::get_observable_nodes() {
     std::fill(result.begin(), result.end(), 0.0);
 
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        result[i] = static_cast<double>(Agent::check_viewline(
-            position, (_simulation->nodes)[i], _simulation->racks));
+        result[i] = static_cast<double>(Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
     }
     return result;
 }
 
 void Agent::add_new_job_to_deque() {
-    // every job consists of a path to a random node, a break at that node,
-    // and a path back to the start node, and a break at the start node
-    // the break nodes will be denoted by the index occuring twice in the path
-    // queue
+    // every job consists of a
+    // path to a random node,
+    // a break at that node,
+    // and a path back to the
+    // start node, and a break
+    // at the start node the
+    // break nodes will be
+    // denoted by the index
+    // occuring twice in the
+    // path queue
     int DROP_INDEX = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
 
     int end_node = DROP_INDEX;
@@ -88,22 +104,23 @@ void Agent::add_new_job_to_deque() {
         end_node = _simulation->get_random_node_index();
     }
 
-    std::vector<int> path_to_target =
-        _simulation->dijkstra(DROP_INDEX, end_node);
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+    std::vector<int> path_to_target = _simulation->dijkstra(DROP_INDEX, end_node);
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude
+                                                       // first
+                                                       // element
         add_node_to_deque(path_to_target[i]);
     }
     std::reverse(path_to_target.begin(), path_to_target.end());
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude
+                                                       // first
+                                                       // element
         add_node_to_deque(path_to_target[i]);
     }
 }
 
 void Agent::add_node_to_deque(int node_index) {
-    double node_x =
-        (_simulation->nodes)[node_index].first + _simulation->get_xy_noise();
-    double node_y =
-        (_simulation->nodes)[node_index].second + _simulation->get_xy_noise();
+    double node_x = (_simulation->nodes)[node_index].first + _simulation->get_node_noise();
+    double node_y = (_simulation->nodes)[node_index].second + _simulation->get_node_noise();
     path.push_back({node_x, node_y});
 }
 
@@ -116,10 +133,23 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
                 double dist = distance(position, human.position);
 
                 pybind11::dict perceived_human;
-                perceived_human["position"] = human.position;
-                perceived_human["belonging_node"] = human.get_belonging_node();
-                perceived_human["heading"] = human.heading;
-                perceived_human["velocity"] = human.velocity;
+                auto noisy_position = human.position;
+                noisy_position.first += position_noise(mt) * dist;
+                noisy_position.second += position_noise(mt) * dist;
+                perceived_human
+                    ["positio"
+                     "n"] = noisy_position;
+                perceived_human
+                    ["belongi"
+                     "ng_"
+                     "node"] = human.get_belonging_node();
+                perceived_human
+                    ["headin"
+                     "g"] = human.heading + heading_noise(mt) * dist;
+                perceived_human
+                    ["velocit"
+                     "y"] = human.velocity + velocity_noise(mt) * dist;
+
                 result.push_back(perceived_human);
             }
         }
@@ -127,8 +157,7 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
     return result;
 }
 
-bool Agent::check_viewline(Point pos1, Point pos2,
-                           std::vector<std::vector<Point>> racks) {
+bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks) {
     for (const auto &polygon : racks) {
         for (size_t i = 0; i < polygon.size(); ++i) {
             Point p1 = polygon[i];
@@ -143,7 +172,15 @@ bool Agent::check_viewline(Point pos1, Point pos2,
 
 bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
     int n = polygon.size();
-    if (n < 3) return false;  // A polygon must have at least 3 vertices
+    if (n < 3)
+        return false;  // A
+                       // polygon
+                       // must
+                       // have
+                       // at
+                       // least
+                       // 3
+                       // vertices
 
     Point infinity_point = std::make_pair(point.first + 1e10, point.second);
     int intersection_count = 0;
@@ -160,13 +197,16 @@ bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
     return (intersection_count % 2 == 1);
 }
 
-// Function to check if two line segments intersect
+// Function to check if two
+// line segments intersect
 bool Agent::do_intersect(Point p1, Point q1, Point p2, Point q2) {
     auto orientation = [](Point p, Point q, Point r) {
-        double val = (q.second - p.second) * (r.first - q.first) -
-                     (q.first - p.first) * (r.second - q.second);
+        double val = (q.second - p.second) * (r.first - q.first) - (q.first - p.first) * (r.second - q.second);
         if (val == 0) return 0;    // collinear
-        return (val > 0) ? 1 : 2;  // clock or counterclock wise
+        return (val > 0) ? 1 : 2;  // clock
+                                   // or
+                                   // counterclock
+                                   // wise
     };
 
     int o1 = orientation(p1, q1, p2);

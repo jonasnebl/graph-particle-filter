@@ -3,6 +3,15 @@ from KDEpy import FFTKDE
 import matplotlib.pyplot as plt
 
 
+def calc_human_at_the_node(sim_log, N_nodes):
+    is_human_at_the_node = np.zeros((len(sim_log["sim_states"]), N_nodes), dtype=bool)
+    for i, state in enumerate(sim_log["sim_states"]):
+        for agent in state:
+            if agent["type"] == "human":
+                is_human_at_the_node[i, agent["belonging_node"]] = True
+    return is_human_at_the_node
+
+
 class Confidence:
     def __init__(self, sim_log, node_probabilities):
         """Confidence metric. Rewards estimated probabilities close to 0."""
@@ -11,12 +20,10 @@ class Confidence:
 
     def per_node(self, only_count_nodes_with_no_humans=True):
         """Confidence evaluated for each graph node specifically"""
-        is_human_at_the_node = np.zeros((self.node_probabilities.shape), dtype=bool)
         if only_count_nodes_with_no_humans:
-            for i, state in enumerate(self.sim_log["sim_states"]):
-                for agent in state:
-                    if agent["type"] == "human":
-                        is_human_at_the_node[i, agent["belonging_node"]] = True
+            is_human_at_the_node = calc_human_at_the_node(self.sim_log, self.node_probabilities.shape[1])
+        else:
+            is_human_at_the_node = np.zeros((self.node_probabilities.shape), dtype=bool)
         return np.mean(~is_human_at_the_node * (1 - np.exp(-self.node_probabilities)), axis=0)
 
     def per_graph(self, only_count_nodes_with_no_humans=True):
@@ -35,11 +42,7 @@ class Accuracy:
 
     def per_node(self):
         """Accuracy evaluated for each graph node specifically"""
-        is_human_at_the_node = np.zeros((self.node_probabilities.shape), dtype=bool)
-        for i, state in enumerate(self.sim_log["sim_states"]):
-            for agent in state:
-                if agent["type"] == "human":
-                    is_human_at_the_node[i, agent["belonging_node"]] = True
+        is_human_at_the_node = calc_human_at_the_node(self.sim_log, self.node_probabilities.shape[1])
 
         node_accuracies = []
         for node in range(self.node_probabilities.shape[1]):
@@ -72,3 +75,31 @@ class Accuracy:
 
     def per_graph(self):
         return self.per_node().mean()
+
+
+class MeanAveragePrecision:
+    def __init__(self, sim_log, node_probabilities):
+        self.sim_log = sim_log
+        self.node_probabilities = np.array(node_probabilities)
+        self.N_thresholds = 100
+
+    def per_node(self):
+        ground_truth_humans = calc_human_at_the_node(self.sim_log, self.node_probabilities.shape[1])
+        thresholds = np.linspace(0, 1, self.N_thresholds)
+        self.mean_average_precision = np.zeros((self.node_probabilities.shape[1]))
+        previous_recall = np.zeros((self.node_probabilities.shape[1]))
+        for threshold in thresholds:
+            predicted_humans = self.node_probabilities > threshold
+            true_positive = np.sum(np.logical_and(predicted_humans, ground_truth_humans), axis=0)
+            false_positive = np.sum(np.logical_and(predicted_humans, ground_truth_humans), axis=0)
+            false_negative = np.sum(np.logical_and(~predicted_humans, ground_truth_humans), axis=0)
+            precision = true_positive / (true_positive + false_positive)
+            recall = true_positive / (true_positive + false_negative)
+            self.mean_average_precision += precision * (recall - previous_recall)
+            previous_recall = recall
+
+        return self.mean_average_precision
+
+    def per_graph(self):
+        per_node_map = self.per_node()
+        return np.mean(per_node_map[~np.isnan(per_node_map)])

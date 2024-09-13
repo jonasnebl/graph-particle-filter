@@ -1,3 +1,5 @@
+import os
+from .constants import *
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -29,5 +31,5 @@ def results_plot(
     plt.xlabel("Konfidenz")
     plt.ylabel("Genauigkeit")
     plt.tight_layout()
-    plt.savefig("figures/results_plot.png")
+    plt.savefig(os.path.join(FIGURE_PATH, "results_plot.pdf"))
     plt.show()

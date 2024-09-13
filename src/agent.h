@@ -1,11 +1,10 @@
 #ifndef WAREHOUSESIM_SRC_AGENT_H
 #define WAREHOUSESIM_SRC_AGENT_H
 
-#include <pybind11/pybind11.h>
-
+#include <random> 
 #include <deque>
 
-#include "simulation.h"
+#include <pybind11/pybind11.h>
 
 using Point = std::pair<double, double>;
 class Simulation;
@@ -40,6 +39,11 @@ class Agent {
     void add_node_to_deque(int node_index);
     int DROPOFF_HUMANS = 1;
     int DROPOFF_ROBOTS = 2;
+
+    std::mt19937 mt;
+    std::normal_distribution<double> position_noise;
+    std::normal_distribution<double> heading_noise;
+    std::normal_distribution<double> velocity_noise;
 };
 
 #endif

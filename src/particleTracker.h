@@ -11,6 +11,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "particle.h"
+
 using Point = std::pair<double, double>;
 
 class ParticleTracker {
@@ -19,31 +21,31 @@ class ParticleTracker {
     std::vector<double> add_observation(std::vector<pybind11::dict> robot_observations);
     std::vector<double> predict();
 
+    // warehouse graph
+    std::vector<Point> nodes;
+    std::vector<std::pair<int, int>> edges;
+    std::vector<std::vector<int>> successor_edges;
+    std::vector<double> edge_weights;
+    std::vector<std::vector<Point>> racks;
+
    private:
-    int prediction_model(std::vector<int> history);
-    std::vector<double> calculate_node_probabilities();
+    // prediction model
+    Particle prediction_model(Particle particle);
+    std::vector<std::vector<std::array<double, 3>>> pred_model_params;
+    void save_pred_model_params() const;
+    std::string pred_model_params_filename = "models/pred_model_params.json";
+
+    // calculate node probabilities from internal sysstem state
+    std::vector<double> calculate_edge_probabilities();
 
     // random number generator variables
     std::mt19937 mt;
-    std::uniform_int_distribution<int> dist;
 
+    // particle filter attributes
     const double T_step;
     const int N_humans_max;
     const int N_particles;
-
-    double T_history;
-    
-    int N_history;
-    int START_NODE;
-    std::vector<std::vector<std::vector<uint8_t>>> human_positions;
-    std::vector<double> particle_weights;
-    double RESAMPLE_THRESHOLD;
-
-    std::vector<Point> nodes;
-    std::vector<std::pair<int, int>> edges;
-    std::vector<double> edge_weights;
-    int N_nodes;
+    std::vector<Particle> particles;
 };
-
 
 #endif

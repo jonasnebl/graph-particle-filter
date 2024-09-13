@@ -1,6 +1,6 @@
 from plotter import Plotter
 import os
-from .utils import load_warehouse_data_from_json
+from utils import load_warehouse_data_from_json
 
 nodes, edges, edge_weights, polygons = load_warehouse_data_from_json()
 
@@ -73,4 +73,6 @@ os.system("clang-format -i -style=file src/warehouse_data.h")
 
 ### --- Visualize the warehouse --- ###
 
-plotter = Plotter(show=True)
+plotter = Plotter()
+plotter.savefig("warehouse.pdf")
+plotter.show()

@@ -36,14 +36,14 @@ class Simulation {
     // utility functions
     std::vector<std::vector<pybind11::dict>> step(int N_steps);
     int get_random_node_index();
-    double get_xy_noise();
+    double get_node_noise();
     std::vector<int> dijkstra(int start, int end);
 
    private:
     // utility function helper variables
     std::mt19937 mt;
     std::uniform_int_distribution<int> dist;
-    std::normal_distribution<double> xy_noise;
+    std::normal_distribution<double> node_noise;
 };
 
 #endif

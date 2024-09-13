@@ -3,6 +3,7 @@ venv/
 build/
 .vscode
 src/warehouse_data.h
+src/prediction_model_parameters.h
 logs/
 models/
 temp/
