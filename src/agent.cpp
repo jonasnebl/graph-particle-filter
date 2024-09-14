@@ -172,15 +172,7 @@ bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point
 
 bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
     int n = polygon.size();
-    if (n < 3)
-        return false;  // A
-                       // polygon
-                       // must
-                       // have
-                       // at
-                       // least
-                       // 3
-                       // vertices
+    if (n < 3) return false;  // A polygon must have at least 3 vertices
 
     Point infinity_point = std::make_pair(point.first + 1e10, point.second);
     int intersection_count = 0;
@@ -203,10 +195,7 @@ bool Agent::do_intersect(Point p1, Point q1, Point p2, Point q2) {
     auto orientation = [](Point p, Point q, Point r) {
         double val = (q.second - p.second) * (r.first - q.first) - (q.first - p.first) * (r.second - q.second);
         if (val == 0) return 0;    // collinear
-        return (val > 0) ? 1 : 2;  // clock
-                                   // or
-                                   // counterclock
-                                   // wise
+        return (val > 0) ? 1 : 2;  // clock or counterclock wise
     };
 
     int o1 = orientation(p1, q1, p2);

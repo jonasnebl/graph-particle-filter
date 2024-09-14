@@ -51,13 +51,6 @@ class Plotter:
             poly = Polygon(polygon_points, closed=True, fill=True, facecolor="gray", alpha=1, zorder=1)
             plt.gca().add_patch(poly)
 
-        # Plot the edges
-        for edge in self.edges:
-            start, end = edge
-            start_pos = self.node_positions[start]
-            end_pos = self.node_positions[end]
-            plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], "b-", zorder=3)
-
         # Annotate the nodes with their indices
         for i, (x, y) in enumerate(self.node_positions):
             plt.text(x, y, str(i), fontsize=12, ha="right", color="black")
@@ -86,12 +79,13 @@ class Plotter:
         if self.record_frames:
             self.frames = []
 
-    def update(self, state, node_probabilities):
+    def update(self, state, edge_probabilities):
         # Update the scatter plot
         positions = [agent["ego_position"] for agent in state]
-        colors = ["blue" if agent["type"] == "robot" else "red" for agent in state]
+        colors = ["orange" if agent["type"] == "robot" else "green" for agent in state]
         self.scat_agents.set_offsets(positions)
         self.scat_agents.set_color(colors)
+        self.scat_agents.set_zorder(3)  # Set a higher zorder for agents
 
         # Clear previous perceptions
         for elem in self.perception_elements:
@@ -108,16 +102,51 @@ class Plotter:
                         [agent["ego_position"][1], perceived_human["position"][1]],
                         "k-",
                         linewidth=0.5,
+                        zorder=3  # Set a higher zorder for perception lines
                     )
                     self.perception_elements.extend(line)
 
-        # Update the colors of the polygons based on node_probabilities using a heatmap colormap
+        # Clear previous edges and text annotations
+        for patch in self.ax.patches:
+            if isinstance(patch, matplotlib.patches.FancyArrow):
+                patch.remove()
+        for text in self.ax.texts:
+            text.remove()
+
+        # Update the edges with arrows based on edge_probabilities
         cmap = plt.get_cmap("coolwarm")
-        for i, node in enumerate(self.nodes):
-            if "area" in node:
-                probability = node_probabilities[i]
-                color = cmap(probability)
-                self.node_patches[i].set_facecolor(color)
+        offset = 0.1  # Offset for the text annotations
+        for i, edge in enumerate(self.edges):
+            start, end = edge
+            start_pos = self.node_positions[start]
+            end_pos = self.node_positions[end]
+            probability = edge_probabilities[i]
+            color = cmap(probability)
+            linewidth = 1 + 9 * probability  # Line width ranges from 1 to 10
+            alpha = 0.1 if probability == 0 else 1  # Make arrow almost invisible if probability is zero
+            arrow = matplotlib.patches.FancyArrow(
+                start_pos[0],
+                start_pos[1],
+                end_pos[0] - start_pos[0],
+                end_pos[1] - start_pos[1],
+                width=0.05 * linewidth,  # Adjust the width of the arrow
+                color=color,
+                alpha=alpha,
+                length_includes_head=True,
+                head_width=0.1 * linewidth,  # Adjust the head width of the arrow
+                head_length=0.2 * linewidth,  # Adjust the head length of the arrow
+                zorder=2  # Set a lower zorder for arrows
+            )
+            self.ax.add_patch(arrow)
+
+            # Add text annotation for the probability
+            mid_pos = (start_pos + end_pos) / 2
+            # Offset the text position slightly for opposing edges
+            if start < end:
+                text_pos = mid_pos + np.array([offset, offset])
+            else:
+                text_pos = mid_pos - np.array([offset, offset])
+            self.ax.text(text_pos[0], text_pos[1], f"{probability:.2f}", fontsize=10, ha="center", color="black", zorder=3)
 
         # Capture the current frame
         if self.record_frames:

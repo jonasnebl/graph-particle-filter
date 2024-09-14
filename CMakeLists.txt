@@ -16,7 +16,4 @@ pybind11_add_module(cpp_utils
                     src/particleTracker.cpp
                     src/particle.cpp)
 
-# add_executable(main src/main.cpp src/agent.cpp src/particleTracker.cpp src/particle.cpp)
-# target_link_libraries(main PRIVATE pybind11::embed nlohmann_json::nlohmann_json)
-
 install(TARGETS cpp_utils DESTINATION .)

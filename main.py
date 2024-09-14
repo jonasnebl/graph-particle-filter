@@ -1,4 +1,5 @@
 from tqdm import tqdm
+import numpy as np
 import pickle
 import sys
 from datetime import datetime
@@ -13,7 +14,7 @@ from python.confidentTracker import ConfidentTracker
 
 
 ##############################################################
-T_simulation = 1 * 60  # 10 minutes
+T_simulation = 10 * 60  # 10 minutes
 
 sim = Simulation(T_step=0.1, N_humans=3, N_robots=1)
 sim_states = []
@@ -67,7 +68,7 @@ if record_video:
 
 confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
 accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
-particleTracker = ParticleTracker(T_step, 3, 5000)
+particleTracker = ParticleTracker(T_step, 3, 10000)
 
 if plot:
     plotter = Plotter(record_frames=record_video)
@@ -77,7 +78,8 @@ pbar = tqdm(range(0, len(sim_states)), desc="Simulation")
 simulation_time = 0
 confidentTracker_node_probabilities = []
 accurateTracker_node_probabilities = []
-particleTracker_node_probabilities = []
+particleTracker_edge_probabilities = []
+
 for i in pbar:
     sim_state = sim_states[i]
 
@@ -98,11 +100,11 @@ for i in pbar:
     accurateTracker_node_probabilities.append(accurateTracker.add_observation(robot_perceptions))
     _ = accurateTracker.predict()
 
-    particleTracker_node_probabilities.append(particleTracker.add_observation(robot_perceptions))
+    particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
     _ = particleTracker.predict()
 
     if plot:
-        plotter.update(sim_state, particleTracker_node_probabilities[-1])
+        plotter.update(sim_state, particleTracker_edge_probabilities[-1])
 
     pbar.set_postfix(
         {
@@ -116,6 +118,9 @@ for i in pbar:
     )
 
     simulation_time += T_step
+
+
+
 
 if record_video:
     plotter.create_video(T_step)
