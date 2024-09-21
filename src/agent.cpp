@@ -67,7 +67,7 @@ pybind11::dict Agent::log_state() {
     return state;
 }
 
-int Agent::get_belonging_node() {
+int Agent::get_belonging_edge() {
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
         if (Agent::is_point_in_polygon(position, (_simulation->node_polygons)[i])) {
             return i;
@@ -81,7 +81,8 @@ std::vector<double> Agent::get_observable_nodes() {
     std::fill(result.begin(), result.end(), 0.0);
 
     for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        result[i] = static_cast<double>(Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
+        result[i] = static_cast<double>(
+            Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
     }
     return result;
 }
@@ -136,20 +137,10 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
                 auto noisy_position = human.position;
                 noisy_position.first += position_noise(mt) * dist;
                 noisy_position.second += position_noise(mt) * dist;
-                perceived_human
-                    ["positio"
-                     "n"] = noisy_position;
-                perceived_human
-                    ["belongi"
-                     "ng_"
-                     "node"] = human.get_belonging_node();
-                perceived_human
-                    ["headin"
-                     "g"] = human.heading + heading_noise(mt) * dist;
-                perceived_human
-                    ["velocit"
-                     "y"] = human.velocity + velocity_noise(mt) * dist;
-
+                perceived_human["position"] = noisy_position;
+                perceived_human["belonging_node"] = human.get_belonging_node();
+                perceived_human["heading"] = human.heading + heading_noise(mt) * dist;
+                perceived_human["velocity"] = human.velocity + velocity_noise(mt) * dist;
                 result.push_back(perceived_human);
             }
         }
@@ -193,7 +184,8 @@ bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
 // line segments intersect
 bool Agent::do_intersect(Point p1, Point q1, Point p2, Point q2) {
     auto orientation = [](Point p, Point q, Point r) {
-        double val = (q.second - p.second) * (r.first - q.first) - (q.first - p.first) * (r.second - q.second);
+        double val = (q.second - p.second) * (r.first - q.first) -
+                     (q.first - p.first) * (r.second - q.second);
         if (val == 0) return 0;    // collinear
         return (val > 0) ? 1 : 2;  // clock or counterclock wise
     };

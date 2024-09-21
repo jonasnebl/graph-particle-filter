@@ -7,7 +7,7 @@ class Tracker:
     def __init__(self, N_robots):
         self.N_robots = N_robots
         self.nodes, self.edges, self.edge_weights, self.polygons = load_warehouse_data_from_json()
-        self.N_nodes = len(self.nodes)
+        self.N_edges = len(self.edges)
 
     def get_observable_nodes(self, robot_perceptions):
         """Get the observability of the nodes for all robots.

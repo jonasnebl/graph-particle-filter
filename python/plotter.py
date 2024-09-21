@@ -35,6 +35,7 @@ class Plotter:
 
         # Create a figure and axis
         self.fig, self.ax = plt.subplots()
+        self.fig.set_size_inches(24, 16)
 
         self.ax.set_title("Warehouse Simulation")
         self.ax.set_xlabel("X in m")
@@ -102,7 +103,7 @@ class Plotter:
                         [agent["ego_position"][1], perceived_human["position"][1]],
                         "k-",
                         linewidth=0.5,
-                        zorder=3  # Set a higher zorder for perception lines
+                        zorder=3,  # Set a higher zorder for perception lines
                     )
                     self.perception_elements.extend(line)
 
@@ -135,7 +136,7 @@ class Plotter:
                 length_includes_head=True,
                 head_width=0.1 * linewidth,  # Adjust the head width of the arrow
                 head_length=0.2 * linewidth,  # Adjust the head length of the arrow
-                zorder=2  # Set a lower zorder for arrows
+                zorder=2,  # Set a lower zorder for arrows
             )
             self.ax.add_patch(arrow)
 
@@ -146,7 +147,9 @@ class Plotter:
                 text_pos = mid_pos + np.array([offset, offset])
             else:
                 text_pos = mid_pos - np.array([offset, offset])
-            self.ax.text(text_pos[0], text_pos[1], f"{probability:.2f}", fontsize=10, ha="center", color="black", zorder=3)
+            self.ax.text(
+                text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=10, ha="center", color="black", zorder=3
+            )
 
         # Capture the current frame
         if self.record_frames:
@@ -164,8 +167,8 @@ class Plotter:
                 os.path.join(
                     LOG_FOLDER,
                     "video_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4",
-                    fps=fps,
-                )
+                ),
+                fps=fps,
             )
 
     def savefig(self, filename):

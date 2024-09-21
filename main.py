@@ -14,7 +14,7 @@ from python.confidentTracker import ConfidentTracker
 
 
 ##############################################################
-T_simulation = 10 * 60  # 10 minutes
+T_simulation = 1 * 60  # 10 minutes
 
 sim = Simulation(T_step=0.1, N_humans=3, N_robots=1)
 sim_states = []
@@ -68,12 +68,12 @@ if record_video:
 
 confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
 accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
-particleTracker = ParticleTracker(T_step, 3, 10000)
+particleTracker = ParticleTracker(T_step, N_humans, 1000)
 
 if plot:
     plotter = Plotter(record_frames=record_video)
 
-pbar = tqdm(range(0, len(sim_states)), desc="Simulation")
+pbar = tqdm(range(0, int(len(sim_states) / 2)), desc="Simulation")
 
 simulation_time = 0
 confidentTracker_node_probabilities = []
@@ -120,8 +120,6 @@ for i in pbar:
     simulation_time += T_step
 
 
-
-
 if record_video:
     plotter.create_video(T_step)
 
@@ -129,17 +127,17 @@ if record_video:
 ##############################################################
 from python.metrics import Confidence, Accuracy, MeanAveragePrecision
 
-confidentTracker_confidence = Confidence(sim_log, confidentTracker_node_probabilities).per_graph()
-accurateTracker_confidence = Confidence(sim_log, accurateTracker_node_probabilities).per_graph()
-particleTracker_confidence = Confidence(sim_log, particleTracker_node_probabilities).per_graph()
+confidentTracker_confidence = Confidence(sim_log, confidentTracker_edge_probabilities).per_graph()
+accurateTracker_confidence = Confidence(sim_log, accurateTracker_edge_probabilities).per_graph()
+particleTracker_confidence = Confidence(sim_log, particleTracker_edge_probabilities).per_graph()
 
-confidentTracker_accuracy = Accuracy(sim_log, confidentTracker_node_probabilities).per_graph()
-accurateTracker_accuracy = Accuracy(sim_log, accurateTracker_node_probabilities).per_graph()
-particleTracker_accuracy = Accuracy(sim_log, particleTracker_node_probabilities).per_graph()
+confidentTracker_accuracy = Accuracy(sim_log, confidentTracker_edge_probabilities).per_graph()
+accurateTracker_accuracy = Accuracy(sim_log, accurateTracker_edgee_probabilities).per_graph()
+particleTracker_accuracy = Accuracy(sim_log, particleTracker_edgee_probabilities).per_graph()
 
-confidentTracker_map = MeanAveragePrecision(sim_log, confidentTracker_node_probabilities).per_graph()
-accurateTracker_map = MeanAveragePrecision(sim_log, accurateTracker_node_probabilities).per_graph()
-particleTracker_map = MeanAveragePrecision(sim_log, particleTracker_node_probabilities).per_graph()
+confidentTracker_map = MeanAveragePrecision(sim_log, confidentTracker_edge_probabilities).per_graph()
+accurateTracker_map = MeanAveragePrecision(sim_log, accurateTracker_edge_probabilities).per_graph()
+particleTracker_map = MeanAveragePrecision(sim_log, particleTracker_edge_probabilities).per_graph()
 
 from python.figures import results_plot
 
