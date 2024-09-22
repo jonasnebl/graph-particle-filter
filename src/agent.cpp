@@ -6,6 +6,7 @@
 #include <random>
 
 #include "simulation.h"
+#include "particleTracker.h"
 
 Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     : _T_step(T_step), _is_human(is_human), _simulation(simulation) {
@@ -51,53 +52,32 @@ pybind11::dict Agent::log_state() {
     state["ego_position"] = position;
     if (_is_human) {
         state["type"] = "human";
-        state
-            ["belonging_"
-             "node"] = get_belonging_node();
+        state["belonging_edge"] = get_belonging_edge();
     } else {
         state["type"] = "robot";
         auto perceived_humans = perceive_humans();
-        state
-            ["perceived_"
-             "humans"] = perceived_humans;
-        state
-            ["observable_"
-             "nodes"] = get_observable_nodes();
+        state["perceived_humans"] = perceived_humans;
     }
     return state;
 }
 
 int Agent::get_belonging_edge() {
-    for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        if (Agent::is_point_in_polygon(position, (_simulation->node_polygons)[i])) {
-            return i;
-        }
+    std::vector<double> distances;
+    for (int i = 0; i < (_simulation->edges).size(); i++) {
+        Point p1 = (_simulation->nodes)[(_simulation->edges)[i].first];
+        Point p2 = (_simulation->nodes)[(_simulation->edges)[i].second];
+        double cartesian_distance_to_edge = ParticleTracker::distance_of_point_to_edge(position, p1, p2);
+        double heading_difference =
+            std::abs(heading - std::atan2(p2.second - p1.second, p2.first - p1.first));
+        distances.push_back(cartesian_distance_to_edge + 2 * heading_difference);
     }
-    return -1;
-}
-
-std::vector<double> Agent::get_observable_nodes() {
-    std::vector<double> result((_simulation->nodes).size());
-    std::fill(result.begin(), result.end(), 0.0);
-
-    for (int i = 0; i < (_simulation->nodes).size(); i++) {
-        result[i] = static_cast<double>(
-            Agent::check_viewline(position, (_simulation->nodes)[i], _simulation->racks));
-    }
-    return result;
+    return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }
 
 void Agent::add_new_job_to_deque() {
-    // every job consists of a
-    // path to a random node,
-    // a break at that node,
-    // and a path back to the
-    // start node, and a break
-    // at the start node the
-    // break nodes will be
-    // denoted by the index
-    // occuring twice in the
-    // path queue
+    // every job consists of a path to a random node, a break at that node,
+    // and a path back to the start node, and a break at the start node the
+    // break nodes will be denoted by the index occuring twice in the path queue
     int DROP_INDEX = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
 
     int end_node = DROP_INDEX;
@@ -106,15 +86,11 @@ void Agent::add_new_job_to_deque() {
     }
 
     std::vector<int> path_to_target = _simulation->dijkstra(DROP_INDEX, end_node);
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude
-                                                       // first
-                                                       // element
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
         add_node_to_deque(path_to_target[i]);
     }
     std::reverse(path_to_target.begin(), path_to_target.end());
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude
-                                                       // first
-                                                       // element
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
         add_node_to_deque(path_to_target[i]);
     }
 }
@@ -132,15 +108,14 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
             Agent human = _simulation->agents[i];
             if (check_viewline(position, human.position, _simulation->racks)) {
                 double dist = distance(position, human.position);
-
                 pybind11::dict perceived_human;
                 auto noisy_position = human.position;
                 noisy_position.first += position_noise(mt) * dist;
                 noisy_position.second += position_noise(mt) * dist;
                 perceived_human["position"] = noisy_position;
-                perceived_human["belonging_node"] = human.get_belonging_node();
                 perceived_human["heading"] = human.heading + heading_noise(mt) * dist;
                 perceived_human["velocity"] = human.velocity + velocity_noise(mt) * dist;
+                perceived_human["belonging_edge"] = human.get_belonging_edge();
                 result.push_back(perceived_human);
             }
         }

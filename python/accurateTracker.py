@@ -10,11 +10,11 @@ class AccurateTracker(Tracker):
 
         self.include_observations = include_observations
         self.train = train
-        self.probabilities = np.zeros((self.N_nodes,))
+        self.probabilities = np.zeros((self.N_edges,))
 
         self.mean_probabilities_filename = os.path.join(MODEL_PATH, "accurateTracker_mean_probabilities.txt")
         if self.train:
-            self.mean_probabilities = np.zeros((self.N_nodes,))
+            self.mean_probabilities = np.zeros((self.N_edges,))
             self.observed_probabilities_list = []
         else:
             self.mean_probabilities = np.loadtxt(self.mean_probabilities_filename)
@@ -23,7 +23,7 @@ class AccurateTracker(Tracker):
         """Update P based on a set of robot perceptions."""
         if self.train or self.include_observations:
             perceived_human_node_belongings = self.get_perceived_human_node_belongings(robot_perceptions)
-            self.observed_probabilities = np.zeros((self.N_nodes,))
+            self.observed_probabilities = np.zeros((self.N_edges,))
             try:
                 self.observed_probabilities[np.unique(perceived_human_node_belongings.flatten())] = 1
             except:

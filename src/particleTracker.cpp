@@ -4,10 +4,12 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <numeric>
 #include <random>
 #include <vector>
+
+#include <nlohmann/json.hpp>
+#include <hungarian.h>
 
 #include "agent.h"
 #include "particle.h"
@@ -87,6 +89,9 @@ void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
         robot_perception["perceived_humans"].cast<std::vector<pybind11::dict>>();
 
     std::vector<int> perceived_human_per_internal_human = assign_perceived_humans_to_internal_humans(robot_position, perceived_humans);
+    for (const auto& perceived_human : perceived_human_per_internal_human) {
+        std::cout << perceived_human << std::endl;
+    }
 
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
@@ -165,7 +170,7 @@ int ParticleTracker::get_belonging_edge(Point position, double heading) {
     return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }
 
-double ParticleTracker::distance_of_point_to_edge(Point p, Point v, Point w) const {
+double ParticleTracker::distance_of_point_to_edge(Point p, Point v, Point w) {
     const double l2 = std::hypot(v.first - w.first, v.second - w.second);  // Length of edge vw
     if (l2 == 0.0) return std::hypot(p.first - v.first, p.second - v.second);  // v == w case
     const double t = std::max(0.0, std::min(1.0, ((p.first - v.first) * (w.first - v.first) +

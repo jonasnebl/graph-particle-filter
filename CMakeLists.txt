@@ -8,6 +8,7 @@ project("WarehouseSim")
 
 find_package(pybind11 CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(hungarian CONFIG REQUIRED)
 
 pybind11_add_module(cpp_utils 
                     src/cpp_utils_pybind11.cpp 

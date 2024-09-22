@@ -16,7 +16,6 @@ class Agent {
     void step();
     pybind11::dict log_state();
     int get_belonging_edge();
-    std::vector<double> get_observable_nodes();
   
     static double distance(Point p1, Point p2);
     static bool do_intersect(Point p1, Point q1, Point p2, Point q2);
