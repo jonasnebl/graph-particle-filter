@@ -186,27 +186,34 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(Poi
     for (int i = 0; i < N_humans_max; i++) {
         individual_edge_probabilities.push_back(calculate_edge_probabilities_one_human(i));
     }
-    std::vector<std::vector<double>> max_probabilities;
-    for (int i = 0; i < perceived_humans.size(); i++) {
+    int m = perceived_humans.size();
+    int n = N_humans_max;
+    int** max_probabilities = (int**)calloc(m, sizeof(int*)); // use c style matrix for hungarian algorithm library
+    for (int i = 0; i < m; i++) {
         auto human = perceived_humans[i];
         int belonging_edge =
             get_belonging_edge(human["position"].cast<Point>(), human["heading"].cast<double>());
-        std::vector<double> belonging_edge_probabilities;
-        for (int j = 0; j < N_humans_max; j++) {
-            belonging_edge_probabilities.push_back(individual_edge_probabilities[j][belonging_edge]);
-        }
-        max_probabilities.push_back(belonging_edge_probabilities);
+        max_probabilities[i] = (int*)calloc(n,sizeof(int));
+        for (int j = 0; j < n; j++) {
+            max_probabilities[i][j] = static_cast<int>(1000 * individual_edge_probabilities[j][belonging_edge]);
+        };
     }
+    // --- assign perceived humans to internal humans using the hungarian algorithm ---
+    hungarian_problem_t prob;
+    int matrix_size = hungarian_init(&prob, max_probabilities, m, n, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+    hungarian_solve(&prob);
     std::vector<int> perceived_human_per_internal_human(N_humans_max, -1);
-    for (int i = 0; i < perceived_humans.size(); i++) {
-        std::pair<int, int> max_element_index = find_max_element_index(max_probabilities);
-        perceived_human_per_internal_human[max_element_index.second] = max_element_index.first;
-        for (int j = 0; j < perceived_humans.size(); j++) {
-            max_probabilities[j][max_element_index.second] = -1;
-        } 
-        for (int j = 0; j < N_humans_max; j++) {
-            max_probabilities[max_element_index.first][j] = -1;
+    for (int j = 0; j < n; j++) {
+        for (int i = 0; i < m; i++) {
+            if (prob.assignment[i][j] == 1) {
+                perceived_human_per_internal_human[j] = i;
+                break;
+            }
         }
+    }
+    hungarian_free(&prob);
+    for (int i = 0; i < m; i++) {
+        free(max_probabilities[i]);
     }
     return perceived_human_per_internal_human;
 }
