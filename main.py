@@ -62,7 +62,7 @@ sim = Simulation(T_step=T_step, N_humans=N_humans, N_robots=N_robots)
 
 ##############################################################
 plot = True  # slows down loop significantly!
-record_video = True  # slows down loop even more!
+record_video = False  # slows down loop even more!
 if record_video:
     plot = True
 
@@ -73,7 +73,7 @@ particleTracker = ParticleTracker(T_step, N_humans, 1000)
 if plot:
     plotter = Plotter(record_frames=record_video)
 
-pbar = tqdm(range(0, int(len(sim_states)/2)), desc="Simulation")
+pbar = tqdm(range(0, int(len(sim_states))), desc="Simulation")
 
 simulation_time = 0
 confidentTracker_edge_probabilities = []

@@ -18,4 +18,4 @@ pybind11_add_module(cpp_utils
                     src/particle.cpp)
 
 install(TARGETS cpp_utils DESTINATION .)
-target_link_libraries(cpp_utils PRIVATE nlohmann_json::nlohmann_json hungarian::hungarian)
+target_link_libraries(cpp_utils PRIVATE hungarian::hungarian nlohmann_json nlohmann_json::nlohmann_json)
