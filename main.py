@@ -68,7 +68,7 @@ if record_video:
 
 confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
 accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
-particleTracker = ParticleTracker(T_step, N_humans, 100)
+particleTracker = ParticleTracker(T_step, N_humans, 1000)
 
 if plot:
     plotter = Plotter(record_frames=record_video)

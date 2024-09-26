@@ -55,22 +55,33 @@ Particle::Particle(int edge_, const Particle& p)
     time_since_edge_change = 0.5 * get_random_time_of_edge_change(edge, next_edge);
 }
 
-double Particle::distance(Point robot_position, Point measured_position, double heading) {
+Point Particle::get_position() {
     double x_edge_start = (*nodes)[(*edges)[edge].first].first;
     double x_edge_end = (*nodes)[(*edges)[edge].second].first;
     double y_edge_start = (*nodes)[(*edges)[edge].first].second;
     double y_edge_end = (*nodes)[(*edges)[edge].second].second;
-
     double x =
         x_edge_start + (x_edge_end - x_edge_start) * time_since_edge_change / time_of_edge_change;
     double y =
         y_edge_start + (y_edge_end - y_edge_start) * time_since_edge_change / time_of_edge_change;
+    return std::make_pair(x, y);
+}
 
-    double edge_heading = std::atan2(y_edge_end - y_edge_start, x_edge_end - x_edge_start);
+double Particle::get_heading() {
+    double x_edge_start = (*nodes)[(*edges)[edge].first].first;
+    double x_edge_end = (*nodes)[(*edges)[edge].second].first;
+    double y_edge_start = (*nodes)[(*edges)[edge].first].second;
+    double y_edge_end = (*nodes)[(*edges)[edge].second].second;
+    return std::atan2(y_edge_end - y_edge_start, x_edge_end - x_edge_start);
+}
+
+double Particle::distance(Point robot_position, Point measured_position, double heading) {
+    Point ego_position = get_position();
+    double edge_heading = get_heading();
 
     double distance = 0;
     bool human_should_be_visible =
-        Agent::check_viewline(robot_position, std::make_pair(x, y), *racks);
+        Agent::check_viewline(robot_position, ego_position, *racks);
     if (std::isnan(heading) && !human_should_be_visible) { 
         return 0;
     } else if (std::isnan(heading) && human_should_be_visible) {
@@ -80,8 +91,8 @@ double Particle::distance(Point robot_position, Point measured_position, double 
         previous_distance += 10;
         return previous_distance;
     } else if (!std::isnan(heading) && human_should_be_visible) {
-        distance = (std::pow(measured_position.first - x, 2) +
-                    std::pow(measured_position.second - y, 2)) +
+        distance = (std::pow(measured_position.first - ego_position.first, 2) +
+                    std::pow(measured_position.second - ego_position.second, 2)) +
                    100 * std::pow(std::abs(heading - edge_heading), 2);
         previous_distance = distance;
         return distance;

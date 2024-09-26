@@ -46,8 +46,10 @@ class ParticleTracker {
     void add_single_observation(pybind11::dict robot_perception);
     int get_belonging_edge(Point position, double heading);
     std::vector<int> assign_perceived_humans_to_internal_humans(Point robot_position, std::vector<pybind11::dict> perceived_humans);
-    void update_particles(int i, std::vector<double> distances, Point perceived_pos, double perceived_heading);
+    std::vector<std::vector<double>> assignment_probabilities_per_internal_human(std::vector<pybind11::dict> perceived_humans);
+    void update_particles(int i, std::vector<double> distances);
     std::pair<int, int> find_max_element_index(const std::vector<std::vector<double>>& matrix);
+    static double manhattan_distance(Point p1, Point p2);
 
     // random number generator variables
     std::mt19937 mt;

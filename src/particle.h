@@ -17,6 +17,8 @@ class Particle{
                  std::vector<std::vector<std::array<double, 3>>>* pred_model_params);  
         Particle(const Particle &p); // copy constructor
         Particle(int edge_, const Particle& p); // copy constructor with custom edge
+        Point get_position();
+        double get_heading();
         double distance(Point robot_position, Point measured_position, double heading);
         void predict(double T_step);
         int get_random_successor_edge(int edge);
