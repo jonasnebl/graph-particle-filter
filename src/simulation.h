@@ -17,6 +17,8 @@ class Agent;
 
 using Point = std::pair<double, double>;
 
+const double TRAJECTORY_XY_STDDEV = 0.5; // meters
+
 class Simulation {
    public:
     Simulation(double T_step, int N_humans, int N_robots);
@@ -31,19 +33,20 @@ class Simulation {
     std::vector<std::pair<int, int>> edges;
     std::vector<double> edge_weights;
     std::vector<std::vector<Point>> racks;
-    std::vector<std::vector<Point>> node_polygons;
+    std::vector<int> staging_nodes;
+    std::vector<int> storage_nodes;
 
     // utility functions
     std::vector<std::vector<pybind11::dict>> step(int N_steps);
     int get_random_node_index();
-    double get_node_noise();
+    double get_trajectory_xy_noise();
     std::vector<int> dijkstra(int start, int end);
 
    private:
     // utility function helper variables
     std::mt19937 mt;
-    std::uniform_int_distribution<int> dist;
-    std::normal_distribution<double> node_noise;
+    std::uniform_int_distribution<int> random_node_index;
+    std::normal_distribution<double> trajectory_xy_noise;
 };
 
 #endif

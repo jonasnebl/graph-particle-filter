@@ -34,7 +34,7 @@ Particle::Particle(const Particle& p)
       pred_model_params(p.pred_model_params),
       edge(p.edge),
       next_edge(p.next_edge),
-      time_since_edge_change(p.time_since_edge_change){
+      time_since_edge_change(p.time_since_edge_change) {
     std::random_device rd;
     mt = std::mt19937(rd());
     next_edge = get_random_successor_edge(edge);
@@ -80,9 +80,8 @@ double Particle::distance(Point robot_position, Point measured_position, double 
     double edge_heading = get_heading();
 
     double distance = 0;
-    bool human_should_be_visible =
-        Agent::check_viewline(robot_position, ego_position, *racks);
-    if (std::isnan(heading) && !human_should_be_visible) { 
+    bool human_should_be_visible = Agent::check_viewline(robot_position, ego_position, *racks);
+    if (std::isnan(heading) && !human_should_be_visible) {
         return 0;
     } else if (std::isnan(heading) && human_should_be_visible) {
         previous_distance += 10;
@@ -127,7 +126,7 @@ double Particle::get_random_time_of_edge_change(int current_edge, int next_edge)
     int next_edge_relative_index = find_edge_relative_index(current_edge, next_edge);
     std::vector<std::array<double, 3>> weights = (*pred_model_params)[current_edge];
     return std::normal_distribution<double>(weights[next_edge_relative_index][1],
-                                                     weights[next_edge_relative_index][2])(mt);
+                                            weights[next_edge_relative_index][2])(mt);
 }
 
 int Particle::find_edge_relative_index(int edge, int next_edge) const {

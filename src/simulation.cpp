@@ -18,14 +18,15 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     edges = warehouse_data::edges;
     edge_weights = warehouse_data::edge_weights;
     racks = warehouse_data::racks;
-    node_polygons = warehouse_data::node_polygons;
+    staging_nodes = warehouse_data::staging_nodes;
+    storage_nodes = warehouse_data::storage_nodes;
 
     // random node index
     // generator
     std::random_device rd;
     mt = std::mt19937(rd());
-    dist = std::uniform_int_distribution<int>(0, nodes.size() - 1);
-    node_noise = std::normal_distribution<double>(0, 0.5);
+    random_node_index = std::uniform_int_distribution<int>(0, nodes.size() - 1);
+    trajectory_xy_noise = std::normal_distribution<double>(0, TRAJECTORY_XY_STDDEV);
 
     // initialize agents
     for (int i = 0; i < _N_humans; i++) {
@@ -36,21 +37,17 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     }
 }
 
-double Simulation::get_node_noise() { return node_noise(mt); }
+double Simulation::get_trajectory_xy_noise() { return trajectory_xy_noise(mt); }
 
-int Simulation::get_random_node_index() { return dist(mt); }
+int Simulation::get_random_node_index() { return random_node_index(mt); }
 
 std::vector<std::vector<pybind11::dict>> Simulation::step(int N_steps) {
     auto result = std::vector<std::vector<pybind11::dict>>(N_steps);
     for (int i = 0; i < N_steps; i++) {
-        // step all agents
-        for (auto &agent : agents) {
-            agent.step();
-        }
-
-        // log state for step
+        // step all agents and log step state
         std::vector<pybind11::dict> step_state;
         for (auto &agent : agents) {
+            agent.step();
             step_state.push_back(agent.log_state());
         }
         result[i] = step_state;
@@ -65,9 +62,7 @@ std::vector<int> Simulation::dijkstra(int start_node, int end_node) {
     std::vector<int> predecessors(nodes.size(), std::numeric_limits<int>::max());
     std::vector<bool> considered(nodes.size(), false);
 
-    // priority queue to
-    // select the node with
-    // the smallest distance
+    // priority queue to select the node with the smallest distance
     using NodeDistPair = std::pair<double, int>;
     std::priority_queue<NodeDistPair, std::vector<NodeDistPair>, std::greater<NodeDistPair>> pq;
     pq.emplace(0, start_node);
@@ -91,9 +86,7 @@ std::vector<int> Simulation::dijkstra(int start_node, int end_node) {
             }
         }
     }
-
-    // extract and return
-    // solution
+    // extract and return solution
     std::vector<int> optimal_path;
     for (int at = end_node; at != std::numeric_limits<int>::max(); at = predecessors[at]) {
         optimal_path.insert(optimal_path.begin(), at);

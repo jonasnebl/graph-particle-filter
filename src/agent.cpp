@@ -5,58 +5,64 @@
 #include <iostream>
 #include <random>
 
-#include "simulation.h"
 #include "particleTracker.h"
+#include "simulation.h"
 
 Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     : _T_step(T_step), _is_human(is_human), _simulation(simulation) {
-    int start_node_index = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
-    position = (_simulation->nodes)[start_node_index];
-    path = std::deque<Point>();
-    add_node_to_deque(start_node_index);
-
     std::random_device rd;
     mt = std::mt19937(rd());
-    position_noise = std::normal_distribution<double>(0, 0.0);
-    heading_noise = std::normal_distribution<double>(0, 0.0);
-    velocity_noise = std::normal_distribution<double>(0, 0.0);
+    if (_is_human) {
+        velocity_distribution =
+            std::normal_distribution<double>(HUMAN_VELOCITY_MEAN, HUMAN_VELOCITY_STDDEV);
+    } else {
+        velocity_distribution = std::normal_distribution<double>(ROBOT_VELOCITY, 0.0);
+    }
+    position_noise = std::normal_distribution<double>(0, XY_STDDEV);
+    heading_noise = std::normal_distribution<double>(0, HEADING_STDDEV);
+    staging_node_distribution = std::discrete_distribution<>((_simulation->staging_nodes).begin(),
+                                                             (_simulation->staging_nodes).end());
+    storage_node_distribution = std::discrete_distribution<>((_simulation->storage_nodes).begin(),
+                                                             (_simulation->storage_nodes).end());
+
+    int start_node_index = staging_node_distribution(mt);
+    position = (_simulation->nodes)[start_node_index];
+    path = std::deque<std::pair<Point, double>>();
+    add_node_to_deque(start_node_index, get_random_velocity());
+    current_final_path_node = start_node_index;
 }
 
 void Agent::step() {
-    while (path.size() <= 10) {
-        add_new_job_to_deque();
+    while (path.size() <= 10) {  // keep path length at least at 10
+        add_new_double_cycle_to_deque();
     }
+    double x_target = path.front().first.first;
+    double y_target = path.front().first.second;
+    velocity = path.front().second;
 
-    double dist_remaining = velocity * _T_step;
-    while (dist_remaining > 0) {
-        double dist_x = path.front().first - position.first;
-        double dist_y = path.front().second - position.second;
-        heading = std::atan2(dist_y, dist_x);
-        double dist = distance(position, path.front());
-        if (dist < dist_remaining) {
-            path.pop_front();
-        } else {
-            position.first += dist_remaining * dist_x / dist;
-            position.second += dist_remaining * dist_y / dist;
-        }
-        dist_remaining -= dist;
+    double dist_x_to_target = x_target - position.first;
+    double dist_y_to_target = y_target - position.second;
+    heading = std::atan2(dist_y_to_target, dist_x_to_target);
+    position.first += velocity * std::cos(heading) * _T_step;
+    position.second += velocity * std::sin(heading) * _T_step;
+    
+    double dist_to_target = euclidean_distance(position, path.front().first);
+    double dist_covered_in_one_step = velocity * _T_step;
+    if (dist_covered_in_one_step > dist_to_target) {  // target reached --> next target
+        path.pop_front();
     }
-}
-
-double Agent::distance(Point p1, Point p2) {
-    return std::sqrt(std::pow(p1.first - p2.first, 2) + std::pow(p1.second - p2.second, 2));
+    return;
 }
 
 pybind11::dict Agent::log_state() {
     pybind11::dict state;
-    state["ego_position"] = position;
+    state["position"] = position;
+    state["belonging_edge"] = get_belonging_edge();
     if (_is_human) {
         state["type"] = "human";
-        state["belonging_edge"] = get_belonging_edge();
     } else {
         state["type"] = "robot";
-        auto perceived_humans = perceive_humans();
-        state["perceived_humans"] = perceived_humans;
+        state["perceived_humans"] = perceive_humans();
     }
     return state;
 }
@@ -66,61 +72,13 @@ int Agent::get_belonging_edge() {
     for (int i = 0; i < (_simulation->edges).size(); i++) {
         Point p1 = (_simulation->nodes)[(_simulation->edges)[i].first];
         Point p2 = (_simulation->nodes)[(_simulation->edges)[i].second];
-        double cartesian_distance_to_edge = ParticleTracker::distance_of_point_to_edge(position, p1, p2);
+        double cartesian_distance_to_edge =
+            ParticleTracker::distance_of_point_to_edge(position, p1, p2);
         double heading_difference =
             std::abs(heading - std::atan2(p2.second - p1.second, p2.first - p1.first));
-        distances.push_back(cartesian_distance_to_edge + 2 * heading_difference);
+        distances.push_back(cartesian_distance_to_edge + 10 * heading_difference);
     }
     return std::min_element(distances.begin(), distances.end()) - distances.begin();
-}
-
-void Agent::add_new_job_to_deque() {
-    // every job consists of a path to a random node, a break at that node,
-    // and a path back to the start node, and a break at the start node the
-    // break nodes will be denoted by the index occuring twice in the path queue
-    int DROP_INDEX = _is_human ? DROPOFF_HUMANS : DROPOFF_ROBOTS;
-
-    int end_node = DROP_INDEX;
-    while (end_node == DROP_INDEX) {
-        end_node = _simulation->get_random_node_index();
-    }
-
-    std::vector<int> path_to_target = _simulation->dijkstra(DROP_INDEX, end_node);
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i]);
-    }
-    std::reverse(path_to_target.begin(), path_to_target.end());
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i]);
-    }
-}
-
-void Agent::add_node_to_deque(int node_index) {
-    double node_x = (_simulation->nodes)[node_index].first + _simulation->get_node_noise();
-    double node_y = (_simulation->nodes)[node_index].second + _simulation->get_node_noise();
-    path.push_back({node_x, node_y});
-}
-
-std::vector<pybind11::dict> Agent::perceive_humans() {
-    std::vector<pybind11::dict> result;
-    for (int i = 0; i < _simulation->_N_humans + _simulation->_N_robots; i++) {
-        if ((_simulation->agents)[i]._is_human) {
-            Agent human = _simulation->agents[i];
-            if (check_viewline(position, human.position, _simulation->racks)) {
-                double dist = distance(position, human.position);
-                pybind11::dict perceived_human;
-                auto noisy_position = human.position;
-                noisy_position.first += position_noise(mt) * dist;
-                noisy_position.second += position_noise(mt) * dist;
-                perceived_human["position"] = noisy_position;
-                perceived_human["heading"] = human.heading + heading_noise(mt) * dist;
-                perceived_human["velocity"] = human.velocity + velocity_noise(mt) * dist;
-                perceived_human["belonging_edge"] = human.get_belonging_edge();
-                result.push_back(perceived_human);
-            }
-        }
-    }
-    return result;
 }
 
 bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks) {
@@ -136,27 +94,77 @@ bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point
     return true;
 }
 
-bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
-    int n = polygon.size();
-    if (n < 3) return false;  // A polygon must have at least 3 vertices
+double Agent::get_random_velocity() { return velocity_distribution(mt); }
 
-    Point infinity_point = std::make_pair(point.first + 1e10, point.second);
-    int intersection_count = 0;
-
-    for (int i = 0; i < n; ++i) {
-        Point p1 = polygon[i];
-        Point p2 = polygon[(i + 1) % n];
-
-        if (do_intersect(point, infinity_point, p1, p2)) {
-            intersection_count++;
+std::vector<pybind11::dict> Agent::perceive_humans() {
+    std::vector<pybind11::dict> result;
+    for (int i = 0; i < _simulation->_N_humans + _simulation->_N_robots; i++) {
+        if ((_simulation->agents)[i]._is_human) {
+            Agent human = _simulation->agents[i];
+            if (check_viewline(position, human.position, _simulation->racks)) {
+                if (random_check_viewrange(position, human.position)) {
+                    double dist = euclidean_distance(position, human.position);
+                    pybind11::dict perceived_human;
+                    auto noisy_position = human.position;
+                    noisy_position.first += position_noise(mt) * dist;
+                    noisy_position.second += position_noise(mt) * dist;
+                    perceived_human["position"] = noisy_position;
+                    perceived_human["heading"] = human.heading + heading_noise(mt) * dist;
+                    result.push_back(perceived_human);
+                }
+            }
         }
     }
-
-    return (intersection_count % 2 == 1);
+    return result;
 }
 
-// Function to check if two
-// line segments intersect
+void Agent::add_new_double_cycle_to_deque() {
+    // double cycles are simulated
+    // one double cycle consists of legs:
+    // 1. random node in staging -> random node in storage
+    // 2. random node in storage -> another random node in storage
+    // 3. another random node in storage -> random node in storage
+
+    // 1. leg
+    int target_node_1 = random_storage_node();
+    std::vector<int> path_to_target = _simulation->dijkstra(current_final_path_node, target_node_1);
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+        add_node_to_deque(path_to_target[i], get_random_velocity());
+    }
+    add_node_to_deque(target_node_1, 0.1);  // generates a pause
+    // 2. leg
+    int target_node_2 = random_storage_node();
+    path_to_target = _simulation->dijkstra(target_node_1, target_node_2);
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+        add_node_to_deque(path_to_target[i], get_random_velocity());
+    }
+    add_node_to_deque(target_node_2, 0.1);  // generates a pause
+    // 3. leg
+    int target_staging_node = random_staging_node();
+    path_to_target = _simulation->dijkstra(target_node_2, target_staging_node);
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+        add_node_to_deque(path_to_target[i], get_random_velocity());
+    }
+    add_node_to_deque(target_staging_node, 0.1);  // generates a pause
+    current_final_path_node = target_staging_node;
+}
+
+void Agent::add_node_to_deque(int node_index, double path_velocity) {
+    double node_x = (_simulation->nodes)[node_index].first + _simulation->get_trajectory_xy_noise();
+    double node_y =
+        (_simulation->nodes)[node_index].second + _simulation->get_trajectory_xy_noise();
+    path.push_back(std::make_pair(std::make_pair(node_x, node_y), path_velocity));
+}
+
+int Agent::random_staging_node() { return staging_node_distribution(mt); }
+
+int Agent::random_storage_node() { return storage_node_distribution(mt); }
+
+double Agent::euclidean_distance(Point p1, Point p2) {
+    return std::sqrt(std::pow(p1.first - p2.first, 2) + std::pow(p1.second - p2.second, 2));
+}
+
+// Function to check if two line segments intersect
 bool Agent::do_intersect(Point p1, Point q1, Point p2, Point q2) {
     auto orientation = [](Point p, Point q, Point r) {
         double val = (q.second - p.second) * (r.first - q.first) -
@@ -173,4 +181,34 @@ bool Agent::do_intersect(Point p1, Point q1, Point p2, Point q2) {
     if (o1 != o2 && o3 != o4) return true;
 
     return false;
+}
+
+bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
+    int n = polygon.size();
+    if (n < 3) return false;  // A polygon must have at least 3 vertices
+    Point infinity_point = std::make_pair(point.first + 1e10, point.second);
+    int intersection_count = 0;
+    for (int i = 0; i < n; ++i) {
+        Point p1 = polygon[i];
+        Point p2 = polygon[(i + 1) % n];
+
+        if (do_intersect(point, infinity_point, p1, p2)) {
+            intersection_count++;
+        }
+    }
+    return (intersection_count % 2 == 1);
+}
+
+bool Agent::random_check_viewrange(Point pos1, Point pos2) {
+    double dist = euclidean_distance(pos1, pos2);
+    double probability_in_range;
+    if (dist < D_MIN) {
+        probability_in_range = DETECTION_PROBABILITY_IN_RANGE;
+    } else if (dist >= D_MIN && dist < D_MAX) {
+        probability_in_range = (D_MAX - dist) / (D_MAX - D_MIN);
+    } else if (dist >= D_MAX) {
+        probability_in_range = 0;
+    }
+    std::uniform_real_distribution<double> unif(0, 1);
+    return unif(mt) < probability_in_range;
 }

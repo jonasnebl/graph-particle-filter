@@ -19,4 +19,10 @@ def load_warehouse_data_from_json():
         rack_data = json.load(f)
     polygons = rack_data["polygons"]
 
-    return nodes, edges, edge_weights, polygons
+    # Load staging and storage nodes
+    with open(NODE_MEANING_PATH, "r") as f:
+        node_meanings = json.load(f)
+    staging_nodes = node_meanings["staging_nodes"]
+    storage_nodes = node_meanings["storage_nodes"]
+
+    return nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes

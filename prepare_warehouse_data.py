@@ -1,8 +1,9 @@
-from plotter import Plotter
+from python.plotter import Plotter
+from python.utils import load_warehouse_data_from_json
 import os
-from utils import load_warehouse_data_from_json
 
-nodes, edges, edge_weights, polygons = load_warehouse_data_from_json()
+
+nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes = load_warehouse_data_from_json()
 
 ### --- Generate the C++ header file for the graph --- ###
 
@@ -50,15 +51,20 @@ for polygon in polygons:
     header_content += "        },\n"
 
 header_content += """    };
-    inline std::vector<std::vector<Point>> node_polygons = {
+    inline std::vector<int> staging_nodes = {
 """
 
-# Add node polygons to the header content
-for node in nodes:
-    header_content += "        {\n"
-    for point in node["area"]:
-        header_content += f"            {{{point[0]}, {point[1]}}},\n"
-    header_content += "        },\n"
+# Add staging nodes to the header content
+for node in staging_nodes:
+    header_content += f"        {node},\n"
+
+header_content += """    };
+    inline std::vector<int> storage_nodes = {
+"""
+
+# Add storage nodes to the header content
+for node in storage_nodes:
+    header_content += f"        {node},\n"
 
 header_content += """    };
 }

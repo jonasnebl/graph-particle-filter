@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 import sys
 from datetime import datetime
+import yaml
 
 sys.path.append("build/")
 from cpp_utils import Simulation, ParticleTracker
@@ -12,11 +13,13 @@ from python.constants import *
 from python.accurateTracker import AccurateTracker
 from python.confidentTracker import ConfidentTracker
 
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
-##############################################################
-T_simulation = 1 * 60  # 10 minutes
+# --- Run new simulation ---
 
-sim = Simulation(T_step=0.1, N_humans=3, N_robots=1)
+T_simulation = config["T_simulation"]
+sim = Simulation(T_step=config["T_step"], N_humans=config["N_humans"], N_robots=config["N_robots"])
 sim_states = []
 N_minutes = int(T_simulation / 60)
 N_hours = int(T_simulation / 3600)
@@ -44,7 +47,7 @@ with open(filename, "wb") as outp:
     pickle.dump(sim_log, outp, pickle.HIGHEST_PROTOCOL)
 
 
-##############################################################
+# --- Load simulation ---
 
 if "sim_log" not in locals():
     filename = os.path.join(LOG_FOLDER, "log_2024-08-30_10-47-52.pkl")
@@ -60,15 +63,16 @@ N_robots = sim_log["N_robots"]
 sim = Simulation(T_step=T_step, N_humans=N_humans, N_robots=N_robots)
 
 
-##############################################################
-plot = True  # slows down loop significantly!
-record_video = False  # slows down loop even more!
+# --- Run tracker on playback simulation data ---
+
+plot = config["plot"]  # slows down loop significantly!
+record_video = config["record_video"]  # slows down loop even more!
 if record_video:
     plot = True
 
 confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
 accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
-particleTracker = ParticleTracker(T_step, N_humans, 1000)
+# particleTracker = ParticleTracker(T_step, N_humans, config["N_particles"])
 
 if plot:
     plotter = Plotter(record_frames=record_video)
@@ -86,25 +90,26 @@ for i in pbar:
     # outer list: robots, inner list: perceived humans for every robot
     robot_perceptions = [
         {
-            "ego_position": agent["ego_position"],
-#            "observable_nodes": agent["observable_nodes"],
+            "ego_position": agent["position"],
+            #            "observable_nodes": agent["observable_nodes"],
             "perceived_humans": agent["perceived_humans"],
         }
         for agent in sim_state
         if agent["type"] == "robot"
     ]
 
-    confidentTracker_edge_probabilities.append(confidentTracker.add_observation(robot_perceptions))
-    _ = confidentTracker.predict()
+    # confidentTracker_edge_probabilities.append(confidentTracker.add_observation(robot_perceptions))
+    # _ = confidentTracker.predict()
 
-    accurateTracker_edge_probabilities.append(accurateTracker.add_observation(robot_perceptions))
-    _ = accurateTracker.predict()
+    # accurateTracker_edge_probabilities.append(accurateTracker.add_observation(robot_perceptions))
+    # _ = accurateTracker.predict()
 
-    particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
-    _ = particleTracker.predict()
+    # particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
+    # _ = particleTracker.predict()
 
     if plot:
-        plotter.update(sim_state, particleTracker_edge_probabilities[-1])
+        # plotter.update(sim_state, particleTracker_edge_probabilities[-1])
+        plotter.update(sim_state, np.zeros((180,)))
 
     pbar.set_postfix(
         {
@@ -119,12 +124,12 @@ for i in pbar:
 
     simulation_time += T_step
 
-
 if record_video:
     plotter.create_video(T_step)
 
 
-##############################################################
+# --- Evaluate tracker performance ---
+
 from python.metrics import Confidence, Accuracy, MeanAveragePrecision
 
 confidentTracker_confidence = Confidence(sim_log, confidentTracker_edge_probabilities).per_graph()
@@ -149,8 +154,8 @@ print("ParticleTracker:", particleTracker_map)
 results_plot(
     confidentTracker_confidence=confidentTracker_confidence,
     confidentTracker_accuracy=confidentTracker_accuracy,
-#     accurateTracker_confidence=accurateTracker_confidence,
-#     accurateTracker_accuracy=accurateTracker_accuracy,
+    #     accurateTracker_confidence=accurateTracker_confidence,
+    #     accurateTracker_accuracy=accurateTracker_accuracy,
     accurateTracker_confidence=0.0,
     accurateTracker_accuracy=0.0,
     particleTracker_confidence=particleTracker_confidence,

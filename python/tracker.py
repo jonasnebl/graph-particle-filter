@@ -6,7 +6,7 @@ from .utils import load_warehouse_data_from_json
 class Tracker:
     def __init__(self, N_robots):
         self.N_robots = N_robots
-        self.nodes, self.edges, self.edge_weights, self.polygons = load_warehouse_data_from_json()
+        self.nodes, self.edges, self.edge_weights, self.polygons, self.staging_nodes, self.storage_nodes = load_warehouse_data_from_json()
         self.N_edges = len(self.edges)
 
     def get_perceived_human_node_belongings(self, robot_perceptions):
@@ -36,10 +36,10 @@ class Tracker:
     # def get_perceived_human_node_belongings(self, robot_perceptions):
     #     positions = np.array([perception["position"] for perception in robot_perceptions])
     #     headings = np.array([perception["heading"] for perception in robot_perceptions])
-        
+
     #     p1 = self.nodes[self.edges[:, 0]]
     #     p2 = self.nodes[self.edges[:, 1]]
-        
+
     #     # Calculate distances and heading differences for all edges
     #     distances = np.zeros((len(robot_perceptions), len(self.edges)))
     #     for i, (position, heading) in enumerate(zip(positions, headings)):
@@ -48,7 +48,7 @@ class Tracker:
     #         heading_differences = np.abs(heading - edge_headings)
     #         heading_differences = np.minimum(heading_differences, 2 * np.pi - heading_differences)
     #         distances[i] = cartesian_distances + 2 * heading_differences
-        
+
     #     # Find the index of the closest edge for each perception
     #     closest_edges = np.argmin(distances, axis=1)
     #     return closest_edges

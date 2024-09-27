@@ -1,15 +1,15 @@
 #include "particleTracker.h"
 
+#include <hungarian.h>
+
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <numeric>
 #include <random>
 #include <vector>
-
-#include <nlohmann/json.hpp>
-#include <hungarian.h>
 
 #include "agent.h"
 #include "particle.h"
@@ -84,11 +84,12 @@ std::vector<double> ParticleTracker::add_observation(
 }
 
 void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
-    Point robot_position = robot_perception["ego_position"].cast<Point>();
+    Point robot_position = robot_perception["position"].cast<Point>();
     auto perceived_humans =
         robot_perception["perceived_humans"].cast<std::vector<pybind11::dict>>();
 
-    std::vector<int> perceived_human_per_internal_human = assign_perceived_humans_to_internal_humans(robot_position, perceived_humans);
+    std::vector<int> perceived_human_per_internal_human =
+        assign_perceived_humans_to_internal_humans(robot_position, perceived_humans);
     for (const auto& perceived_human : perceived_human_per_internal_human) {
         std::cout << perceived_human << std::endl;
     }
@@ -97,12 +98,12 @@ void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
     for (int i = 0; i < N_humans_max; i++) {
         int perception_index = perceived_human_per_internal_human[i];
         auto perceived_pos = perception_index == -1
-                                     ? Point{std::nan(""), std::nan("")}
-                                     : perceived_humans[perception_index]["position"].cast<Point>();
+                                 ? Point{std::nan(""), std::nan("")}
+                                 : perceived_humans[perception_index]["position"].cast<Point>();
         auto perceived_heading = perception_index == -1
-                    ? std::nan("")
-                    : perceived_humans[perception_index]["heading"].cast<double>();
-        
+                                     ? std::nan("")
+                                     : perceived_humans[perception_index]["heading"].cast<double>();
+
         // --- calculate distance of each particle ---
         std::vector<double> distances;
         for (auto& particle : particles[i]) {
@@ -171,7 +172,7 @@ int ParticleTracker::get_belonging_edge(Point position, double heading) {
 }
 
 double ParticleTracker::distance_of_point_to_edge(Point p, Point v, Point w) {
-    const double l2 = std::hypot(v.first - w.first, v.second - w.second);  // Length of edge vw
+    const double l2 = std::hypot(v.first - w.first, v.second - w.second);      // Length of edge vw
     if (l2 == 0.0) return std::hypot(p.first - v.first, p.second - v.second);  // v == w case
     const double t = std::max(0.0, std::min(1.0, ((p.first - v.first) * (w.first - v.first) +
                                                   (p.second - v.second) * (w.second - v.second)) /
@@ -181,21 +182,24 @@ double ParticleTracker::distance_of_point_to_edge(Point p, Point v, Point w) {
     return std::hypot(p.first - projection.first, p.second - projection.second);
 }
 
-std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(Point robot_position, std::vector<pybind11::dict> perceived_humans) {
+std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
+    Point robot_position, std::vector<pybind11::dict> perceived_humans) {
     std::vector<std::vector<double>> individual_edge_probabilities;
     for (int i = 0; i < N_humans_max; i++) {
         individual_edge_probabilities.push_back(calculate_edge_probabilities_one_human(i));
     }
     int m = perceived_humans.size();
     int n = N_humans_max;
-    int** max_probabilities = (int**)calloc(m, sizeof(int*)); // use c style matrix for hungarian algorithm library
+    int** max_probabilities =
+        (int**)calloc(m, sizeof(int*));  // use c style matrix for hungarian algorithm library
     for (int i = 0; i < m; i++) {
         auto human = perceived_humans[i];
         int belonging_edge =
             get_belonging_edge(human["position"].cast<Point>(), human["heading"].cast<double>());
-        max_probabilities[i] = (int*)calloc(n,sizeof(int));
+        max_probabilities[i] = (int*)calloc(n, sizeof(int));
         for (int j = 0; j < n; j++) {
-            max_probabilities[i][j] = static_cast<int>(1000 * individual_edge_probabilities[j][belonging_edge]);
+            max_probabilities[i][j] =
+                static_cast<int>(1000 * individual_edge_probabilities[j][belonging_edge]);
         };
     }
     // --- assign perceived humans to internal humans using the hungarian algorithm ---
@@ -218,12 +222,13 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(Poi
     return perceived_human_per_internal_human;
 }
 
-void ParticleTracker::update_particles(int i, std::vector<double> distances, Point perceived_pos, double perceived_heading) {
+void ParticleTracker::update_particles(int i, std::vector<double> distances, Point perceived_pos,
+                                       double perceived_heading) {
     // --- Remove the particles with the highest distance and fill up with particles with lower
     std::vector<int> range(N_particles);
     std::iota(range.begin(), range.end(), 0);
     std::sort(range.begin(), range.end(),
-            [&distances](int j1, int j2) { return distances[j1] < distances[j2]; });
+              [&distances](int j1, int j2) { return distances[j1] < distances[j2]; });
 
     auto particles_copy = particles;
     int j = 0;
@@ -242,14 +247,15 @@ void ParticleTracker::update_particles(int i, std::vector<double> distances, Poi
     }
     if (!std::isnan(perceived_heading)) {
         int N_clever_resample = 0.1 * N_particles;
-        for (j = N_particles-N_clever_resample; j < N_particles; j++) {
+        for (j = N_particles - N_clever_resample; j < N_particles; j++) {
             int belonging_edge = get_belonging_edge(perceived_pos, perceived_heading);
             particles[i][j] = Particle(belonging_edge, particles[i][j]);
         }
     }
 }
 
-std::pair<int, int> ParticleTracker::find_max_element_index(const std::vector<std::vector<double>>& matrix) {
+std::pair<int, int> ParticleTracker::find_max_element_index(
+    const std::vector<std::vector<double>>& matrix) {
     int max_row = -1;
     int max_col = -1;
     double max_value = -1.0;

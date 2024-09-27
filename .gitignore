@@ -11,3 +11,4 @@ temp/
 figures/
 .ruff_cache
 src/test_c_hungarian.c
+warehouse_junk/

@@ -1,5 +1,8 @@
 KDEpy==1.1.9
-KDEpy==1.1.9
+KDEpy==1.1.10
 matplotlib==3.9.2
 moviepy==1.0.3
-numpy==2.1.0
+numpy==2.1.1
+PyYAML==6.0.2
+PyYAML==6.0.2
+tqdm==4.66.4

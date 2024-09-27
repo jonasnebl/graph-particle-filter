@@ -14,7 +14,7 @@ import os
 
 
 class Plotter:
-    def __init__(self, record_frames=False):
+    def __init__(self, record_frames=False, print_probabilites=False):
         """Plotter to plot robot and human movement in the warehouse
 
         :param show: Show the warehouse structure after initializing the tracker object. Blocking!
@@ -23,6 +23,7 @@ class Plotter:
         """
 
         self.record_frames = record_frames
+        self.print_probabilites = print_probabilites
 
         with open(GRAPH_PATH, "r") as f:
             graph_data = json.load(f)
@@ -37,15 +38,17 @@ class Plotter:
         self.fig, self.ax = plt.subplots()
         self.fig.set_size_inches(24, 16)
 
-        self.ax.set_title("Warehouse Simulation")
+        self.ax.set_title("Warehouse Simulation", fontsize=24)
         self.ax.set_xlabel("X in m")
         self.ax.set_ylabel("Y in m")
+        self.ax.set_aspect('equal', adjustable='box')
+        self.ax.axis("off")
 
         # Initialize scatter plots
         self.scat_graph = self.ax.scatter(
-            self.node_positions[:, 0], self.node_positions[:, 1], s=100, c="skyblue", zorder=2
+            self.node_positions[:, 0], self.node_positions[:, 1], s=50, c="skyblue", zorder=2
         )
-        self.scat_agents = self.ax.scatter([], [], s=100, facecolor=[], zorder=0)
+        self.scat_agents = self.ax.scatter([], [], s=200, facecolor=[], zorder=19)
         # Plot the polygons for the racks
         for polygon in self.polygons:
             polygon_points = np.array(polygon)
@@ -56,22 +59,12 @@ class Plotter:
         for i, (x, y) in enumerate(self.node_positions):
             plt.text(x, y, str(i), fontsize=12, ha="right", color="black")
 
-        # Plot the areas for each node in gray
-        self.node_patches = []
-        for node in self.nodes:
-            if "area" in node:
-                area_points = np.array(node["area"])
-                poly = Polygon(
-                    area_points,
-                    closed=True,
-                    fill=True,
-                    edgecolor="black",
-                    facecolor="gray",
-                    alpha=0.5,
-                    zorder=1,
-                )
-                plt.gca().add_patch(poly)
-                self.node_patches.append(poly)
+        # show the edges
+        for edge in self.edges:
+            start, end = edge
+            start_pos = self.node_positions[start]
+            end_pos = self.node_positions[end]
+            plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], "black", zorder=10)
 
         # List to keep track of perception-related elements
         self.perception_elements = []
@@ -82,11 +75,10 @@ class Plotter:
 
     def update(self, state, edge_probabilities):
         # Update the scatter plot
-        positions = [agent["ego_position"] for agent in state]
+        positions = [agent["position"] for agent in state]
         colors = ["orange" if agent["type"] == "robot" else "green" for agent in state]
         self.scat_agents.set_offsets(positions)
         self.scat_agents.set_color(colors)
-        self.scat_agents.set_zorder(3)  # Set a higher zorder for agents
 
         # Clear previous perceptions
         for elem in self.perception_elements:
@@ -99,13 +91,22 @@ class Plotter:
                 for perceived_human in agent["perceived_humans"]:
                     # Draw a thin black line from the robot to the perceived location
                     line = self.ax.plot(
-                        [agent["ego_position"][0], perceived_human["position"][0]],
-                        [agent["ego_position"][1], perceived_human["position"][1]],
-                        "k-",
+                        [agent["position"][0], perceived_human["position"][0]],
+                        [agent["position"][1], perceived_human["position"][1]],
+                        "b-",
                         linewidth=0.5,
-                        zorder=3,  # Set a higher zorder for perception lines
+                        zorder=20,  # Set a higher zorder for perception lines
                     )
                     self.perception_elements.extend(line)
+                    perception_scat = self.ax.scatter(
+                        perceived_human["position"][0],
+                        perceived_human["position"][1],
+                        color="b",
+                        marker="x",
+                        zorder=20,  # Set a higher zorder for perception points
+                    )
+                    self.perception_elements.append(perception_scat)
+
 
         # Clear previous edges and text annotations
         for patch in self.ax.patches:
@@ -140,21 +141,23 @@ class Plotter:
             )
             self.ax.add_patch(arrow)
 
-            # Add text annotation for the probability
-            mid_pos = (start_pos + end_pos) / 2
-            # Offset the text position slightly for opposing edges
-            if start < end:
-                text_pos = mid_pos + np.array([offset, offset])
-            else:
-                text_pos = mid_pos - np.array([offset, offset])
-            self.ax.text(
-                text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=10, ha="center", color="black", zorder=3
-            )
+            if self.print_probabilites:
+                # Add text annotation for the probability
+                mid_pos = (start_pos + end_pos) / 2
+                # Offset the text position slightly for opposing edges
+                if start < end:
+                    text_pos = mid_pos + np.array([offset, offset])
+                else:
+                    text_pos = mid_pos - np.array([offset, offset])
+                self.ax.text(
+                    text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=10, ha="center", color="black", zorder=3
+                )
 
         # Capture the current frame
         if self.record_frames:
             self.frames.append(mplfig_to_npimage(self.fig))
 
+        plt.tight_layout()
         plt.pause(1e-4)
 
     def create_video(self, T_step):
@@ -179,4 +182,5 @@ class Plotter:
 
     def show(self):
         """Show the warehouse plot"""
+        plt.tight_layout()
         plt.show()
