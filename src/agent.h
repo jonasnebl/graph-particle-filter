@@ -28,6 +28,7 @@ class Agent {
     int get_belonging_edge();
     static bool check_viewline(Point pos1, Point pos2, 
                                std::vector<std::vector<Point>> racks); 
+    static double manhattan_distance(Point p1, Point p2);
 
   private:
     Simulation *_simulation;

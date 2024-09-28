@@ -45,7 +45,7 @@ void Agent::step() {
     heading = std::atan2(dist_y_to_target, dist_x_to_target);
     position.first += velocity * std::cos(heading) * _T_step;
     position.second += velocity * std::sin(heading) * _T_step;
-    
+
     double dist_to_target = euclidean_distance(position, path.front().first);
     double dist_covered_in_one_step = velocity * _T_step;
     if (dist_covered_in_one_step > dist_to_target) {  // target reached --> next target
@@ -206,6 +206,10 @@ int Agent::random_storage_node() { return storage_node_distribution(mt); }
 
 double Agent::euclidean_distance(Point p1, Point p2) {
     return std::sqrt(std::pow(p1.first - p2.first, 2) + std::pow(p1.second - p2.second, 2));
+}
+
+double Agent::manhattan_distance(Point p1, Point p2) {
+    return std::abs(p1.first - p2.first) + std::abs(p1.second - p2.second);
 }
 
 // Function to check if two line segments intersect

@@ -6,7 +6,9 @@ from .utils import load_warehouse_data_from_json
 class Tracker:
     def __init__(self, N_robots):
         self.N_robots = N_robots
-        self.nodes, self.edges, self.edge_weights, self.polygons, self.staging_nodes, self.storage_nodes = load_warehouse_data_from_json()
+        self.nodes, self.edges, self.edge_weights, self.polygons, self.staging_nodes, self.storage_nodes = (
+            load_warehouse_data_from_json()
+        )
         self.N_edges = len(self.edges)
 
     def get_perceived_human_node_belongings(self, robot_perceptions):

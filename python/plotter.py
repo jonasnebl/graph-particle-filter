@@ -41,7 +41,7 @@ class Plotter:
         self.ax.set_title("Warehouse Simulation", fontsize=24)
         self.ax.set_xlabel("X in m")
         self.ax.set_ylabel("Y in m")
-        self.ax.set_aspect('equal', adjustable='box')
+        self.ax.set_aspect("equal", adjustable="box")
         self.ax.axis("off")
 
         # Initialize scatter plots
@@ -106,7 +106,6 @@ class Plotter:
                         zorder=20,  # Set a higher zorder for perception points
                     )
                     self.perception_elements.append(perception_scat)
-
 
         # Clear previous edges and text annotations
         for patch in self.ax.patches:

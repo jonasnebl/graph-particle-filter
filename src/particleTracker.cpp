@@ -52,8 +52,8 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
                 } else {
                     select_edge_j_probability = (1 - 0.1) / (successor_edges[i].size() - 1);
                 }
-                params_per_edge.push_back(
-                    std::array<double, 3>({select_edge_j_probability, edge_weights[i] / HUMAN_VELOCITY_MEAN, 0.7}));
+                params_per_edge.push_back(std::array<double, 3>(
+                    {select_edge_j_probability, edge_weights[i] / HUMAN_VELOCITY_MEAN, 0.7}));
             }
             pred_model_params.push_back(params_per_edge);
         }
@@ -90,7 +90,7 @@ void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
 
     std::vector<int> perceived_human_per_internal_human =
         assign_perceived_humans_to_internal_humans(robot_position, perceived_humans);
-        
+
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
         int perception_index = perceived_human_per_internal_human[i];
@@ -181,40 +181,56 @@ double ParticleTracker::distance_of_point_to_edge(Point p, Point v, Point w) {
 
 std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     Point robot_position, std::vector<pybind11::dict> perceived_humans) {
-    std::vector<std::vector<double>> individual_edge_probabilities;
+    // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
+    int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
     for (int i = 0; i < N_humans_max; i++) {
-        individual_edge_probabilities.push_back(calculate_edge_probabilities_one_human(i));
+        cost_matrix[i] = (int*)calloc(N_humans_max, sizeof(int));
+        for (int j = 0; j < N_humans_max; j++) {
+            cost_matrix[i][j] = 0;
+        }
     }
-    int m = perceived_humans.size();
-    int n = N_humans_max;
-    int** max_probabilities =
-        (int**)calloc(m, sizeof(int*));  // use c style matrix for hungarian algorithm library
-    for (int i = 0; i < m; i++) {
-        auto human = perceived_humans[i];
-        int belonging_edge =
-            get_belonging_edge(human["position"].cast<Point>(), human["heading"].cast<double>());
-        max_probabilities[i] = (int*)calloc(n, sizeof(int));
-        for (int j = 0; j < n; j++) {
-            max_probabilities[i][j] =
-                static_cast<int>(1000 * individual_edge_probabilities[j][belonging_edge]);
-        };
+    const int N_monte_carlo = 100;
+    std::uniform_int_distribution<int> get_random_particle(0, N_particles - 1);
+    for (int i = 0; i < N_monte_carlo; i++) {
+        for (int j = 0; j < N_humans_max; j++) {
+            for (int k = 0; k < N_humans_max; k++) {
+                if (k < perceived_humans.size()) {
+                    auto particle = particles[j][get_random_particle(mt)];
+                    auto perceived_human = perceived_humans[k];
+                    double manh_distance = Agent::manhattan_distance(
+                        particle.get_position(), perceived_human["position"].cast<Point>());
+                    double heading_distance = std::abs(particle.get_heading() -
+                                                       perceived_human["heading"].cast<double>());
+                    cost_matrix[j][k] += static_cast<int>(10000 / N_monte_carlo *
+                                                          (manh_distance + 10 * heading_distance));                   
+                } else {
+                    cost_matrix[j][k] = 100000;
+                }
+            }
+        }
     }
+
     // --- assign perceived humans to internal humans using the hungarian algorithm ---
     hungarian_problem_t prob;
-    int matrix_size = hungarian_init(&prob, max_probabilities, m, n, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+    int matrix_size = hungarian_init(&prob, cost_matrix, N_humans_max, N_humans_max,
+                                     HUNGARIAN_MODE_MINIMIZE_COST);
     hungarian_solve(&prob);
     std::vector<int> perceived_human_per_internal_human(N_humans_max, -1);
-    for (int j = 0; j < n; j++) {
-        for (int i = 0; i < m; i++) {
+    for (int i = 0; i < N_humans_max; i++) {
+        for (int j = 0; j < N_humans_max; j++) {
             if (prob.assignment[i][j] == 1) {
-                perceived_human_per_internal_human[j] = i;
+                if (j < perceived_humans.size()) {
+                    perceived_human_per_internal_human[i] = j;
+                } else {
+                    perceived_human_per_internal_human[j] = -1;
+                }
                 break;
             }
         }
     }
     hungarian_free(&prob);
-    for (int i = 0; i < m; i++) {
-        free(max_probabilities[i]);
+    for (int i = 0; i < N_humans_max; i++) {
+        free(cost_matrix[i]);
     }
     return perceived_human_per_internal_human;
 }

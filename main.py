@@ -71,7 +71,7 @@ if record_video:
     plot = True
 
 # confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
-# accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False) 
+# accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
 particleTracker = ParticleTracker(T_step, N_humans, config["N_particles"])
 
 if plot:
@@ -93,7 +93,8 @@ for i in pbar:
             "position": agent["position"],
             "perceived_humans": agent["perceived_humans"],
         }
-        for agent in sim_state if agent["type"] == "robot"
+        for agent in sim_state
+        if agent["type"] == "robot"
     ]
 
     # confidentTracker_edge_probabilities.append(confidentTracker.add_observation(robot_perceptions))
@@ -118,7 +119,7 @@ for i in pbar:
                 int(simulation_time / 60) % 60,
                 int(T_simulation / 3600),
                 int(T_simulation / 60) % 60,
-                1000*execution_time_particleTracker
+                1000 * execution_time_particleTracker,
             )
         }
     )

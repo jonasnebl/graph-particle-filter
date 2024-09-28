@@ -41,12 +41,12 @@ with open("warehouse/rack_data.json", "r") as rack_file:
 # rack_data["polygons"] += new_polygons
 
 
-
 # order nodes by y first and then by x
 range_vec = list(range(len(graph_data["nodes"])))
-sort_mask = [index for _, index 
-             in sorted(zip(graph_data["nodes"], range_vec), 
-                       key=lambda pair: 1000 * pair[0]["y"] + pair[0]["x"])]
+sort_mask = [
+    index
+    for _, index in sorted(zip(graph_data["nodes"], range_vec), key=lambda pair: 1000 * pair[0]["y"] + pair[0]["x"])
+]
 graph_data["nodes"] = [graph_data["nodes"][i] for i in sort_mask]
 
 for edge in graph_data["edges"]:
