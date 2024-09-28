@@ -53,7 +53,7 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
                     select_edge_j_probability = (1 - 0.1) / (successor_edges[i].size() - 1);
                 }
                 params_per_edge.push_back(
-                    std::array<double, 3>({select_edge_j_probability, edge_weights[i] / 2.0, 0.7}));
+                    std::array<double, 3>({select_edge_j_probability, edge_weights[i] / HUMAN_VELOCITY_MEAN, 0.7}));
             }
             pred_model_params.push_back(params_per_edge);
         }
@@ -90,10 +90,7 @@ void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
 
     std::vector<int> perceived_human_per_internal_human =
         assign_perceived_humans_to_internal_humans(robot_position, perceived_humans);
-    for (const auto& perceived_human : perceived_human_per_internal_human) {
-        std::cout << perceived_human << std::endl;
-    }
-
+        
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
         int perception_index = perceived_human_per_internal_human[i];

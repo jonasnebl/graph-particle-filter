@@ -125,28 +125,38 @@ void Agent::add_new_double_cycle_to_deque() {
     // 2. random node in storage -> another random node in storage
     // 3. another random node in storage -> random node in storage
 
-    // 1. leg
+    int path_length_before_new_double_cycle = path.size();
+
+    // --- 1. leg ---
     int target_node_1 = random_storage_node();
     std::vector<int> path_to_target = _simulation->dijkstra(current_final_path_node, target_node_1);
+    double velocity_leg_1 = get_random_velocity();
     for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], get_random_velocity());
+        add_node_to_deque(path_to_target[i], velocity_leg_1);
     }
     add_node_to_deque(target_node_1, 0.1);  // generates a pause
-    // 2. leg
+    // --- 2. leg ---
     int target_node_2 = random_storage_node();
     path_to_target = _simulation->dijkstra(target_node_1, target_node_2);
+    double velocity_leg_2 = get_random_velocity();
     for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], get_random_velocity());
+        add_node_to_deque(path_to_target[i], velocity_leg_2);
     }
     add_node_to_deque(target_node_2, 0.1);  // generates a pause
-    // 3. leg
+    // --- 3. leg ---
     int target_staging_node = random_staging_node();
     path_to_target = _simulation->dijkstra(target_node_2, target_staging_node);
+    double velocity_leg_3 = get_random_velocity();
     for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], get_random_velocity());
+        add_node_to_deque(path_to_target[i], velocity_leg_3);
     }
     add_node_to_deque(target_staging_node, 0.1);  // generates a pause
     current_final_path_node = target_staging_node;
+
+    // --- smooth ---
+    for (int i = 0; i < 5; i++) {  // smooth multiple times for better results
+        smooth_path(path_length_before_new_double_cycle, path.size() - 1, 0.1);
+    }
 }
 
 void Agent::add_node_to_deque(int node_index, double path_velocity) {
@@ -154,6 +164,40 @@ void Agent::add_node_to_deque(int node_index, double path_velocity) {
     double node_y =
         (_simulation->nodes)[node_index].second + _simulation->get_trajectory_xy_noise();
     path.push_back(std::make_pair(std::make_pair(node_x, node_y), path_velocity));
+}
+
+void Agent::smooth_path(int start, int end, double strength) {
+    for (int i = start + 1; i < end - 1; i++) {
+        double x_before = path[i - 1].first.first;
+        double y_before = path[i - 1].first.second;
+        double x_after = path[i + 1].first.first;
+        double y_after = path[i + 1].first.second;
+
+        double x_current = path[i].first.first;
+        double y_current = path[i].first.second;
+
+        // Calculate the projection of the current point onto the line segment
+        double dx = x_after - x_before;
+        double dy = y_after - y_before;
+        double length_squared = dx * dx + dy * dy;
+        double t = ((x_current - x_before) * dx + (y_current - y_before) * dy) / length_squared;
+
+        // Clamp t to the range [0, 1] to ensure the projection is on the segment
+        t = std::max(0.0, std::min(1.0, t));
+
+        double x_projection = x_before + t * dx;
+        double y_projection = y_before + t * dy;
+
+        // Calculate the distance to the projection
+        double distance = std::hypot(x_current - x_projection, y_current - y_projection);
+
+        // Move the current point closer to the projection
+        double move_x = (x_projection - x_current) * strength;
+        double move_y = (y_projection - y_current) * strength;
+
+        path[i].first.first += move_x;
+        path[i].first.second += move_y;
+    }
 }
 
 int Agent::random_staging_node() { return staging_node_distribution(mt); }

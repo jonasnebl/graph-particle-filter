@@ -13,11 +13,11 @@ using Point = std::pair<double, double>;
 const double D_MIN = 10.0;
 const double D_MAX = 20.0;
 const double DETECTION_PROBABILITY_IN_RANGE = 0.99;
-const double XY_STDDEV = 0.03;
+const double XY_STDDEV = 0.02;
 const double HEADING_STDDEV = 15 * 3.14159 / 180;
 const double ROBOT_VELOCITY = 2.2;
-const double HUMAN_VELOCITY_MEAN = 1.5;
-const double HUMAN_VELOCITY_STDDEV = 0.5;
+const double HUMAN_VELOCITY_MEAN = 1.4;
+const double HUMAN_VELOCITY_STDDEV = 0.2;
 
 class Agent {
   public:
@@ -49,6 +49,7 @@ class Agent {
 
     void add_new_double_cycle_to_deque();
     void add_node_to_deque(int node_index, double path_velocity);
+    void smooth_path(int start, int end, double strength);
     int random_staging_node();
     int random_storage_node();
     std::discrete_distribution<> staging_node_distribution;

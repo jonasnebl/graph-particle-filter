@@ -70,12 +70,12 @@ record_video = config["record_video"]  # slows down loop even more!
 if record_video:
     plot = True
 
-confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
-accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False)
-# particleTracker = ParticleTracker(T_step, N_humans, config["N_particles"])
+# confidentTracker = ConfidentTracker(N_robots=N_robots, include_observations=True)
+# accurateTracker = AccurateTracker(N_robots=N_robots, include_observations=False, train=False) 
+particleTracker = ParticleTracker(T_step, N_humans, config["N_particles"])
 
 if plot:
-    plotter = Plotter(record_frames=record_video)
+    plotter = Plotter(record_frames=record_video, print_probabilites=True)
 
 pbar = tqdm(range(0, int(len(sim_states))), desc="Simulation")
 
@@ -90,12 +90,10 @@ for i in pbar:
     # outer list: robots, inner list: perceived humans for every robot
     robot_perceptions = [
         {
-            "ego_position": agent["position"],
-            #            "observable_nodes": agent["observable_nodes"],
+            "position": agent["position"],
             "perceived_humans": agent["perceived_humans"],
         }
-        for agent in sim_state
-        if agent["type"] == "robot"
+        for agent in sim_state if agent["type"] == "robot"
     ]
 
     # confidentTracker_edge_probabilities.append(confidentTracker.add_observation(robot_perceptions))
@@ -104,20 +102,23 @@ for i in pbar:
     # accurateTracker_edge_probabilities.append(accurateTracker.add_observation(robot_perceptions))
     # _ = accurateTracker.predict()
 
-    # particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
-    # _ = particleTracker.predict()
+    start = time()
+    particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
+    _ = particleTracker.predict()
+    execution_time_particleTracker = time() - start
 
     if plot:
-        # plotter.update(sim_state, particleTracker_edge_probabilities[-1])
-        plotter.update(sim_state, np.zeros((180,)))
+        # plotter.update(sim_state, np.zeros((180,)))
+        plotter.update(sim_state, particleTracker_edge_probabilities[-1])
 
     pbar.set_postfix(
         {
-            "Simulated time": "{:d}:{:02d} of {:d}:{:02d} hours".format(
+            "Simulated time": "{:d}:{:02d} of {:d}:{:02d} hours; T_Tracker: {:.0f}ms".format(
                 int(simulation_time / 3600),
                 int(simulation_time / 60) % 60,
                 int(T_simulation / 3600),
                 int(T_simulation / 60) % 60,
+                1000*execution_time_particleTracker
             )
         }
     )

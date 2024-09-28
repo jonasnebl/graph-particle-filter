@@ -117,14 +117,14 @@ class Plotter:
 
         # Update the edges with arrows based on edge_probabilities
         cmap = plt.get_cmap("coolwarm")
-        offset = 0.1  # Offset for the text annotations
+        offset = 0.16  # Offset for the text annotations
         for i, edge in enumerate(self.edges):
             start, end = edge
             start_pos = self.node_positions[start]
             end_pos = self.node_positions[end]
             probability = edge_probabilities[i]
             color = cmap(probability)
-            linewidth = 1 + 9 * probability  # Line width ranges from 1 to 10
+            linewidth = 1 + 19 * probability  # Line width ranges from 1 to 20
             alpha = 0.1 if probability == 0 else 1  # Make arrow almost invisible if probability is zero
             arrow = matplotlib.patches.FancyArrow(
                 start_pos[0],
@@ -150,7 +150,7 @@ class Plotter:
                 else:
                     text_pos = mid_pos - np.array([offset, offset])
                 self.ax.text(
-                    text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=10, ha="center", color="black", zorder=3
+                    text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=9, ha="center", color="black", zorder=3
                 )
 
         # Capture the current frame
@@ -174,10 +174,12 @@ class Plotter:
                 fps=fps,
             )
 
-    def savefig(self, filename):
+    def savefig(self, filename, format="svg"):
         """Save the currently displayed warehouse as a pdf figure"""
-        if not filename.endswith(".pdf"):
-            filename += ".pdf"
+        if format not in ["pdf", "svg", "png"]:
+            raise ValueError(f"Invalid format: {format}. Use 'pdf', 'svg', or 'png' instead.")
+        if not filename.endswith("." + format):
+            filename += "." + format
         plt.savefig(os.path.join(FIGURE_PATH, filename))
 
     def show(self):
