@@ -29,6 +29,8 @@ class Agent {
     static bool check_viewline(Point pos1, Point pos2, 
                                std::vector<std::vector<Point>> racks); 
     static double manhattan_distance(Point p1, Point p2);
+    static double euclidean_distance(Point p1, Point p2);
+    static double probability_in_viewrange(double dist);
 
   private:
     Simulation *_simulation;
@@ -56,7 +58,6 @@ class Agent {
     std::discrete_distribution<> staging_node_distribution;
     std::discrete_distribution<> storage_node_distribution;
 
-    static double euclidean_distance(Point p1, Point p2);
     static bool do_intersect(Point p1, Point q1, Point p2, Point q2);
     static bool is_point_in_polygon(Point point, std::vector<Point> polygon);
     bool random_check_viewrange(Point pos1, Point pos2);   

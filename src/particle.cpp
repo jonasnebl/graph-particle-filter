@@ -75,28 +75,64 @@ double Particle::get_heading() {
     return std::atan2(y_edge_end - y_edge_start, x_edge_end - x_edge_start);
 }
 
-double Particle::distance(Point robot_position, Point measured_position, double heading) {
+double Particle::distance(Point robot_position, Point measured_position, double measured_heading) {
     Point ego_position = get_position();
     double edge_heading = get_heading();
 
     double distance = 0;
-    bool human_should_be_visible = Agent::check_viewline(robot_position, ego_position, *racks);
-    if (std::isnan(heading) && !human_should_be_visible) {
+    double euclidean_distance = Agent::euclidean_distance(robot_position, ego_position);
+    bool viewline = Agent::check_viewline(robot_position, ego_position, *racks);
+    bool human_should_be_visible = euclidean_distance < D_MAX && viewline;
+
+    if (std::isnan(measured_heading) && !human_should_be_visible) {
         return 0;
-    } else if (std::isnan(heading) && human_should_be_visible) {
+    } else if (std::isnan(measured_heading) && human_should_be_visible) {
         previous_distance += 10;
         return previous_distance;
-    } else if (!std::isnan(heading) && !human_should_be_visible) {
+    } else if (!std::isnan(measured_heading) && !human_should_be_visible) {
         previous_distance += 10;
         return previous_distance;
-    } else if (!std::isnan(heading) && human_should_be_visible) {
+    } else if (!std::isnan(measured_heading) && human_should_be_visible) {
         distance = (std::pow(measured_position.first - ego_position.first, 2) +
                     std::pow(measured_position.second - ego_position.second, 2)) +
-                   100 * std::pow(std::abs(heading - edge_heading), 2);
+                   100 * std::pow(std::abs(measured_heading - edge_heading), 2);
         previous_distance = distance;
         return distance;
     }
     return 0;
+}
+
+double Particle::likelihood(Point robot_position, Point measured_position, double measured_heading) {
+    // Calculates the probability of obtaining the measured position and heading 
+    // given the particle state and robot position
+    Point particle_position = get_position();
+    double particle_heading = get_heading();
+    bool viewline = Agent::check_viewline(robot_position, particle_position, *racks);
+    if (std::isnan(measured_position.first) || std::isnan(measured_heading)) {
+        // probability of not seeing the human
+        if (!viewline) {
+            return 1.0;
+        } else {
+            double dist = Agent::euclidean_distance(robot_position, particle_position);
+            return 1 - Agent::probability_in_viewrange(dist);
+        }
+    } else {
+        // probability of seeing the human
+        double dist = distance(robot_position, measured_position, measured_heading);
+        double probability_in_viewrange = Agent::probability_in_viewrange(dist);
+        double position_pdf_value = measurement_noise_pdf(particle_position, measured_position);
+        double heading_pdf_value = std::exp(-0.5 * std::pow(measured_heading - particle_heading, 2) /
+                                            std::pow(1 * HEADING_STDDEV, 2));
+        return probability_in_viewrange * position_pdf_value * heading_pdf_value;
+    }
+}
+
+double Particle::measurement_noise_pdf(Point particle_position, Point measured_position) {
+    double x_diff = particle_position.first - measured_position.first;
+    double y_diff = particle_position.second - measured_position.second;
+    double normalization_factor = 1 / std::sqrt(std::pow(2 * 3.14159, 2) * std::pow(20 * XY_STDDEV, 4));
+    double exponent = - 0.5 * (std::pow(x_diff, 2) + std::pow(y_diff, 2)) / std::pow(20 * XY_STDDEV, 2);
+    return normalization_factor * std::exp(exponent);
 }
 
 void Particle::predict(double T_step) {

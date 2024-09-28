@@ -41,6 +41,10 @@ class ParticleTracker {
     // calculate node probabilities from internal sysstem state
     std::vector<double> calculate_edge_probabilities();
     std::vector<double> calculate_edge_probabilities_one_human(int index_human);
+    std::vector<double> weighted_calculate_edge_probabilities_one_human(int index_human);
+    std::vector<double> weighted_calculate_edge_probabilities();
+    void normalize_weights(int index_human);
+    void print_weights(int index_human);
 
     // helper functions
     void add_single_observation(pybind11::dict robot_perception);
@@ -57,6 +61,7 @@ class ParticleTracker {
     const int N_humans_max;
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
+    std::vector<std::vector<double>> particle_weights;
 };
 
 #endif

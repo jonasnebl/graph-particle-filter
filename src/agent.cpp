@@ -249,14 +249,18 @@ bool Agent::is_point_in_polygon(Point point, std::vector<Point> polygon) {
 
 bool Agent::random_check_viewrange(Point pos1, Point pos2) {
     double dist = euclidean_distance(pos1, pos2);
-    double probability_in_range;
-    if (dist < D_MIN) {
-        probability_in_range = DETECTION_PROBABILITY_IN_RANGE;
-    } else if (dist >= D_MIN && dist < D_MAX) {
-        probability_in_range = (D_MAX - dist) / (D_MAX - D_MIN);
-    } else if (dist >= D_MAX) {
-        probability_in_range = 0;
-    }
+    double prob_in_viewrange = probability_in_viewrange(dist);
     std::uniform_real_distribution<double> unif(0, 1);
-    return unif(mt) < probability_in_range;
+    return unif(mt) < prob_in_viewrange;
+}
+
+double Agent::probability_in_viewrange(double dist) {
+    if (dist < D_MIN) {
+        return DETECTION_PROBABILITY_IN_RANGE;
+    } else if (dist >= D_MIN && dist < D_MAX) {
+        return (D_MAX - dist) / (D_MAX - D_MIN);
+    } else if (dist >= D_MAX) {
+        return 0.0;
+    }
+    return 0.0; // should never be reached, to prevent compiler warning
 }

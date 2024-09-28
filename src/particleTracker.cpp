@@ -69,6 +69,7 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
         }
         particles.push_back(particles_per_human);
     }
+    particle_weights = std::vector<std::vector<double>>(N_humans_max, std::vector<double>(N_particles, 1.0 / N_particles));
 
     // init random number generator
     std::random_device rd;
@@ -80,7 +81,7 @@ std::vector<double> ParticleTracker::add_observation(
     for (const auto& robot_perception : robot_perceptions) {
         add_single_observation(robot_perception);
     }
-    return calculate_edge_probabilities();
+    return weighted_calculate_edge_probabilities();
 }
 
 void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
@@ -101,13 +102,41 @@ void ParticleTracker::add_single_observation(pybind11::dict robot_perception) {
                                      ? std::nan("")
                                      : perceived_humans[perception_index]["heading"].cast<double>();
 
-        // --- calculate distance of each particle ---
-        std::vector<double> distances;
-        for (auto& particle : particles[i]) {
-            distances.push_back(
-                particle.distance(robot_position, perceived_pos, perceived_heading));
+        // --- update weights of each particle ---
+        std::vector<double> likelihoods;
+        for (int j = 0; j < N_particles; j++) {
+            likelihoods.push_back(particles[i][j].likelihood(robot_position, perceived_pos, perceived_heading));
         }
-        update_particles(i, distances, perceived_pos, perceived_heading);
+        if (std::accumulate(likelihoods.begin(), likelihoods.end(), 0.0) > 0) {
+            for (int j = 0; j < N_particles; j++) {
+                particle_weights[i][j] *= likelihoods[j];
+            }
+        } else if (!std::isnan(perceived_heading)) {
+            // int perceived_edge = get_belonging_edge(perceived_pos, perceived_heading);
+            // for (int j = 0; j < N_particles; j++) {
+            //     particles[i][j] = Particle(perceived_edge, particles[i][j]);
+            //     particle_weights[i][j] = 1.0 / N_particles;
+            // }
+        }
+
+        normalize_weights(i);
+        // print_weights(i);
+
+        // // --- resample particles ---
+        // auto old_particles = particles;
+        // auto old_particle_weights = particle_weights;
+        // double RESAMPLE_THRESHOLD = 0.001;
+        // std::discrete_distribution<int> particle_distribution(particle_weights[i].begin(),
+        //                                                      particle_weights[i].end());
+        // for (int j = 0; j < 0.5 * static_cast<double>(N_particles); j++) {
+        //     if (particle_weights[i][j] < RESAMPLE_THRESHOLD) {
+        //         int random_particle = particle_distribution(mt);
+        //         particles[i][j] = Particle(particles[i][random_particle]);
+        //         particle_weights[i][j] = old_particle_weights[i][random_particle];
+        //     }
+        // }
+        // normalize_weights(i);
+        // print_weights(i);
     }
 }
 
@@ -117,7 +146,28 @@ std::vector<double> ParticleTracker::predict() {
             particle.predict(T_step);
         }
     }
-    return calculate_edge_probabilities();
+    return weighted_calculate_edge_probabilities();
+}
+
+void ParticleTracker::normalize_weights(int index_human) {
+    double sum_weights = std::accumulate(particle_weights[index_human].begin(), particle_weights[index_human].end(), 0.0);
+    if (sum_weights < 0.000001) {
+        for (int j = 0; j < N_particles; j++) {
+            std::cout << "sum_weights: " << sum_weights << std::endl;
+            particle_weights[index_human][j] = 1.0 / N_particles;
+        }
+        return;
+    }
+    for (int j = 0; j < N_particles; j++) {
+        particle_weights[index_human][j] /= sum_weights;
+    }
+}
+
+void ParticleTracker::print_weights(int index_human) {
+    for (int i = 0; i < N_particles; i++) {
+        std::cout << particle_weights[index_human][i] << " ";
+    }
+    std::cout << std::endl;
 }
 
 std::vector<double> ParticleTracker::calculate_edge_probabilities_one_human(int index_human) {
@@ -127,6 +177,18 @@ std::vector<double> ParticleTracker::calculate_edge_probabilities_one_human(int 
             if (particle.is_human_on_edge(i)) {
                 edge_probabilities[i] += 1.0 / static_cast<double>(N_particles);
                 break;
+            }
+        }
+    }
+    return edge_probabilities;
+}
+
+std::vector<double> ParticleTracker::weighted_calculate_edge_probabilities_one_human(int index_human) {
+    std::vector<double> edge_probabilities(edges.size(), 0.0);
+    for (int i = 0; i < edges.size(); i++) {
+        for (int j = 0; j < N_particles; j++) {
+            if (particles[index_human][j].is_human_on_edge(i)) {
+                edge_probabilities[i] += particle_weights[index_human][j];
             }
         }
     }
@@ -148,6 +210,21 @@ std::vector<double> ParticleTracker::calculate_edge_probabilities() {
     return edge_probabilities;
 }
 
+std::vector<double> ParticleTracker::weighted_calculate_edge_probabilities() {
+    std::vector<std::vector<double>> edge_probabilities_for_every_internal_human;
+    for (int i = 0; i < N_humans_max; i++) {
+        edge_probabilities_for_every_internal_human.push_back(weighted_calculate_edge_probabilities_one_human(i));
+    }
+    std::vector<double> edge_probabilities(edges.size(), 1.0);
+    for (int i = 0; i < edges.size(); i++) {
+        for (int j = 0; j < N_humans_max; j++) {
+            edge_probabilities[i] *= 1 - edge_probabilities_for_every_internal_human[j][i];
+        }
+        edge_probabilities[i] = 1 - edge_probabilities[i];
+    }
+    return edge_probabilities;
+}
+
 void ParticleTracker::save_pred_model_params() const {
     nlohmann::json json_data = pred_model_params;
     std::ofstream file(pred_model_params_filename);
@@ -160,10 +237,9 @@ int ParticleTracker::get_belonging_edge(Point position, double heading) {
         Point p1 = nodes[edges[i].first];
         Point p2 = nodes[edges[i].second];
         double cartesian_distance_to_edge = distance_of_point_to_edge(position, p1, p2);
-        ;
         double heading_difference =
             std::abs(heading - std::atan2(p2.second - p1.second, p2.first - p1.first));
-        distances.push_back(cartesian_distance_to_edge + 2 * heading_difference);
+        distances.push_back(cartesian_distance_to_edge + 100 * heading_difference);
     }
     return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }

@@ -19,7 +19,9 @@ class Particle{
         Particle(int edge_, const Particle& p); // copy constructor with custom edge
         Point get_position();
         double get_heading();
-        double distance(Point robot_position, Point measured_position, double heading);
+        double distance(Point robot_position, Point measured_position, double measured_heading);
+        double likelihood(Point robot_position, Point measured_position, double measured_heading);
+        double measurement_noise_pdf(Point particle_position, Point measured_position);
         void predict(double T_step);
         int get_random_successor_edge(int edge);
         double get_random_time_of_edge_change(int current_edge, int next_edge);
