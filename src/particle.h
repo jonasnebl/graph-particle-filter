@@ -20,7 +20,7 @@ class Particle{
         Point get_position();
         double get_heading();
         double distance(Point robot_position, Point measured_position, double measured_heading);
-        double likelihood(Point robot_position, Point measured_position, double measured_heading);
+        double likelihood_no_perception(Point robot_position);
         double measurement_noise_pdf(Point particle_position, Point measured_position);
         void predict(double T_step);
         int get_random_successor_edge(int edge);

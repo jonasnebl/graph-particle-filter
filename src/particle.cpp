@@ -102,28 +102,16 @@ double Particle::distance(Point robot_position, Point measured_position, double 
     return 0;
 }
 
-double Particle::likelihood(Point robot_position, Point measured_position, double measured_heading) {
-    // Calculates the probability of obtaining the measured position and heading 
-    // given the particle state and robot position
+double Particle::likelihood_no_perception(Point robot_position) {
+    // Gives the probability of NOT seeing the human given particle state and robot position
     Point particle_position = get_position();
     double particle_heading = get_heading();
     bool viewline = Agent::check_viewline(robot_position, particle_position, *racks);
-    if (std::isnan(measured_position.first) || std::isnan(measured_heading)) {
-        // probability of not seeing the human
-        if (!viewline) {
-            return 1.0;
-        } else {
-            double dist = Agent::euclidean_distance(robot_position, particle_position);
-            return 1 - Agent::probability_in_viewrange(dist);
-        }
+    if (!viewline) {
+        return 1.0;
     } else {
-        // probability of seeing the human
-        double dist = distance(robot_position, measured_position, measured_heading);
-        double probability_in_viewrange = Agent::probability_in_viewrange(dist);
-        double position_pdf_value = measurement_noise_pdf(particle_position, measured_position);
-        double heading_pdf_value = std::exp(-0.5 * std::pow(measured_heading - particle_heading, 2) /
-                                            std::pow(1 * HEADING_STDDEV, 2));
-        return probability_in_viewrange * position_pdf_value * heading_pdf_value;
+        double dist = Agent::euclidean_distance(robot_position, particle_position);
+        return 1 - Agent::probability_in_viewrange(dist);
     }
 }
 

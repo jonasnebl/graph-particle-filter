@@ -1,8 +1,8 @@
 T_simulation: 60 # seconds
 T_step: 0.2 # seconds
-N_humans: 1
-N_robots: 1
+N_humans: 5
+N_robots: 5
 
 plot: True
 record_video: False
-N_particles: 10000
+N_particles: 1000

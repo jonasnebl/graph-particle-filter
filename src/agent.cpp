@@ -109,7 +109,7 @@ std::vector<pybind11::dict> Agent::perceive_humans() {
                     noisy_position.first += position_noise(mt) * dist;
                     noisy_position.second += position_noise(mt) * dist;
                     perceived_human["position"] = noisy_position;
-                    perceived_human["heading"] = human.heading + heading_noise(mt) * dist;
+                    perceived_human["heading"] = human.heading + heading_noise(mt);
                     result.push_back(perceived_human);
                 }
             }
