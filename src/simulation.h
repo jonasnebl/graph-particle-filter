@@ -35,6 +35,7 @@ class Simulation {
     std::vector<std::vector<Point>> racks;
     std::vector<int> staging_nodes;
     std::vector<int> storage_nodes;
+    std::vector<int> exit_nodes;
 
     // utility functions
     std::vector<std::vector<pybind11::dict>> step(int N_steps);

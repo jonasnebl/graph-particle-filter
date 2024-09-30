@@ -16,8 +16,15 @@ const double DETECTION_PROBABILITY_IN_RANGE = 0.99;
 const double XY_STDDEV = 0.02;
 const double HEADING_STDDEV = 15.0 * M_PI / 180.0;
 const double ROBOT_VELOCITY = 2.2;
-const double HUMAN_VELOCITY_MEAN = 1.4;
-const double HUMAN_VELOCITY_STDDEV = 0.2;
+const double HUMAN_VELOCITY_MEAN = 1.3;
+const double HUMAN_VELOCITY_STDDEV = 0.1;
+
+const double PAUSE_VELOCITY = 0.1;
+const double OUT_OF_WAREHOUSE_VELOCITY = 0.01;
+const double LEAVE_WAREHOUSE_PROBABILITY = 0.01;
+
+const double SMOOTHING_STRENGTH = 0.1;
+const double SMOOTHING_ITERATIONS = 5;
 
 class Agent {
   public:
@@ -47,14 +54,16 @@ class Agent {
     int current_final_path_node; // holds node index of last node in path
 
     std::vector<pybind11::dict> perceive_humans();
-        std::normal_distribution<double> position_noise;
+    std::normal_distribution<double> position_noise;
     std::normal_distribution<double> heading_noise;
 
     void add_new_double_cycle_to_deque();
+    void add_path_to_deque(std::vector<int> path_to_target, double path_velocity);
     void add_node_to_deque(int node_index, double path_velocity);
     void smooth_path(int start, int end, double strength);
     int random_staging_node();
     int random_storage_node();
+    bool random_leave_warehouse();
     std::discrete_distribution<> staging_node_distribution;
     std::discrete_distribution<> storage_node_distribution;
 

@@ -127,7 +127,7 @@ for i in pbar:
     simulation_time += T_step
 
 if record_video:
-    plotter.create_video(T_step)
+    plotter.create_video(T_step, speed=config["playback_speed"])
 
 
 # --- Evaluate tracker performance ---

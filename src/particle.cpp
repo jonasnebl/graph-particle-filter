@@ -102,24 +102,30 @@ double Particle::distance(Point robot_position, Point measured_position, double 
     return 0;
 }
 
-double Particle::likelihood_no_perception(Point robot_position) {
+double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
     // Gives the probability of NOT seeing the human given particle state and robot position
     Point particle_position = get_position();
     double particle_heading = get_heading();
-    bool viewline = Agent::check_viewline(robot_position, particle_position, *racks);
-    if (!viewline) {
-        return 1.0;
-    } else {
-        double dist = Agent::euclidean_distance(robot_position, particle_position);
-        return 1 - Agent::probability_in_viewrange(dist);
+    double likelihood = 1.0;
+    for (const auto& robot_position : robot_positions) {
+        bool viewline = Agent::check_viewline(robot_position, particle_position, *racks);
+        if (!viewline) {
+            likelihood *= 1.0;
+        } else {
+            double dist = Agent::euclidean_distance(robot_position, particle_position);
+            likelihood *= 1 - Agent::probability_in_viewrange(dist);
+        }
     }
+    return likelihood;
 }
 
 double Particle::measurement_noise_pdf(Point particle_position, Point measured_position) {
     double x_diff = particle_position.first - measured_position.first;
     double y_diff = particle_position.second - measured_position.second;
-    double normalization_factor = 1 / std::sqrt(std::pow(2 * 3.14159, 2) * std::pow(20 * XY_STDDEV, 4));
-    double exponent = - 0.5 * (std::pow(x_diff, 2) + std::pow(y_diff, 2)) / std::pow(20 * XY_STDDEV, 2);
+    double normalization_factor =
+        1 / std::sqrt(std::pow(2 * 3.14159, 2) * std::pow(20 * XY_STDDEV, 4));
+    double exponent =
+        -0.5 * (std::pow(x_diff, 2) + std::pow(y_diff, 2)) / std::pow(20 * XY_STDDEV, 2);
     return normalization_factor * std::exp(exponent);
 }
 

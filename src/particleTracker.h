@@ -43,11 +43,11 @@ class ParticleTracker {
     std::vector<double> calculate_edge_probabilities();
 
     // helper functions
-    void add_single_observation(pybind11::dict robot_perception);
-    void generate_particles_from_perception(int i, Point robot_position, Point perceived_pos, double perceived_heading);
+    std::pair<std::vector<Point>, std::vector<pybind11::dict>> merge_perceptions(std::vector<pybind11::dict> robot_perceptions);
+    void generate_particles_from_perception(int i, Point perceived_pos, double perceived_heading);
     int get_belonging_edge(Point position, double heading);
     double heading_distance(double heading1, double heading2);
-    std::vector<int> assign_perceived_humans_to_internal_humans(Point robot_position, std::vector<pybind11::dict> perceived_humans);
+    std::vector<int> assign_perceived_humans_to_internal_humans(std::vector<pybind11::dict> perceived_humans);
     void normalize_weights(int index_human);
     void print_weights(int index_human);
 

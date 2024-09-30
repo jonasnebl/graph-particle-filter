@@ -24,5 +24,6 @@ def load_warehouse_data_from_json():
         node_meanings = json.load(f)
     staging_nodes = node_meanings["staging_nodes"]
     storage_nodes = node_meanings["storage_nodes"]
+    exit_nodes = node_meanings["exit_nodes"]
 
-    return nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes
+    return nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes

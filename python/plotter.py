@@ -159,11 +159,11 @@ class Plotter:
         plt.tight_layout()
         plt.pause(1e-4)
 
-    def create_video(self, T_step):
+    def create_video(self, T_step, speed=1.0):
         if not self.record_frames:
             raise Exception("You must set option record_frames=True to create a video.")
         else:
-            fps = int(1 / T_step)
+            fps = speed / T_step
             clip = ImageSequenceClip(self.frames, fps=fps)
             clip.write_videofile(
                 os.path.join(

@@ -20,6 +20,7 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots)
     racks = warehouse_data::racks;
     staging_nodes = warehouse_data::staging_nodes;
     storage_nodes = warehouse_data::storage_nodes;
+    exit_nodes = warehouse_data::exit_nodes;
 
     // random node index
     // generator

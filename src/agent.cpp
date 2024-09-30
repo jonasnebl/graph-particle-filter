@@ -127,35 +127,48 @@ void Agent::add_new_double_cycle_to_deque() {
 
     int path_length_before_new_double_cycle = path.size();
 
-    // --- 1. leg ---
-    int target_node_1 = random_storage_node();
-    std::vector<int> path_to_target = _simulation->dijkstra(current_final_path_node, target_node_1);
-    double velocity_leg_1 = get_random_velocity();
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], velocity_leg_1);
+    if (random_leave_warehouse() && _is_human) {  // only humans can leave the warehouse
+        // --- 1. leg ---
+        int target_exit_node = (_simulation->exit_nodes)[0];
+        std::vector<int> path_to_target =
+            _simulation->dijkstra(current_final_path_node, target_exit_node);
+        add_path_to_deque(path_to_target, get_random_velocity());
+        add_node_to_deque(target_exit_node, OUT_OF_WAREHOUSE_VELOCITY);  // generates a pause
+        // --- 2. leg ---
+        int target_staging_node = random_staging_node();
+        path_to_target = _simulation->dijkstra(target_exit_node, target_staging_node);
+        add_path_to_deque(path_to_target, get_random_velocity());
+        add_node_to_deque(target_staging_node, PAUSE_VELOCITY);  // generates a pause
+        current_final_path_node = target_exit_node;
+    } else {
+        // --- 1. leg ---
+        int target_node_1 = random_storage_node();
+        std::vector<int> path_to_target =
+            _simulation->dijkstra(current_final_path_node, target_node_1);
+        add_path_to_deque(path_to_target, get_random_velocity());
+        add_node_to_deque(target_node_1, PAUSE_VELOCITY);  // generates a pause
+        // --- 2. leg ---
+        int target_node_2 = random_storage_node();
+        path_to_target = _simulation->dijkstra(target_node_1, target_node_2);
+        add_path_to_deque(path_to_target, get_random_velocity());
+        add_node_to_deque(target_node_2, PAUSE_VELOCITY);  // generates a pause
+        // --- 3. leg ---
+        int target_staging_node = random_staging_node();
+        path_to_target = _simulation->dijkstra(target_node_2, target_staging_node);
+        add_path_to_deque(path_to_target, get_random_velocity());
+        add_node_to_deque(target_staging_node, PAUSE_VELOCITY);  // generates a pause
+        current_final_path_node = target_staging_node;
     }
-    add_node_to_deque(target_node_1, 0.1);  // generates a pause
-    // --- 2. leg ---
-    int target_node_2 = random_storage_node();
-    path_to_target = _simulation->dijkstra(target_node_1, target_node_2);
-    double velocity_leg_2 = get_random_velocity();
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], velocity_leg_2);
-    }
-    add_node_to_deque(target_node_2, 0.1);  // generates a pause
-    // --- 3. leg ---
-    int target_staging_node = random_staging_node();
-    path_to_target = _simulation->dijkstra(target_node_2, target_staging_node);
-    double velocity_leg_3 = get_random_velocity();
-    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
-        add_node_to_deque(path_to_target[i], velocity_leg_3);
-    }
-    add_node_to_deque(target_staging_node, 0.1);  // generates a pause
-    current_final_path_node = target_staging_node;
-
     // --- smooth ---
-    for (int i = 0; i < 5; i++) {  // smooth multiple times for better results
-        smooth_path(path_length_before_new_double_cycle, path.size() - 1, 0.1);
+    for (int i = 0; i < SMOOTHING_ITERATIONS; i++) {  // smooth multiple times for better results
+        smooth_path(path_length_before_new_double_cycle, path.size() - 1, SMOOTHING_STRENGTH);
+    }
+    return;
+}
+
+void Agent::add_path_to_deque(std::vector<int> path_to_target, double path_velocity) {
+    for (int i = 1; i < path_to_target.size(); i++) {  // exclude first element
+        add_node_to_deque(path_to_target[i], path_velocity);
     }
 }
 
@@ -203,6 +216,11 @@ void Agent::smooth_path(int start, int end, double strength) {
 int Agent::random_staging_node() { return staging_node_distribution(mt); }
 
 int Agent::random_storage_node() { return storage_node_distribution(mt); }
+
+bool Agent::random_leave_warehouse() {
+    std::uniform_real_distribution<double> unif(0, 1);
+    return unif(mt) < LEAVE_WAREHOUSE_PROBABILITY;
+}
 
 double Agent::euclidean_distance(Point p1, Point p2) {
     return std::sqrt(std::pow(p1.first - p2.first, 2) + std::pow(p1.second - p2.second, 2));
@@ -262,5 +280,5 @@ double Agent::probability_in_viewrange(double dist) {
     } else if (dist >= D_MAX) {
         return 0.0;
     }
-    return 0.0; // should never be reached, to prevent compiler warning
+    return 0.0;  // should never be reached, to prevent compiler warning
 }
