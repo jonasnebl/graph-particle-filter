@@ -20,12 +20,8 @@ Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     }
     position_noise = std::normal_distribution<double>(0, XY_STDDEV);
     heading_noise = std::normal_distribution<double>(0, HEADING_STDDEV);
-    staging_node_distribution = std::discrete_distribution<>((_simulation->staging_nodes).begin(),
-                                                             (_simulation->staging_nodes).end());
-    storage_node_distribution = std::discrete_distribution<>((_simulation->storage_nodes).begin(),
-                                                             (_simulation->storage_nodes).end());
 
-    int start_node_index = staging_node_distribution(mt);
+    int start_node_index = random_staging_node();
     position = (_simulation->nodes)[start_node_index];
     path = std::deque<std::pair<Point, double>>();
     add_node_to_deque(start_node_index, get_random_velocity());
@@ -213,9 +209,15 @@ void Agent::smooth_path(int start, int end, double strength) {
     }
 }
 
-int Agent::random_staging_node() { return staging_node_distribution(mt); }
+int Agent::random_staging_node() { 
+    std::uniform_int_distribution<int> staging_node_distribution(0, _simulation->staging_nodes.size() - 1);
+    return (_simulation->staging_nodes)[staging_node_distribution(mt)]; 
+}
 
-int Agent::random_storage_node() { return storage_node_distribution(mt); }
+int Agent::random_storage_node() { 
+    std::uniform_int_distribution<int> storage_node_distribution(0, _simulation->storage_nodes.size() - 1);
+    return (_simulation->storage_nodes)[storage_node_distribution(mt)]; 
+}
 
 bool Agent::random_leave_warehouse() {
     std::uniform_real_distribution<double> unif(0, 1);

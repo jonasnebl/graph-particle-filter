@@ -64,9 +64,6 @@ class Agent {
     int random_staging_node();
     int random_storage_node();
     bool random_leave_warehouse();
-    std::discrete_distribution<> staging_node_distribution;
-    std::discrete_distribution<> storage_node_distribution;
-
     static bool do_intersect(Point p1, Point q1, Point p2, Point q2);
     static bool is_point_in_polygon(Point point, std::vector<Point> polygon);
     bool random_check_viewrange(Point pos1, Point pos2);   
