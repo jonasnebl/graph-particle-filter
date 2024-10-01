@@ -129,13 +129,8 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
             double perceived_pos_variance =
                 std::pow(XY_STDDEV * Agent::euclidean_distance(robot_position, perceived_pos), 2);
             double perceived_heading_variance = std::pow(HEADING_STDDEV, 2);
-            if (merged_perceptions.second.empty()) {
-                new_perceptions_this_robot.push_back(perceived_human);
-                new_perceptions_this_robot.back()["position_stddev"] =
-                    std::sqrt(perceived_pos_variance);
-                new_perceptions_this_robot.back()["heading_stddev"] =
-                    std::sqrt(perceived_heading_variance);
-            }
+
+            bool matching_perception_found = false;
             for (auto& merged_human : merged_perceptions.second) {
                 Point merged_pos = merged_human["position"].cast<Point>();
                 double merged_heading = merged_human["heading"].cast<double>();
@@ -170,13 +165,16 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
                     merged_human["heading_stddev"] =
                         std::sqrt(merged_heading_variance * perceived_heading_variance /
                                   (merged_heading_variance + perceived_heading_variance));
-                } else {
-                    new_perceptions_this_robot.push_back(perceived_human);
-                    new_perceptions_this_robot.back()["position_stddev"] =
-                        std::sqrt(perceived_pos_variance);
-                    new_perceptions_this_robot.back()["heading_stddev"] =
-                        std::sqrt(perceived_heading_variance);
-                }
+                    matching_perception_found = true;
+                    break;
+                } 
+            }
+            if (!matching_perception_found) {
+                new_perceptions_this_robot.push_back(perceived_human);
+                new_perceptions_this_robot.back()["position_stddev"] =
+                    std::sqrt(perceived_pos_variance);
+                new_perceptions_this_robot.back()["heading_stddev"] =
+                    std::sqrt(perceived_heading_variance);
             }
         }
         merged_perceptions.second.insert(merged_perceptions.second.end(),
