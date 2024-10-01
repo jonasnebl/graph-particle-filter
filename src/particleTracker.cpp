@@ -46,14 +46,22 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
             std::vector<std::array<double, 3>> params_per_edge;
             for (int j = 0; j < successor_edges[i].size(); j++) {
                 double select_edge_j_probability;
-                if (edges[successor_edges[i][j]].second ==
-                    edges[i].first) {  // other direction edge
+
+                if (edges[successor_edges[i][j]].second == edges[i].first) {  // other direction
                     select_edge_j_probability = 0.1;
+                    if (edges[i].first = 24) {  // special case
+                        select_edge_j_probability = 0.98;
+                    }
                 } else {
                     select_edge_j_probability = (1 - 0.1) / (successor_edges[i].size() - 1);
+                    if (edges[i].first = 24) {  // special case
+                        select_edge_j_probability = 0.02;
+                    }
                 }
+                double mean_time_at_edge = edge_weights[i] / HUMAN_VELOCITY_MEAN;
+                double stddev_time_at_edge = 0.2 * mean_time_at_edge;
                 params_per_edge.push_back(std::array<double, 3>(
-                    {select_edge_j_probability, edge_weights[i] / HUMAN_VELOCITY_MEAN, 0.7}));
+                    {select_edge_j_probability, mean_time_at_edge, stddev_time_at_edge}));
             }
             pred_model_params.push_back(params_per_edge);
         }

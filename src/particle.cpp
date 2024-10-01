@@ -20,7 +20,13 @@ Particle::Particle(std::vector<Point>* nodes, std::vector<std::pair<int, int>>* 
       pred_model_params(pred_model_params) {
     std::random_device rd;
     mt = std::mt19937(rd());
-    edge = std::uniform_int_distribution<int>(0, successor_edges->size() - 1)(mt);
+    // edge = std::uniform_int_distribution<int>(0, successor_edges->size() - 1)(mt);
+    for (int i = 0; i < (*edges).size(); i++) {
+        if ((*edges)[i].first == 24) {
+            edge = i;
+            break;
+        }
+    }
     next_edge = get_random_successor_edge(edge);
     time_since_edge_change = 0.8;
     time_of_edge_change = 1.0;
