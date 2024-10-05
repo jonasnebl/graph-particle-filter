@@ -7,4 +7,4 @@ plot: True
 record_video: True
 playback_speed: 0.5
 
-N_particles: 1000
+N_particles: 100
