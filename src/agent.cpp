@@ -209,14 +209,16 @@ void Agent::smooth_path(int start, int end, double strength) {
     }
 }
 
-int Agent::random_staging_node() { 
-    std::uniform_int_distribution<int> staging_node_distribution(0, _simulation->staging_nodes.size() - 1);
-    return (_simulation->staging_nodes)[staging_node_distribution(mt)]; 
+int Agent::random_staging_node() {
+    std::uniform_int_distribution<int> staging_node_distribution(
+        0, _simulation->staging_nodes.size() - 1);
+    return (_simulation->staging_nodes)[staging_node_distribution(mt)];
 }
 
-int Agent::random_storage_node() { 
-    std::uniform_int_distribution<int> storage_node_distribution(0, _simulation->storage_nodes.size() - 1);
-    return (_simulation->storage_nodes)[storage_node_distribution(mt)]; 
+int Agent::random_storage_node() {
+    std::uniform_int_distribution<int> storage_node_distribution(
+        0, _simulation->storage_nodes.size() - 1);
+    return (_simulation->storage_nodes)[storage_node_distribution(mt)];
 }
 
 bool Agent::random_leave_warehouse() {

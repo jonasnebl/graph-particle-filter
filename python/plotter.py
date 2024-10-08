@@ -14,7 +14,7 @@ import os
 
 
 class Plotter:
-    def __init__(self, record_frames=False, print_probabilites=False):
+    def __init__(self, record_frames=False, print_probabilites=False, print_edge_indices=False):
         """Plotter to plot robot and human movement in the warehouse
 
         :param show: Show the warehouse structure after initializing the tracker object. Blocking!
@@ -66,6 +66,10 @@ class Plotter:
             end_pos = self.node_positions[end]
             plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], "black", zorder=10)
 
+        # Annotate the edges with their indices
+        if print_edge_indices:
+            self.annotate_edges(np.arange(len(self.edges), dtype=int))
+
         # List to keep track of perception-related elements
         self.perception_elements = []
 
@@ -116,7 +120,6 @@ class Plotter:
 
         # Update the edges with arrows based on edge_probabilities
         cmap = plt.get_cmap("coolwarm")
-        offset = 0.16  # Offset for the text annotations
         for i, edge in enumerate(self.edges):
             start, end = edge
             start_pos = self.node_positions[start]
@@ -140,17 +143,8 @@ class Plotter:
             )
             self.ax.add_patch(arrow)
 
-            if self.print_probabilites:
-                # Add text annotation for the probability
-                mid_pos = (start_pos + end_pos) / 2
-                # Offset the text position slightly for opposing edges
-                if start < end:
-                    text_pos = mid_pos + np.array([offset, offset])
-                else:
-                    text_pos = mid_pos - np.array([offset, offset])
-                self.ax.text(
-                    text_pos[0], text_pos[1], f"{probability:.3f}", fontsize=9, ha="center", color="black", zorder=3
-                )
+        if self.print_probabilites:
+            self.annotate_edges(edge_probabilities)
 
         # Capture the current frame
         if self.record_frames:
@@ -180,6 +174,22 @@ class Plotter:
         if not filename.endswith("." + format):
             filename += "." + format
         plt.savefig(os.path.join(FIGURE_PATH, filename))
+
+    def annotate_edges(self, annotations):
+        """Annotate the edges with the given annotations"""
+        for edge_index, annotation in enumerate(annotations):
+            start, end = self.edges[edge_index]
+            start_pos = self.node_positions[start]
+            end_pos = self.node_positions[end]
+            # Add text annotation for the probability
+            mid_pos = (start_pos + end_pos) / 2
+            # Offset the text position slightly for opposing edges
+            offset = 0.16  # Offset for the text annotations
+            if start < end:
+                text_pos = mid_pos + np.array([offset, offset])
+            else:
+                text_pos = mid_pos - np.array([offset, offset])
+            self.ax.text(text_pos[0], text_pos[1], f"{annotation}", fontsize=9, ha="center", color="black", zorder=3)
 
     def show(self):
         """Show the warehouse plot"""

@@ -20,7 +20,7 @@ class ParticleTracker {
     ParticleTracker(double T_step, int N_humans_max, int N_particles);
     std::vector<double> add_observation(std::vector<pybind11::dict> robot_perceptions);
     std::vector<double> predict();
-    void save_pred_model_params() const;
+    void save_training_data() const;
 
     // warehouse graph
     std::vector<Point> nodes;
@@ -37,6 +37,9 @@ class ParticleTracker {
     Particle prediction_model(Particle particle);
     std::vector<std::vector<std::array<double, 3>>> pred_model_params;
     std::string pred_model_params_filename = "models/pred_model_params.json";
+    std::vector<std::tuple<int, int, double>> training_data;
+    std::string training_data_filename = "training_data/training_data.json";
+    void record_training_data();
 
     // calculate node probabilities from internal sysstem state
     std::vector<double> calculate_edge_probabilities_one_human(int index_human);
@@ -60,6 +63,13 @@ class ParticleTracker {
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
     std::vector<std::vector<double>> particle_weights;
+
+    // training data variables
+    double simulation_time = 0.0;
+    std::vector<int> training_data_state;
+    std::vector<int> training_data_current_edge;
+    std::vector<int> training_data_previous_edge;
+    std::vector<double> training_data_start_time;
 };
 
 #endif

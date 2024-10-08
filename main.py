@@ -129,6 +129,8 @@ for i in pbar:
 if record_video:
     plotter.create_video(T_step, speed=config["playback_speed"])
 
+particleTracker.save_training_data()
+
 
 # --- Evaluate tracker performance ---
 

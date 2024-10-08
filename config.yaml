@@ -1,10 +1,10 @@
-T_simulation: 120 # seconds
+T_simulation: 86400 # seconds
 T_step: 0.3333333 # seconds
 N_humans: 3
 N_robots: 3
 
-plot: True
-record_video: True
+plot: False
+record_video: False
 playback_speed: 0.5
 
-N_particles: 100
+N_particles: 10
