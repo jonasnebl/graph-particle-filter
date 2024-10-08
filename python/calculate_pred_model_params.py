@@ -33,7 +33,7 @@ for i, edge in enumerate(edges):
         while len(durations) < 10:
             # add dummy measurements based on the edge weights
             mean = edge_weights[successor_edge] / 1.3
-            durations.append(np.random.normal(mean, mean/5))
+            durations.append(np.random.normal(mean, mean / 5))
 
         # use MLE to fit a Weibull distribution to all data points
         # remove double entries to avoid singularity errors
