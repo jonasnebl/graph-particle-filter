@@ -1,7 +1,12 @@
+"""
+This script generates a C++ header file containing the warehouse graph data.
+It also visualizes the warehouse graph with all node and edge indices
+and saves the resulting figure to the figures folder.
+"""
+
 from python.plotter import Plotter
 from python.utils import load_warehouse_data_from_json
 import os
-
 
 nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
 

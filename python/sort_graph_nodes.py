@@ -1,5 +1,10 @@
+"""
+This script sorts the nodes in the cartesian space by their y-coordinate first and then by their x-coordinate.
+The graph itself doesn't change but sorting the nodes makes it easier to find nodes.
+"""
+
 import json
-from python.constants import *
+from constants import *
 
 # Load graph_data.json
 with open(GRAPH_PATH, "r") as graph_file:

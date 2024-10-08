@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from .constants import *
+from constants import *
 
 
 def load_warehouse_data_from_json():
@@ -27,3 +27,6 @@ def load_warehouse_data_from_json():
     exit_nodes = node_meanings["exit_nodes"]
 
     return nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes
+
+def get_successor_edges(edges):
+    return [[i for i, next_edge in enumerate(edges) if edge[1] == next_edge[0]] for edge in edges]

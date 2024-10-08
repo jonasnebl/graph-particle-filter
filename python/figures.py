@@ -1,10 +1,15 @@
+"""
+Functions to generate figures for the final project report.
+"""
+
+import sys
 import os
-from .constants import *
+from constants import *
 import matplotlib.pyplot as plt
 import matplotlib
 import json
 import numpy as np
-from .utils import load_warehouse_data_from_json
+from utils import load_warehouse_data_from_json, get_successor_edges
 
 matplotlib.use("TkAgg")
 
@@ -12,41 +17,18 @@ matplotlib.use("TkAgg")
 plt.style.use("default")
 
 
-def results_plot(
-    confidentTracker_confidence,
-    confidentTracker_accuracy,
-    accurateTracker_confidence,
-    accurateTracker_accuracy,
-    particleTracker_confidence,
-    particleTracker_accuracy,
-):
-    x = [confidentTracker_confidence, accurateTracker_confidence, particleTracker_confidence]
-    y = [confidentTracker_accuracy, accurateTracker_accuracy, particleTracker_accuracy]
-    legends = ["Konfidenter Tracker", "Genauer Tracker", "Partikel-Tracker"]
-    colors = ["red", "green", "blue"]
-
-    plt.scatter(x, y, c=colors)
-
-    for i, legend in enumerate(legends):
-        plt.annotate(legend, (x[i], y[i]))
-
-    plt.title("Konfidenz und Genauigkeit")
-    plt.xlabel("Konfidenz")
-    plt.ylabel("Genauigkeit")
-    plt.tight_layout()
-    plt.savefig(os.path.join(FIGURE_PATH, "results_plot.pdf"))
-    plt.show()
-
-
 def plot_pred_model(edge):
+    """
+    Plot the prediction model for the given edge.
+    """
     with open(os.path.join(MODEL_PATH, "pred_model_params_new.json"), "r") as f:
         pred_model_params = json.load(f)
 
     nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
-    successor_edges = [[i for i, next_edge in enumerate(edges) if edge[1] == next_edge[0]] for edge in edges]
+    successor_edges = get_successor_edges(edges)
 
     N_successors = len(pred_model_params[edge])
-    fig, axs = plt.subplots(2, N_successors, figsize=(4 * N_successors, 8))
+    fig, axs = plt.subplots(2, N_successors, figsize=(4 * N_successors, 7))
     fig.suptitle(f"Kante {edge}")
 
     for i, params in enumerate(pred_model_params[edge]):
@@ -122,3 +104,7 @@ def plot_pred_model(edge):
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, f"pred_model_edge_{edge}.pdf"))
     plt.show()
+
+
+if __name__ == "__main__":
+    plot_pred_model(int(sys.argv[1]))
