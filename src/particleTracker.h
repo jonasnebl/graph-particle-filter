@@ -18,8 +18,8 @@ using Point = std::pair<double, double>;
 class ParticleTracker {
    public:
     ParticleTracker(double T_step, int N_humans_max, int N_particles);
-    std::vector<double> add_observation(std::vector<pybind11::dict> robot_perceptions);
-    std::vector<double> predict();
+    std::vector<std::vector<double>> add_observation(std::vector<pybind11::dict> robot_perceptions);
+    std::vector<std::vector<double>> predict();
     void save_training_data() const;
 
     // warehouse graph
@@ -43,7 +43,7 @@ class ParticleTracker {
 
     // calculate node probabilities from internal sysstem state
     std::vector<double> calculate_edge_probabilities_one_human(int index_human);
-    std::vector<double> calculate_edge_probabilities();
+    std::vector<std::vector<double>> calculate_individual_edge_probabilities();
 
     // helper functions
     std::pair<std::vector<Point>, std::vector<pybind11::dict>> merge_perceptions(std::vector<pybind11::dict> robot_perceptions);

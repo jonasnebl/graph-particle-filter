@@ -14,7 +14,7 @@ import os
 
 
 class Plotter:
-    def __init__(self, record_frames=False, print_probabilites=False, print_edge_indices=False):
+    def __init__(self, print_probabilites=False, print_edge_indices=False):
         """Plotter to plot robot and human movement in the warehouse
 
         :param show: Show the warehouse structure after initializing the tracker object. Blocking!
@@ -22,7 +22,6 @@ class Plotter:
         :returns: Plotter object
         """
 
-        self.record_frames = record_frames
         self.print_probabilites = print_probabilites
 
         with open(GRAPH_PATH, "r") as f:
@@ -74,10 +73,22 @@ class Plotter:
         self.perception_elements = []
 
         # List to store frames to later generate a video
-        if self.record_frames:
-            self.frames = []
+        self.frames = []
 
-    def update(self, state, edge_probabilities):
+    def clear(self):
+        """Clear previous arrows and text annotations
+        """
+        for patch in self.ax.patches:
+            if isinstance(patch, matplotlib.patches.FancyArrow):
+                patch.remove()
+        for text in self.ax.texts:
+            text.remove()
+
+    def update_sim_state(self, state):
+        """Update the warehouse plot with the current state of the simulation
+
+        :param state: List of dictionaries containing the state of each agent
+        """
         # Update the scatter plot
         positions = [agent["position"] for agent in state]
         colors = ["orange" if agent["type"] == "robot" else "green" for agent in state]
@@ -111,13 +122,11 @@ class Plotter:
                     )
                     self.perception_elements.append(perception_scat)
 
-        # Clear previous edges and text annotations
-        for patch in self.ax.patches:
-            if isinstance(patch, matplotlib.patches.FancyArrow):
-                patch.remove()
-        for text in self.ax.texts:
-            text.remove()
+    def update_edge_probabilities(self, edge_probabilities):
+        """Displays the edge probabilities for each tracked human individually
 
+        :param edge_probabilities: List of edge probabilities for each human
+        """
         # Update the edges with arrows based on edge_probabilities
         cmap = plt.get_cmap("coolwarm")
         for i, edge in enumerate(self.edges):
@@ -146,12 +155,57 @@ class Plotter:
         if self.print_probabilites:
             self.annotate_edges(["{:.3f}".format(probability) for probability in edge_probabilities])
 
-        # Capture the current frame
-        if self.record_frames:
-            self.frames.append(mplfig_to_npimage(self.fig))
+    def update_individual_edge_probabilities(self, individual_edge_probabilities):
+        """Displays the edge probabilities for each tracked human individually
 
+        :param individual_edge_probabilities: List of list of edge probabilities for each human
+        """
+        colors = ["red", "blue", "purple", "orange", "brown", "pink", "gray", "olive", "cyan"]
+        if len(individual_edge_probabilities) >= len(colors):
+            raise ValueError("We don't have enough colors to display so many humans.")      
+        
+        for i, edge in enumerate(self.edges):
+            for j, edge_probabilities in enumerate(individual_edge_probabilities):
+                start, end = edge
+                start_pos = self.node_positions[start]
+                end_pos = self.node_positions[end]
+                probability = edge_probabilities[i]
+                linewidth = 1 + 19 * probability  # Line width ranges from 1 to 20
+                alpha = 0.1 if probability == 0 else 1  # Make arrow almost invisible if probability is zero
+                arrow = matplotlib.patches.FancyArrow(
+                    start_pos[0],
+                    start_pos[1],
+                    end_pos[0] - start_pos[0],
+                    end_pos[1] - start_pos[1],
+                    width=0.05 * linewidth,  # Adjust the width of the arrow
+                    color=colors[j],
+                    alpha=alpha,
+                    length_includes_head=True,
+                    head_width=0.1 * linewidth,  # Adjust the head width of the arrow
+                    head_length=0.2 * linewidth,  # Adjust the head length of the arrow
+                    zorder=int(- probability * 100),  # Set a lower zorder for arrows
+                )
+                self.ax.add_patch(arrow)
+
+        if self.print_probabilites:
+            max_edge_probabilities = np.max(individual_edge_probabilities, axis=0)
+            self.annotate_edges(["{:.3f}".format(max_probability) for max_probability in max_edge_probabilities])
+
+    def show(self, blocking=True):
+        """Show the current state of the warehouse plot.
+
+        :param blocking: If True, the plot will be blocking, otherwise non-blocking.
+        """
         plt.tight_layout()
-        plt.pause(1e-4)
+        if blocking:
+            plt.show()
+        else:
+            plt.pause(1e-4)
+
+    def capture_frame(self):
+        """Capture the current frame and store it for later video generation
+        """
+        self.frames.append(mplfig_to_npimage(self.fig))
 
     def create_video(self, T_step, speed=1.0):
         if not self.record_frames:
@@ -190,8 +244,3 @@ class Plotter:
             else:
                 text_pos = mid_pos - np.array([offset, offset])
             self.ax.text(text_pos[0], text_pos[1], f"{annotation}", fontsize=9, ha="center", color="black", zorder=3)
-
-    def show(self):
-        """Show the warehouse plot"""
-        plt.tight_layout()
-        plt.show()

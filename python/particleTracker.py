@@ -23,11 +23,18 @@ class ParticleTracker:
         :param robot_perceptions: list of dictionaries, each dictionary contains the position of a robot and a list of perceived humans.
         :return: list of edge probabilities for the tracker.
         """
-        return self.tracker.add_observation(robot_perceptions)
+        individual_edge_probabilities = self.tracker.add_observation(robot_perceptions)
+        return individual_edge_probabilities
     
     def predict(self):
         """Predict the internal state of the tracker by T_step.
 
         :return: list of edge probabilities for the tracker.
         """
-        return self.tracker.predict()
+        individual_edge_probabilities = self.tracker.predict()
+        return individual_edge_probabilities
+    
+    def save_training_data(self):
+        """Save the collected training data of the tracker to a json file in the log folder.
+        """
+        self.tracker.save_training_data()

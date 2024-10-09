@@ -80,7 +80,7 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
     training_data_start_time = std::vector<double>(N_humans_max, 0.0);
 }
 
-std::vector<double> ParticleTracker::add_observation(
+std::vector<std::vector<double>> ParticleTracker::add_observation(
     std::vector<pybind11::dict> robot_perceptions) {
     auto merged_perceptions = merge_perceptions(robot_perceptions);
     std::vector<Point> robot_positions = merged_perceptions.first;
@@ -122,7 +122,7 @@ std::vector<double> ParticleTracker::add_observation(
     record_training_data();
     simulation_time += T_step;
 
-    return calculate_edge_probabilities();
+    return calculate_individual_edge_probabilities();
 }
 
 std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merge_perceptions(
@@ -246,13 +246,13 @@ double ParticleTracker::distance_of_point_to_edge(Point point, Point edge_start,
     return std::hypot(point.first - projection.first, point.second - projection.second);
 }
 
-std::vector<double> ParticleTracker::predict() {
+std::vector<std::vector<double>> ParticleTracker::predict() {
     for (int i = 0; i < N_humans_max; i++) {
         for (auto& particle : particles[i]) {
             particle.predict(T_step);
         }
     }
-    return calculate_edge_probabilities();
+    return calculate_individual_edge_probabilities();
 }
 
 void ParticleTracker::normalize_weights(int index_human) {
@@ -285,20 +285,12 @@ std::vector<double> ParticleTracker::calculate_edge_probabilities_one_human(int 
     return edge_probabilities;
 }
 
-std::vector<double> ParticleTracker::calculate_edge_probabilities() {
-    std::vector<std::vector<double>> edge_probabilities_for_every_internal_human;
+std::vector<std::vector<double>> ParticleTracker::calculate_individual_edge_probabilities() {
+    std::vector<std::vector<double>> individual_edge_probabilities;
     for (int i = 0; i < N_humans_max; i++) {
-        edge_probabilities_for_every_internal_human.push_back(
-            calculate_edge_probabilities_one_human(i));
+        individual_edge_probabilities.push_back(calculate_edge_probabilities_one_human(i));
     }
-    std::vector<double> edge_probabilities(edges.size(), 1.0);
-    for (int i = 0; i < edges.size(); i++) {
-        for (int j = 0; j < N_humans_max; j++) {
-            edge_probabilities[i] *= 1 - edge_probabilities_for_every_internal_human[j][i];
-        }
-        edge_probabilities[i] = 1 - edge_probabilities[i];
-    }
-    return edge_probabilities;
+    return individual_edge_probabilities;
 }
 
 void ParticleTracker::save_training_data() const {

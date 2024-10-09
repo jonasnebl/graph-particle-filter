@@ -63,7 +63,7 @@ record_video = config["record_video"]  # slows down loop even more!
 if record_video:
     plot = True
 if plot:
-    plotter = Plotter(record_frames=record_video, print_probabilites=True)
+    plotter = Plotter(print_probabilites=True)
 
 if config["N_humans_tracker"] == -1:
     N_humans_tracker = N_humans
@@ -91,7 +91,14 @@ for i in pbar:
     particleTracker_execution_times.append(time() - start)
 
     if plot:
-        plotter.update(sim_states[i], particleTracker_edge_probabilities[-1])
+        plotter.clear()
+        plotter.update_sim_state(sim_states[i])
+        # plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
+        plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
+        plotter.show(blocking=False)
+    if record_video:
+        plotter.capture_frame()
+
     pbar.set_postfix(
         {
             "Simulated time": "{:d}:{:02d} of {:d}:{:02d} hours; T_Tracker: {:.0f}ms".format(
