@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <numeric>
@@ -85,24 +86,24 @@ std::vector<double> ParticleTracker::add_observation(
     std::vector<Point> robot_positions = merged_perceptions.first;
     std::vector<pybind11::dict> perceived_humans = merged_perceptions.second;
 
-    std::vector<int> perceived_human_per_internal_human =
+    // std::vector<int> perceived_human_per_internal_human =
+    //     assign_perceived_humans_to_internal_humans(perceived_humans);
+
+    std::vector<std::function<int()>> hypothesis_generators =
         assign_perceived_humans_to_internal_humans(perceived_humans);
 
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
-        int perception_index = perceived_human_per_internal_human[i];
-
-        if (perception_index == -1) {
-            for (int j = 0; j < N_particles; j++) {
+        for (int j = 0; j < N_particles; j++) {
+            int perception_index = hypothesis_generators[i]();
+            if (perception_index == -1) {
                 particle_weights[i][j] *= particles[i][j].likelihood_no_perception(robot_positions);
-            }
-            normalize_weights(i);
-        } else {
-            Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
-            double perceived_heading = perceived_humans[perception_index]["heading"].cast<double>();
-            generate_particles_from_perception(i, perceived_pos, perceived_heading);
-            for (int j = 0; j < N_particles; j++) {
-                particle_weights[i][j] = 1.0 / static_cast<double>(N_particles);
+            } else {
+                Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
+                double perceived_heading =
+                    perceived_humans[perception_index]["heading"].cast<double>();
+                particles[i][j] =
+                    generate_new_particle_from_perception(perceived_pos, perceived_heading);
             }
         }
     }
@@ -183,19 +184,19 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
     return merged_perceptions;
 }
 
-void ParticleTracker::generate_particles_from_perception(int i, Point perceived_pos,
-                                                         double perceived_heading) {
+Particle ParticleTracker::generate_new_particle_from_perception(Point perceived_pos,
+                                                                double perceived_heading) {
     double dist = 10;
     std::normal_distribution<double> position_noise(0, 5 * XY_STDDEV * dist);
     std::normal_distribution<double> heading_noise(0, HEADING_STDDEV);
-    for (int j = 0; j < N_particles; j++) {
-        Point noisy_perceived_pos = perceived_pos;
-        noisy_perceived_pos.first += position_noise(mt);
-        noisy_perceived_pos.second += position_noise(mt);
-        double noisy_perceived_heading = perceived_heading + heading_noise(mt);
-        particles[i][j] = Particle(get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading),
-                                   particles[i][j]);
-    }
+
+    Point noisy_perceived_pos = perceived_pos;
+    noisy_perceived_pos.first += position_noise(mt);
+    noisy_perceived_pos.second += position_noise(mt);
+    double noisy_perceived_heading = perceived_heading + heading_noise(mt);
+
+    return Particle(get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading),
+                    particles[0][0]);
 }
 
 int ParticleTracker::get_belonging_edge(Point position, double heading) {
@@ -296,7 +297,7 @@ void ParticleTracker::save_training_data() const {
     file << json_data.dump(4);
 }
 
-std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
+std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_internal_humans(
     std::vector<pybind11::dict> perceived_humans) {
     // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
     int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
@@ -332,14 +333,15 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     int matrix_size = hungarian_init(&prob, cost_matrix, N_humans_max, N_humans_max,
                                      HUNGARIAN_MODE_MINIMIZE_COST);
     hungarian_solve(&prob);
-    std::vector<int> perceived_human_per_internal_human(N_humans_max, -1);
+    std::vector<std::function<int()>> perceived_human_per_internal_human(N_humans_max,
+                                                                         []() { return -1; });
     for (int i = 0; i < N_humans_max; i++) {
         for (int j = 0; j < N_humans_max; j++) {
             if (prob.assignment[i][j] == 1) {
                 if (j < perceived_humans.size()) {
-                    perceived_human_per_internal_human[i] = j;
+                    perceived_human_per_internal_human[i] = [j]() { return j; };
                 } else {
-                    perceived_human_per_internal_human[j] = -1;
+                    perceived_human_per_internal_human[j] = []() { return -1; };
                 }
                 break;
             }

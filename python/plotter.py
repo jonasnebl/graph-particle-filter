@@ -144,7 +144,7 @@ class Plotter:
             self.ax.add_patch(arrow)
 
         if self.print_probabilites:
-            self.annotate_edges(edge_probabilities)
+            self.annotate_edges(["{:.3f}".format(probability) for probability in edge_probabilities])
 
         # Capture the current frame
         if self.record_frames:
