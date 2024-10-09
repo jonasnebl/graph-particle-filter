@@ -86,9 +86,6 @@ std::vector<double> ParticleTracker::add_observation(
     std::vector<Point> robot_positions = merged_perceptions.first;
     std::vector<pybind11::dict> perceived_humans = merged_perceptions.second;
 
-    // std::vector<int> perceived_human_per_internal_human =
-    //     assign_perceived_humans_to_internal_humans(perceived_humans);
-
     std::vector<std::function<int()>> hypothesis_generators =
         assign_perceived_humans_to_internal_humans(perceived_humans);
 
@@ -106,7 +103,20 @@ std::vector<double> ParticleTracker::add_observation(
                     generate_new_particle_from_perception(perceived_pos, perceived_heading);
             }
         }
-    }
+        normalize_weights(i);      
+
+        // --- resample particles ---
+        const double resample_threshold = 0.1 / static_cast<double>(N_particles);
+        std::discrete_distribution<int> resample_distribution(
+            particle_weights[i].begin(), particle_weights[i].end());
+        for (int j = 0; j < N_particles; j++) {
+            if (particle_weights[i][j] < resample_threshold) {
+                particles[i][j] = particles[i][resample_distribution(mt)];
+            }
+            particles[i][j] = Particle(particles[i][resample_distribution(mt)]);
+        }
+        normalize_weights(i);
+    }   
 
     // --- record training data ---
     record_training_data();
