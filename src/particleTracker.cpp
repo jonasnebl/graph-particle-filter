@@ -330,9 +330,9 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
                     double head_distance = heading_distance(
                         particle.get_heading(), perceived_human["heading"].cast<double>());
                     cost_matrix[j][k] += static_cast<int>(
-                        10000 * std::sqrt((manh_distance + 20 * head_distance) / N_particles));
+                        1e5 * std::pow(manh_distance + 20 * head_distance, 0.1));
                 } else {
-                    cost_matrix[j][k] = 100000;
+                    cost_matrix[j][k] = 1e8;
                 }
             }
         }

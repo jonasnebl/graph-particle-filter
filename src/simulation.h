@@ -23,9 +23,9 @@ class Simulation {
    public:
     Simulation(double T_step, int N_humans, int N_robots);
     // agent attributes
-    int _N_humans;
-    int _N_robots;
-    double _T_step;
+    const int _N_humans;
+    const int _N_robots;
+    const double _T_step;
     std::vector<Agent> agents;
 
     // warehouse structure

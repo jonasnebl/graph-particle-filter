@@ -6,10 +6,9 @@ from datetime import datetime
 import yaml
 from time import time, sleep
 from plotter import Plotter
+from particleTracker import ParticleTracker
+from simulation import Simulation
 from constants import *
-
-sys.path.append("build/")  # allos to import cpp_utils
-from cpp_utils import Simulation, ParticleTracker
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
