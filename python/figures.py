@@ -42,7 +42,7 @@ def plot_pred_model(edge):
         ax_dist.fill_between(x, y, alpha=0.2)
         ax_dist.set_title(f"Folgekante {i} (p={select_edge_prob:.2f})")
         ax_dist.set_xlabel("$t_{[e_i]}$ in Sekunden")
-        ax_dist.set_ylabel("$p[t]$")
+        ax_dist.set_ylabel("$p[t_{[e_i]}]$")
 
         # Add textbox with alpha and beta parameters
         textstr = f"$\\alpha={alpha:.2f}$\n$\\beta={beta:.2f}$"
