@@ -2,9 +2,12 @@
 Python wrapper for the C++ simulation class.
 Enables documentation and type hints for the Simulation class.
 """
+
 import sys
+
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import Simulation as Simulation_cpp
+
 
 class Simulation:
     def __init__(self, T_step: float, N_humans: int, N_robots: int):

@@ -47,7 +47,7 @@ Particle::Particle(const Particle& p)
     time_of_edge_change = get_random_time_of_edge_change(edge, next_edge);
 }
 
-Particle::Particle(int edge_, const Particle& p)
+Particle::Particle(int edge_, double t, const Particle& p)
     : nodes(p.nodes),
       edges(p.edges),
       racks(p.racks),
@@ -58,7 +58,7 @@ Particle::Particle(int edge_, const Particle& p)
     edge = edge_;
     next_edge = get_random_successor_edge(edge);
     time_of_edge_change = get_random_time_of_edge_change(edge, next_edge);
-    time_since_edge_change = 0.5 * get_random_time_of_edge_change(edge, next_edge);
+    time_since_edge_change = t * time_of_edge_change;
 }
 
 Point Particle::get_position() {

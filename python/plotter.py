@@ -76,8 +76,7 @@ class Plotter:
         self.frames = []
 
     def clear(self):
-        """Clear previous arrows and text annotations
-        """
+        """Clear previous arrows and text annotations"""
         for patch in self.ax.patches:
             if isinstance(patch, matplotlib.patches.FancyArrow):
                 patch.remove()
@@ -162,8 +161,8 @@ class Plotter:
         """
         colors = ["red", "blue", "purple", "orange", "brown", "pink", "gray", "olive", "cyan"]
         if len(individual_edge_probabilities) >= len(colors):
-            raise ValueError("We don't have enough colors to display so many humans.")      
-        
+            raise ValueError("We don't have enough colors to display so many humans.")
+
         for i, edge in enumerate(self.edges):
             for j, edge_probabilities in enumerate(individual_edge_probabilities):
                 start, end = edge
@@ -183,7 +182,7 @@ class Plotter:
                     length_includes_head=True,
                     head_width=0.1 * linewidth,  # Adjust the head width of the arrow
                     head_length=0.2 * linewidth,  # Adjust the head length of the arrow
-                    zorder=int(- probability * 100),  # Set a lower zorder for arrows
+                    zorder=int(-probability * 100),  # Set a lower zorder for arrows
                 )
                 self.ax.add_patch(arrow)
 
@@ -203,13 +202,12 @@ class Plotter:
             plt.pause(1e-4)
 
     def capture_frame(self):
-        """Capture the current frame and store it for later video generation
-        """
+        """Capture the current frame and store it for later video generation"""
         self.frames.append(mplfig_to_npimage(self.fig))
 
     def create_video(self, T_step, speed=1.0):
-        if not self.record_frames:
-            raise Exception("You must set option record_frames=True to create a video.")
+        if len(self.frames) == 0:
+            raise Exception("You must capture frames with capture_frame() before creating a video.")
         else:
             fps = speed / T_step
             clip = ImageSequenceClip(self.frames, fps=fps)

@@ -97,18 +97,22 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
                 particle_weights[i][j] *= particles[i][j].likelihood_no_perception(robot_positions);
             } else {
                 Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
+                double position_stddev =
+                    perceived_humans[perception_index]["position_stddev"].cast<double>();
                 double perceived_heading =
                     perceived_humans[perception_index]["heading"].cast<double>();
-                particles[i][j] =
-                    generate_new_particle_from_perception(perceived_pos, perceived_heading);
+                double heading_stddev =
+                    perceived_humans[perception_index]["heading_stddev"].cast<double>();
+                particles[i][j] = generate_new_particle_from_perception(
+                    perceived_pos, position_stddev, perceived_heading, heading_stddev);
             }
         }
-        normalize_weights(i);      
+        normalize_weights(i);
 
         // --- resample particles ---
         const double resample_threshold = 0.1 / static_cast<double>(N_particles);
-        std::discrete_distribution<int> resample_distribution(
-            particle_weights[i].begin(), particle_weights[i].end());
+        std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
+                                                              particle_weights[i].end());
         for (int j = 0; j < N_particles; j++) {
             if (particle_weights[i][j] < resample_threshold) {
                 particles[i][j] = particles[i][resample_distribution(mt)];
@@ -116,7 +120,7 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
             particles[i][j] = Particle(particles[i][resample_distribution(mt)]);
         }
         normalize_weights(i);
-    }   
+    }
 
     // --- record training data ---
     record_training_data();
@@ -195,33 +199,41 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
 }
 
 Particle ParticleTracker::generate_new_particle_from_perception(Point perceived_pos,
-                                                                double perceived_heading) {
-    double dist = 10;
-    std::normal_distribution<double> position_noise(0, 5 * XY_STDDEV * dist);
-    std::normal_distribution<double> heading_noise(0, HEADING_STDDEV);
+                                                                double position_stddev,
+                                                                double perceived_heading,
+                                                                double heading_stddev) {
+    std::normal_distribution<double> position_noise(0, position_stddev);
+    std::normal_distribution<double> heading_noise(0, heading_stddev);
 
     Point noisy_perceived_pos = perceived_pos;
     noisy_perceived_pos.first += position_noise(mt);
     noisy_perceived_pos.second += position_noise(mt);
     double noisy_perceived_heading = perceived_heading + heading_noise(mt);
 
-    return Particle(get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading),
-                    particles[0][0]);
+    std::tuple<int, double> belonging_edge_and_t =
+        get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading);
+    int belonging_edge = std::get<0>(belonging_edge_and_t);
+    double t = std::get<1>(belonging_edge_and_t);
+    return Particle(belonging_edge, t, particles[0][0]);  // any particle is fine here
 }
 
-int ParticleTracker::get_belonging_edge(Point position, double heading) {
+std::tuple<int, double> ParticleTracker::get_belonging_edge(Point position, double heading) {
     std::vector<double> distances;
+    std::vector<double> t_values;
     for (int i = 0; i < edges.size(); i++) {
         Point edge_start = nodes[edges[i].first];
         Point edge_end = nodes[edges[i].second];
-        double cartesian_distance_to_edge =
+        auto cartesian_distance_to_edge_and_t =
             distance_of_point_to_edge(position, edge_start, edge_end);
+        double cartesian_distance_to_edge = std::get<0>(cartesian_distance_to_edge_and_t);
+        t_values.push_back(std::get<1>(cartesian_distance_to_edge_and_t));
         double head_distance = heading_distance(
             heading,
             std::atan2(edge_end.second - edge_start.second, edge_end.first - edge_start.first));
-        distances.push_back(cartesian_distance_to_edge + 20 * head_distance);
+        distances.push_back(cartesian_distance_to_edge + HEADING_WEIGHT * head_distance);
     }
-    return std::min_element(distances.begin(), distances.end()) - distances.begin();
+    int min_index = std::min_element(distances.begin(), distances.end()) - distances.begin();
+    return std::make_tuple(min_index, t_values[min_index]);
 }
 
 double ParticleTracker::heading_distance(double heading1, double heading2) {
@@ -232,18 +244,21 @@ double ParticleTracker::heading_distance(double heading1, double heading2) {
     return std::abs(heading_difference - M_PI);
 }
 
-double ParticleTracker::distance_of_point_to_edge(Point point, Point edge_start, Point edge_end) {
+std::tuple<double, double> ParticleTracker::distance_of_point_to_edge(Point point, Point edge_start,
+                                                                      Point edge_end) {
     const double dx = edge_end.first - edge_start.first;
     const double dy = edge_end.second - edge_start.second;
     const double l2 = dx * dx + dy * dy;  // squared length of the edge
     if (l2 == 0.0) {                      // edge_start == edge_end
-        return std::hypot(point.first - edge_start.first, point.second - edge_start.second);
+        return std::make_tuple(
+            std::hypot(point.first - edge_start.first, point.second - edge_start.second), 0.0);
     }
     const double t = std::max(0.0, std::min(1.0, ((point.first - edge_start.first) * dx +
                                                   (point.second - edge_start.second) * dy) /
                                                      l2));
     const Point projection = {edge_start.first + t * dx, edge_start.second + t * dy};
-    return std::hypot(point.first - projection.first, point.second - projection.second);
+    return std::make_tuple(
+        std::hypot(point.first - projection.first, point.second - projection.second), t);
 }
 
 std::vector<std::vector<double>> ParticleTracker::predict() {
@@ -321,8 +336,8 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
                         particle.get_position(), perceived_human["position"].cast<Point>());
                     double head_distance = heading_distance(
                         particle.get_heading(), perceived_human["heading"].cast<double>());
-                    cost_matrix[j][k] += static_cast<int>(
-                        1e5 * std::pow(manh_distance + 20 * head_distance, 0.1));
+                    cost_matrix[j][k] +=
+                        static_cast<int>(1e5 * std::pow(manh_distance + 20 * head_distance, 0.1));
                 } else {
                     cost_matrix[j][k] = 1e8;
                 }

@@ -12,3 +12,4 @@ figures/
 .ruff_cache
 src/test_c_hungarian.c
 training_data/
+third-party/

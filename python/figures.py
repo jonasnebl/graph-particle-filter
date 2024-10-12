@@ -21,7 +21,7 @@ def plot_pred_model(edge):
     """
     Plot the prediction model for the given edge.
     """
-    with open(os.path.join(MODEL_PATH, "pred_model_params_new.json"), "r") as f:
+    with open(os.path.join(MODEL_PATH, "pred_model_params.json"), "r") as f:
         pred_model_params = json.load(f)
 
     nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
@@ -36,7 +36,7 @@ def plot_pred_model(edge):
         ax_quiver = axs[1, i]
 
         select_edge_prob, alpha, beta = params
-        x = np.linspace(0, 8, 1000)
+        x = np.linspace(0, 10, 1000)
         y = beta * x ** (beta - 1) / alpha**beta * np.exp(-((x / alpha) ** beta))
         ax_dist.plot(x, y)
         ax_dist.fill_between(x, y, alpha=0.2)

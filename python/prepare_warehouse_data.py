@@ -93,5 +93,6 @@ os.system("clang-format -i -style=file src/warehouse_data.h")
 ### --- Visualize the warehouse --- ###
 
 plotter = Plotter(print_edge_indices=True)
-plotter.savefig("warehouse.svg")
+plotter.savefig("warehouse.svg", format="svg")
+plotter.savefig("warehouse.pdf", format="pdf")
 plotter.show()

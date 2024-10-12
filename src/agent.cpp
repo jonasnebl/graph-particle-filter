@@ -68,11 +68,12 @@ int Agent::get_belonging_edge() {
     for (int i = 0; i < (_simulation->edges).size(); i++) {
         Point p1 = (_simulation->nodes)[(_simulation->edges)[i].first];
         Point p2 = (_simulation->nodes)[(_simulation->edges)[i].second];
-        double cartesian_distance_to_edge =
-            ParticleTracker::distance_of_point_to_edge(position, p1, p2);
-        double heading_difference =
-            std::abs(heading - std::atan2(p2.second - p1.second, p2.first - p1.first));
-        distances.push_back(cartesian_distance_to_edge + 10 * heading_difference);
+        double cartesian_distance_to_edge = std::get<0>(
+            ParticleTracker::distance_of_point_to_edge(position, p1, p2));  // we don't need t
+        double heading_difference = ParticleTracker::heading_distance(
+            heading, std::atan2(p2.second - p1.second, p2.first - p1.first));
+        distances.push_back(cartesian_distance_to_edge +
+                            ParticleTracker::HEADING_WEIGHT * heading_difference);
     }
     return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }
