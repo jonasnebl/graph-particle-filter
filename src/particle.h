@@ -5,16 +5,15 @@
 #include <array>
 #include <random>
 
+#include "warehouse_data.h"
+
 using Point = std::pair<double, double>;
 
 class Particle{
     public:
         // random initialization
-        Particle(std::vector<Point>* nodes,
-                 std::vector<std::pair<int,int>>* edges,
-                 std::vector<std::vector<Point>>* racks,
-                 std::vector<std::vector<int>>* successor_edges, 
-                 std::vector<std::vector<std::array<double, 3>>>* pred_model_params);  
+        Particle(graph_struct* graph_,
+                 std::vector<std::vector<std::array<double, 3>>>* pred_model_params_);  
         Particle(const Particle &p); // copy constructor
         Particle(int edge_, double t, const Particle& p); // copy constructor with custom edge
         Point get_position();
@@ -25,19 +24,17 @@ class Particle{
         void predict(double T_step);
         int get_random_successor_edge(int edge);
         double get_random_time_of_edge_change(int current_edge, int next_edge);
-        int find_edge_relative_index(int edge, int next_edge) const;
         bool is_human_on_edge(int edge_input) const;
+        double distance(Point p, double heading);
     private:
+        // particle state
         int edge;
         int next_edge;
         double time_of_edge_change;
         double time_since_edge_change;
-        double previous_distance = 10000;
 
-        const std::vector<Point>* nodes;
-        const std::vector<std::pair<int,int>>* edges;
-        const std::vector<std::vector<Point>>* racks;
-        const std::vector<std::vector<int>>* successor_edges;
+        // pointers to graph data
+        graph_struct* graph;
         std::vector<std::vector<std::array<double, 3>>>* pred_model_params;        
         
         std::mt19937 mt;

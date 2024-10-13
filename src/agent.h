@@ -6,6 +6,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include "warehouse_data.h"
+
 class Simulation;
 
 using Point = std::pair<double, double>;
@@ -26,13 +28,15 @@ const double LEAVE_WAREHOUSE_PROBABILITY = 0.01;
 const double SMOOTHING_STRENGTH = 0.1;
 const double SMOOTHING_ITERATIONS = 5;
 
+enum class AgentType { HUMAN, ROBOT };
+
 class Agent {
   public:
-    Agent(double T_step, bool is_human, Simulation *simulation);
-    bool _is_human;
+    Agent(double T_step, AgentType type_, Simulation* simulation_);
+    AgentType type;
     void step();
     pybind11::dict log_state();
-    int get_belonging_edge();
+    static int get_belonging_edge(Point position, double heading, graph_struct& graph);
     static bool check_viewline(Point pos1, Point pos2, 
                                std::vector<std::vector<Point>> racks); 
     static double manhattan_distance(Point p1, Point p2);
@@ -40,7 +44,7 @@ class Agent {
     static double probability_in_viewrange(double dist);
 
   private:
-    Simulation *_simulation;
+    Simulation* simulation;
     double _T_step;
     std::mt19937 mt;
 

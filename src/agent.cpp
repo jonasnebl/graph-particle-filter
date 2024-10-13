@@ -8,11 +8,11 @@
 #include "particleTracker.h"
 #include "simulation.h"
 
-Agent::Agent(double T_step, bool is_human, Simulation *simulation)
-    : _T_step(T_step), _is_human(is_human), _simulation(simulation) {
+Agent::Agent(double T_step, AgentType type_, Simulation* simulation_)
+    : _T_step(T_step), type(type_), simulation(simulation_) {
     std::random_device rd;
     mt = std::mt19937(rd());
-    if (_is_human) {
+    if (type == AgentType::HUMAN) {
         velocity_distribution =
             std::normal_distribution<double>(HUMAN_VELOCITY_MEAN, HUMAN_VELOCITY_STDDEV);
     } else {
@@ -22,7 +22,7 @@ Agent::Agent(double T_step, bool is_human, Simulation *simulation)
     heading_noise = std::normal_distribution<double>(0, HEADING_STDDEV);
 
     int start_node_index = random_staging_node();
-    position = (_simulation->nodes)[start_node_index];
+    position = simulation->graph.nodes[start_node_index];
     path = std::deque<std::pair<Point, double>>();
     add_node_to_deque(start_node_index, get_random_velocity());
     current_final_path_node = start_node_index;
@@ -53,8 +53,8 @@ void Agent::step() {
 pybind11::dict Agent::log_state() {
     pybind11::dict state;
     state["position"] = position;
-    state["belonging_edge"] = get_belonging_edge();
-    if (_is_human) {
+    state["belonging_edge"] = get_belonging_edge(position, heading, simulation->graph);
+    if (type == AgentType::HUMAN) {
         state["type"] = "human";
     } else {
         state["type"] = "robot";
@@ -63,11 +63,11 @@ pybind11::dict Agent::log_state() {
     return state;
 }
 
-int Agent::get_belonging_edge() {
+int Agent::get_belonging_edge(Point position, double heading, graph_struct& graph) {
     std::vector<double> distances;
-    for (int i = 0; i < (_simulation->edges).size(); i++) {
-        Point p1 = (_simulation->nodes)[(_simulation->edges)[i].first];
-        Point p2 = (_simulation->nodes)[(_simulation->edges)[i].second];
+    for (int i = 0; i < graph.edges.size(); i++) {
+        Point p1 = graph.nodes[graph.edges[i].first];
+        Point p2 = graph.nodes[graph.edges[i].second];
         double cartesian_distance_to_edge = std::get<0>(
             ParticleTracker::distance_of_point_to_edge(position, p1, p2));  // we don't need t
         double heading_difference = ParticleTracker::heading_distance(
@@ -79,7 +79,7 @@ int Agent::get_belonging_edge() {
 }
 
 bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks) {
-    for (const auto &polygon : racks) {
+    for (const auto& polygon : racks) {
         for (size_t i = 0; i < polygon.size(); ++i) {
             Point p1 = polygon[i];
             Point p2 = polygon[(i + 1) % polygon.size()];
@@ -95,10 +95,10 @@ double Agent::get_random_velocity() { return velocity_distribution(mt); }
 
 std::vector<pybind11::dict> Agent::perceive_humans() {
     std::vector<pybind11::dict> result;
-    for (int i = 0; i < _simulation->_N_humans + _simulation->_N_robots; i++) {
-        if ((_simulation->agents)[i]._is_human) {
-            Agent human = _simulation->agents[i];
-            if (check_viewline(position, human.position, _simulation->racks)) {
+    for (int i = 0; i < simulation->_N_humans + simulation->_N_robots; i++) {
+        if (simulation->agents[i].type == AgentType::HUMAN) {
+            Agent human = simulation->agents[i];
+            if (check_viewline(position, human.position, simulation->graph.racks)) {
                 if (random_check_viewrange(position, human.position)) {
                     double dist = euclidean_distance(position, human.position);
                     pybind11::dict perceived_human;
@@ -124,16 +124,18 @@ void Agent::add_new_double_cycle_to_deque() {
 
     int path_length_before_new_double_cycle = path.size();
 
-    if (random_leave_warehouse() && _is_human) {  // only humans can leave the warehouse
+    if (random_leave_warehouse() &&
+        type == AgentType::HUMAN) {  // only humans can leave the warehouse
         // --- 1. leg ---
-        int target_exit_node = (_simulation->exit_nodes)[0];
+        int target_exit_node = simulation->graph.exit_nodes[0];
         std::vector<int> path_to_target =
-            _simulation->dijkstra(current_final_path_node, target_exit_node);
+            simulation->dijkstra(current_final_path_node, target_exit_node, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_exit_node, OUT_OF_WAREHOUSE_VELOCITY);  // generates a pause
         // --- 2. leg ---
         int target_staging_node = random_staging_node();
-        path_to_target = _simulation->dijkstra(target_exit_node, target_staging_node);
+        path_to_target =
+            simulation->dijkstra(target_exit_node, target_staging_node, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_staging_node, PAUSE_VELOCITY);  // generates a pause
         current_final_path_node = target_exit_node;
@@ -141,17 +143,18 @@ void Agent::add_new_double_cycle_to_deque() {
         // --- 1. leg ---
         int target_node_1 = random_storage_node();
         std::vector<int> path_to_target =
-            _simulation->dijkstra(current_final_path_node, target_node_1);
+            simulation->dijkstra(current_final_path_node, target_node_1, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_node_1, PAUSE_VELOCITY);  // generates a pause
         // --- 2. leg ---
         int target_node_2 = random_storage_node();
-        path_to_target = _simulation->dijkstra(target_node_1, target_node_2);
+        path_to_target = simulation->dijkstra(target_node_1, target_node_2, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_node_2, PAUSE_VELOCITY);  // generates a pause
         // --- 3. leg ---
         int target_staging_node = random_staging_node();
-        path_to_target = _simulation->dijkstra(target_node_2, target_staging_node);
+        path_to_target =
+            simulation->dijkstra(target_node_2, target_staging_node, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_staging_node, PAUSE_VELOCITY);  // generates a pause
         current_final_path_node = target_staging_node;
@@ -170,9 +173,10 @@ void Agent::add_path_to_deque(std::vector<int> path_to_target, double path_veloc
 }
 
 void Agent::add_node_to_deque(int node_index, double path_velocity) {
-    double node_x = (_simulation->nodes)[node_index].first + _simulation->get_trajectory_xy_noise();
+    double node_x =
+        (simulation->graph.nodes)[node_index].first + simulation->get_trajectory_xy_noise();
     double node_y =
-        (_simulation->nodes)[node_index].second + _simulation->get_trajectory_xy_noise();
+        simulation->graph.nodes[node_index].second + simulation->get_trajectory_xy_noise();
     path.push_back(std::make_pair(std::make_pair(node_x, node_y), path_velocity));
 }
 
@@ -212,14 +216,14 @@ void Agent::smooth_path(int start, int end, double strength) {
 
 int Agent::random_staging_node() {
     std::uniform_int_distribution<int> staging_node_distribution(
-        0, _simulation->staging_nodes.size() - 1);
-    return (_simulation->staging_nodes)[staging_node_distribution(mt)];
+        0, simulation->graph.staging_nodes.size() - 1);
+    return (simulation->graph.staging_nodes)[staging_node_distribution(mt)];
 }
 
 int Agent::random_storage_node() {
     std::uniform_int_distribution<int> storage_node_distribution(
-        0, _simulation->storage_nodes.size() - 1);
-    return (_simulation->storage_nodes)[storage_node_distribution(mt)];
+        0, simulation->graph.storage_nodes.size() - 1);
+    return (simulation->graph.storage_nodes)[storage_node_distribution(mt)];
 }
 
 bool Agent::random_leave_warehouse() {
@@ -281,7 +285,7 @@ double Agent::probability_in_viewrange(double dist) {
     if (dist < D_MIN) {
         return DETECTION_PROBABILITY_IN_RANGE;
     } else if (dist >= D_MIN && dist < D_MAX) {
-        return (D_MAX - dist) / (D_MAX - D_MIN);
+        return DETECTION_PROBABILITY_IN_RANGE * (D_MAX - dist) / (D_MAX - D_MIN);
     } else if (dist >= D_MAX) {
         return 0.0;
     }

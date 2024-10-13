@@ -5,10 +5,13 @@ and saves the resulting figure to the figures folder.
 """
 
 from plotter import Plotter
-from utils import load_warehouse_data_from_json
+from utils import load_warehouse_data_from_json, get_successor_edges
 import os
 
 nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
+
+# Calculate successor edges
+successor_edges = get_successor_edges(edges)
 
 ### --- Generate the C++ header file for the graph --- ###
 
@@ -20,8 +23,8 @@ header_content = """#ifndef WAREHOUSESIM_SRC_WAREHOUSE_DATA_H
 
 using Point = std::pair<double, double>;
 
-namespace warehouse_data {
-    inline std::vector<Point> nodes = {
+struct graph_struct {
+    std::vector<Point> nodes = {
 """
 
 # Add nodes to the header content
@@ -29,7 +32,7 @@ for node in nodes:
     header_content += f"        {{{node['x']}, {node['y']}}},\n"
 
 header_content += """    };
-    inline std::vector<std::pair<int, int>> edges = {
+    std::vector<std::pair<int, int>> edges = {
 """
 
 # Add edges to the header content
@@ -37,7 +40,7 @@ for edge in edges:
     header_content += f"        {{{edge[0]}, {edge[1]}}},\n"
 
 header_content += """    };
-    inline std::vector<double> edge_weights = {
+    std::vector<double> edge_weights = {
 """
 
 # Add edge weights to the header content
@@ -45,7 +48,7 @@ for weight in edge_weights:
     header_content += f"        {weight},\n"
 
 header_content += """    };
-    inline std::vector<std::vector<Point>> racks = {
+    std::vector<std::vector<Point>> racks = {
 """
 
 # Add racks (polygons) to the header content
@@ -56,7 +59,7 @@ for polygon in polygons:
     header_content += "        },\n"
 
 header_content += """    };
-    inline std::vector<int> staging_nodes = {
+    std::vector<int> staging_nodes = {
 """
 
 # Add staging nodes to the header content
@@ -64,7 +67,7 @@ for node in staging_nodes:
     header_content += f"        {node},\n"
 
 header_content += """    };
-    inline std::vector<int> storage_nodes = {
+    std::vector<int> storage_nodes = {
 """
 
 # Add storage nodes to the header content
@@ -72,7 +75,7 @@ for node in storage_nodes:
     header_content += f"        {node},\n"
 
 header_content += """    };
-    inline std::vector<int> exit_nodes = {
+    std::vector<int> exit_nodes = {
 """
 
 # Add exit nodes to the header content
@@ -80,9 +83,20 @@ for node in exit_nodes:
     header_content += f"        {node},\n"
 
 header_content += """    };
-}
+    std::vector<std::vector<int>> successor_edges = {
+"""
 
-#endif
+# Add successor edges to the header content
+for successors in successor_edges:
+    header_content += "        {"
+    header_content += ", ".join(map(str, successors))
+    header_content += "},\n"
+
+header_content += """    };
+std::vector<std::vector<double>> prob_distance_matrix;  // Will be initialized in the ParticleTracker constructor 
+};
+
+#endif  // WAREHOUSESIM_SRC_WAREHOUSE_DATA_H
 """
 
 # Save the header content to a file

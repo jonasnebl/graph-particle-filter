@@ -13,28 +13,18 @@
 
 Simulation::Simulation(double T_step, int N_humans, int N_robots)
     : _T_step(T_step), _N_humans(N_humans), _N_robots(N_robots) {
-    // load graph
-    nodes = warehouse_data::nodes;
-    edges = warehouse_data::edges;
-    edge_weights = warehouse_data::edge_weights;
-    racks = warehouse_data::racks;
-    staging_nodes = warehouse_data::staging_nodes;
-    storage_nodes = warehouse_data::storage_nodes;
-    exit_nodes = warehouse_data::exit_nodes;
-
-    // random node index
-    // generator
+    // random node index generator
     std::random_device rd;
     mt = std::mt19937(rd());
-    random_node_index = std::uniform_int_distribution<int>(0, nodes.size() - 1);
+    random_node_index = std::uniform_int_distribution<int>(0, graph.nodes.size() - 1);
     trajectory_xy_noise = std::normal_distribution<double>(0, TRAJECTORY_XY_STDDEV);
 
     // initialize agents
     for (int i = 0; i < _N_humans; i++) {
-        agents.push_back(Agent(T_step, true, this));
+        agents.push_back(Agent(T_step, AgentType::HUMAN, this));
     }
     for (int i = 0; i < _N_robots; i++) {
-        agents.push_back(Agent(T_step, false, this));
+        agents.push_back(Agent(T_step, AgentType::ROBOT, this));
     }
 }
 
@@ -56,12 +46,12 @@ std::vector<std::vector<pybind11::dict>> Simulation::step(int N_steps) {
     return result;
 }
 
-std::vector<int> Simulation::dijkstra(int start_node, int end_node) {
+std::vector<int> Simulation::dijkstra(int start_node, int end_node, const graph_struct &graph) {
     // initialize arrays
-    std::vector<double> distances(nodes.size(), std::numeric_limits<double>::infinity());
+    std::vector<double> distances(graph.nodes.size(), std::numeric_limits<double>::infinity());
     distances[start_node] = 0;
-    std::vector<int> predecessors(nodes.size(), std::numeric_limits<int>::max());
-    std::vector<bool> considered(nodes.size(), false);
+    std::vector<int> predecessors(graph.nodes.size(), std::numeric_limits<int>::max());
+    std::vector<bool> considered(graph.nodes.size(), false);
 
     // priority queue to select the node with the smallest distance
     using NodeDistPair = std::pair<double, int>;
@@ -75,10 +65,10 @@ std::vector<int> Simulation::dijkstra(int start_node, int end_node) {
         if (considered[current_node]) continue;
         considered[current_node] = true;
 
-        for (int j = 0; j < edges.size(); j++) {
-            if (edges[j].first == current_node) {
-                int neighbor = edges[j].second;
-                double new_distance = current_distance + edge_weights[j];
+        for (int j = 0; j < graph.edges.size(); j++) {
+            if (graph.edges[j].first == current_node) {
+                int neighbor = graph.edges[j].second;
+                double new_distance = current_distance + graph.edge_weights[j];
                 if (new_distance < distances[neighbor]) {
                     distances[neighbor] = new_distance;
                     predecessors[neighbor] = current_node;

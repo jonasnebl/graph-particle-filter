@@ -11,10 +11,10 @@ N_robots: 3
 log_file: "log_2024-10-09_21-41-50.pkl"
 
 # --- Plotting parameters ---
-plot: False
-record_video: True # sets plot to True
+plot: True
+record_video: False # sets plot to True
 playback_speed: 0.5
 
 # --- Tracker parameters ---
-N_particles: 1000
-N_humans_tracker: -1 # same as in the simulation
+N_particles: 200
+N_humans_tracker: -1 # -1 same as in the simulation

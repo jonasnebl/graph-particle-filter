@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "agent.h"
+#include "warehouse_data.h"
 
 class Agent;
 
@@ -20,7 +21,7 @@ using Point = std::pair<double, double>;
 const double TRAJECTORY_XY_STDDEV = 0.5; // meters
 
 class Simulation {
-   public:
+  public:
     Simulation(double T_step, int N_humans, int N_robots);
     // agent attributes
     const int _N_humans;
@@ -29,21 +30,15 @@ class Simulation {
     std::vector<Agent> agents;
 
     // warehouse structure
-    std::vector<Point> nodes;
-    std::vector<std::pair<int, int>> edges;
-    std::vector<double> edge_weights;
-    std::vector<std::vector<Point>> racks;
-    std::vector<int> staging_nodes;
-    std::vector<int> storage_nodes;
-    std::vector<int> exit_nodes;
+    graph_struct graph;
 
     // utility functions
     std::vector<std::vector<pybind11::dict>> step(int N_steps);
     int get_random_node_index();
     double get_trajectory_xy_noise();
-    std::vector<int> dijkstra(int start, int end);
+    static std::vector<int> dijkstra(int start, int end, const graph_struct &graph);
 
-   private:
+  private:
     // utility function helper variables
     std::mt19937 mt;
     std::uniform_int_distribution<int> random_node_index;

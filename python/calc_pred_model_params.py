@@ -44,19 +44,21 @@ def get_magic_training_data(log_filename):
         previous_edge = belonging_edges[0]
         for j in range(2, len(belonging_edges) - 1):
             simulation_time += T_step
-            if belonging_edges[j-1] != belonging_edges[j]:
+            if belonging_edges[j - 1] != belonging_edges[j]:
                 # save training data
                 duration = simulation_time - edge_start_time
-                training_data.append({
-                    "previous_edge": previous_edge, 
-                    "current_edge": belonging_edges[j-1], 
-                    "next_edge": belonging_edges[j],
-                    "duration": duration
-                })
+                training_data.append(
+                    {
+                        "previous_edge": previous_edge,
+                        "current_edge": belonging_edges[j - 1],
+                        "next_edge": belonging_edges[j],
+                        "duration": duration,
+                    }
+                )
 
                 # save values for next iteration
                 edge_start_time = simulation_time
-                previous_edge = belonging_edges[j-1]
+                previous_edge = belonging_edges[j - 1]
 
     with open(TRAINING_DATA_PATH, "w") as f:
         json.dump(training_data, f, indent=4)
@@ -77,7 +79,9 @@ def train():
         relevant_samples = [sample for sample in training_data if sample["previous_edge"] == i]
 
         # remove entries with no valid successor edge
-        relevant_samples = [sample for sample in relevant_samples if sample["current_edge"] in successor_edges[sample["previous_edge"]]]
+        relevant_samples = [
+            sample for sample in relevant_samples if sample["current_edge"] in successor_edges[sample["previous_edge"]]
+        ]
 
         for successor_edge in successor_edges[i]:
             durations = [sample["duration"] for sample in relevant_samples if sample["current_edge"] == successor_edge]

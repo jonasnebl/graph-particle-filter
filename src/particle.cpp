@@ -8,21 +8,17 @@
 #include <vector>
 
 #include "agent.h"
+#include "particleTracker.h"
+#include "simulation.h"
 
-Particle::Particle(std::vector<Point>* nodes, std::vector<std::pair<int, int>>* edges,
-                   std::vector<std::vector<Point>>* racks,
-                   std::vector<std::vector<int>>* successor_edges,
-                   std::vector<std::vector<std::array<double, 3>>>* pred_model_params)
-    : nodes(nodes),
-      edges(edges),
-      racks(racks),
-      successor_edges(successor_edges),
-      pred_model_params(pred_model_params) {
+Particle::Particle(graph_struct* graph_,
+                   std::vector<std::vector<std::array<double, 3>>>* pred_model_params_)
+    : graph(graph_), pred_model_params(pred_model_params_) {
     std::random_device rd;
     mt = std::mt19937(rd());
     // edge = std::uniform_int_distribution<int>(0, successor_edges->size() - 1)(mt);
-    for (int i = 0; i < (*edges).size(); i++) {
-        if ((*edges)[i].first == 24) {
+    for (int i = 0; i < graph->edges.size(); i++) {
+        if (graph->edges[i].first == 24) {
             edge = i;
             break;
         }
@@ -33,10 +29,7 @@ Particle::Particle(std::vector<Point>* nodes, std::vector<std::pair<int, int>>* 
 }
 
 Particle::Particle(const Particle& p)
-    : nodes(p.nodes),
-      edges(p.edges),
-      racks(p.racks),
-      successor_edges(p.successor_edges),
+    : graph(p.graph),
       pred_model_params(p.pred_model_params),
       edge(p.edge),
       next_edge(p.next_edge),
@@ -48,11 +41,7 @@ Particle::Particle(const Particle& p)
 }
 
 Particle::Particle(int edge_, double t, const Particle& p)
-    : nodes(p.nodes),
-      edges(p.edges),
-      racks(p.racks),
-      successor_edges(p.successor_edges),
-      pred_model_params(p.pred_model_params) {
+    : graph(p.graph), pred_model_params(p.pred_model_params) {
     std::random_device rd;
     mt = std::mt19937(rd());
     edge = edge_;
@@ -62,10 +51,10 @@ Particle::Particle(int edge_, double t, const Particle& p)
 }
 
 Point Particle::get_position() {
-    double x_edge_start = (*nodes)[(*edges)[edge].first].first;
-    double x_edge_end = (*nodes)[(*edges)[edge].second].first;
-    double y_edge_start = (*nodes)[(*edges)[edge].first].second;
-    double y_edge_end = (*nodes)[(*edges)[edge].second].second;
+    double x_edge_start = graph->nodes[graph->edges[edge].first].first;
+    double x_edge_end = graph->nodes[graph->edges[edge].second].first;
+    double y_edge_start = graph->nodes[graph->edges[edge].first].second;
+    double y_edge_end = graph->nodes[graph->edges[edge].second].second;
     double x =
         x_edge_start + (x_edge_end - x_edge_start) * time_since_edge_change / time_of_edge_change;
     double y =
@@ -74,38 +63,11 @@ Point Particle::get_position() {
 }
 
 double Particle::get_heading() {
-    double x_edge_start = (*nodes)[(*edges)[edge].first].first;
-    double x_edge_end = (*nodes)[(*edges)[edge].second].first;
-    double y_edge_start = (*nodes)[(*edges)[edge].first].second;
-    double y_edge_end = (*nodes)[(*edges)[edge].second].second;
+    double x_edge_start = graph->nodes[graph->edges[edge].first].first;
+    double x_edge_end = graph->nodes[graph->edges[edge].second].first;
+    double y_edge_start = graph->nodes[graph->edges[edge].first].second;
+    double y_edge_end = graph->nodes[graph->edges[edge].second].second;
     return std::atan2(y_edge_end - y_edge_start, x_edge_end - x_edge_start);
-}
-
-double Particle::distance(Point robot_position, Point measured_position, double measured_heading) {
-    Point ego_position = get_position();
-    double edge_heading = get_heading();
-
-    double distance = 0;
-    double euclidean_distance = Agent::euclidean_distance(robot_position, ego_position);
-    bool viewline = Agent::check_viewline(robot_position, ego_position, *racks);
-    bool human_should_be_visible = euclidean_distance < D_MAX && viewline;
-
-    if (std::isnan(measured_heading) && !human_should_be_visible) {
-        return 0;
-    } else if (std::isnan(measured_heading) && human_should_be_visible) {
-        previous_distance += 10;
-        return previous_distance;
-    } else if (!std::isnan(measured_heading) && !human_should_be_visible) {
-        previous_distance += 10;
-        return previous_distance;
-    } else if (!std::isnan(measured_heading) && human_should_be_visible) {
-        distance = (std::pow(measured_position.first - ego_position.first, 2) +
-                    std::pow(measured_position.second - ego_position.second, 2)) +
-                   100 * std::pow(std::abs(measured_heading - edge_heading), 2);
-        previous_distance = distance;
-        return distance;
-    }
-    return 0;
 }
 
 double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
@@ -114,7 +76,7 @@ double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
     double particle_heading = get_heading();
     double likelihood = 1.0;
     for (const auto& robot_position : robot_positions) {
-        bool viewline = Agent::check_viewline(robot_position, particle_position, *racks);
+        bool viewline = Agent::check_viewline(robot_position, particle_position, graph->racks);
         if (!viewline) {
             likelihood *= 1.0;
         } else {
@@ -153,21 +115,23 @@ int Particle::get_random_successor_edge(int current_edge) {
     for (const auto& next_edge_weights : (*pred_model_params)[current_edge]) {
         probabilities_for_next_node.push_back(next_edge_weights[0]);
     }
-    return (*successor_edges)[current_edge][std::discrete_distribution(
+    return graph->successor_edges[current_edge][std::discrete_distribution(
         probabilities_for_next_node.begin(), probabilities_for_next_node.end())(mt)];
 }
 
 double Particle::get_random_time_of_edge_change(int current_edge, int next_edge) {
-    std::vector<int> current_edge_successor_edges = (*successor_edges)[current_edge];
-    int next_edge_relative_index = find_edge_relative_index(current_edge, next_edge);
+    std::vector<int> current_edge_successor_edges = graph->successor_edges[current_edge];
+    int next_edge_relative_index =
+        ParticleTracker::find_edge_relative_index(current_edge, next_edge, *graph);
     std::vector<std::array<double, 3>> weights = (*pred_model_params)[current_edge];
     return std::normal_distribution<double>(weights[next_edge_relative_index][1],
                                             weights[next_edge_relative_index][2])(mt);
 }
 
-int Particle::find_edge_relative_index(int edge, int next_edge) const {
-    return find((*successor_edges)[edge].begin(), (*successor_edges)[edge].end(), next_edge) -
-           (*successor_edges)[edge].begin();
-}
-
 bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_input; }
+
+double Particle::distance(Point position, double heading) {
+    int measured_belonging_edge = Agent::get_belonging_edge(position, heading, *graph);
+    double prob_distance = graph->prob_distance_matrix[edge][measured_belonging_edge];
+    return 1 - prob_distance;
+}

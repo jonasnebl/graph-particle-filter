@@ -16,6 +16,5 @@ PYBIND11_MODULE(cpp_utils, m) {
              pybind11::arg("T_step"), pybind11::arg("N_humans_max"), pybind11::arg("N_particles"))
         .def("add_observation", &ParticleTracker::add_observation, "Add robot oservations",
              pybind11::arg("robot_perceptions"))
-        .def("predict", &ParticleTracker::predict, "Predict by one T_step")
-        .def("save_training_data", &ParticleTracker::save_training_data, "Save the training data");
+        .def("predict", &ParticleTracker::predict, "Predict by one T_step");
 }
