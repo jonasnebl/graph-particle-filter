@@ -18,10 +18,10 @@ class Agent;
 
 using Point = std::pair<double, double>;
 
-const double TRAJECTORY_XY_STDDEV = 0.5; // meters
+const double TRAJECTORY_XY_STDDEV = 0.5;  // meters
 
 class Simulation {
-  public:
+   public:
     Simulation(double T_step, int N_humans, int N_robots);
     // agent attributes
     const int _N_humans;
@@ -38,7 +38,7 @@ class Simulation {
     double get_trajectory_xy_noise();
     static std::vector<int> dijkstra(int start, int end, const graph_struct &graph);
 
-  private:
+   private:
     // utility function helper variables
     std::mt19937 mt;
     std::uniform_int_distribution<int> random_node_index;

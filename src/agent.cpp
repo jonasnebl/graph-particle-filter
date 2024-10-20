@@ -66,14 +66,8 @@ pybind11::dict Agent::log_state() {
 int Agent::get_belonging_edge(Point position, double heading, graph_struct& graph) {
     std::vector<double> distances;
     for (int i = 0; i < graph.edges.size(); i++) {
-        Point p1 = graph.nodes[graph.edges[i].first];
-        Point p2 = graph.nodes[graph.edges[i].second];
-        double cartesian_distance_to_edge = std::get<0>(
-            ParticleTracker::distance_of_point_to_edge(position, p1, p2));  // we don't need t
-        double heading_difference = ParticleTracker::heading_distance(
-            heading, std::atan2(p2.second - p1.second, p2.first - p1.first));
-        distances.push_back(cartesian_distance_to_edge +
-                            ParticleTracker::HEADING_WEIGHT * heading_difference);
+        distances.push_back(
+            std::get<0>(ParticleTracker::edge_to_pose_distance_and_t(i, position, heading, graph)));
     }
     return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }

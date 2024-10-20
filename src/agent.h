@@ -1,10 +1,10 @@
 #ifndef WAREHOUSESIM_SRC_AGENT_H
 #define WAREHOUSESIM_SRC_AGENT_H
 
-#include <random> 
-#include <deque>
-
 #include <pybind11/pybind11.h>
+
+#include <deque>
+#include <random>
 
 #include "warehouse_data.h"
 
@@ -31,31 +31,30 @@ const double SMOOTHING_ITERATIONS = 5;
 enum class AgentType { HUMAN, ROBOT };
 
 class Agent {
-  public:
+   public:
     Agent(double T_step, AgentType type_, Simulation* simulation_);
     AgentType type;
     void step();
     pybind11::dict log_state();
     static int get_belonging_edge(Point position, double heading, graph_struct& graph);
-    static bool check_viewline(Point pos1, Point pos2, 
-                               std::vector<std::vector<Point>> racks); 
+    static bool check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks);
     static double manhattan_distance(Point p1, Point p2);
     static double euclidean_distance(Point p1, Point p2);
     static double probability_in_viewrange(double dist);
 
-  private:
+   private:
     Simulation* simulation;
     double _T_step;
     std::mt19937 mt;
 
     Point position;
-    double heading = 0;
-    double velocity = 2;
+    double heading = 0.0;
+    double velocity = 2.0;
     std::normal_distribution<double> velocity_distribution;
     double get_random_velocity();
-   
-    std::deque<std::pair<Point, double>> path; // (next position, velocity to this position)
-    int current_final_path_node; // holds node index of last node in path
+
+    std::deque<std::pair<Point, double>> path;  // (next position, velocity to this position)
+    int current_final_path_node;                // holds node index of last node in path
 
     std::vector<pybind11::dict> perceive_humans();
     std::normal_distribution<double> position_noise;
@@ -70,7 +69,7 @@ class Agent {
     bool random_leave_warehouse();
     static bool do_intersect(Point p1, Point q1, Point p2, Point q2);
     static bool is_point_in_polygon(Point point, std::vector<Point> polygon);
-    bool random_check_viewrange(Point pos1, Point pos2);   
+    bool random_check_viewrange(Point pos1, Point pos2);
 };
 
 #endif
