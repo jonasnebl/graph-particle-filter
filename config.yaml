@@ -16,5 +16,5 @@ record_video: False # sets plot to True
 playback_speed: 0.5
 
 # --- Tracker parameters ---
-N_particles: 200
+N_particles: 1000
 N_humans_tracker: -1 # -1 same as in the simulation

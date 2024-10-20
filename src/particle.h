@@ -20,12 +20,11 @@ class Particle{
         double get_heading();
         double distance(Point robot_position, Point measured_position, double measured_heading);
         double likelihood_no_perception(std::vector<Point> robot_position);
-        double measurement_noise_pdf(Point particle_position, Point measured_position);
         void predict(double T_step);
         int get_random_successor_edge(int edge);
         double get_random_time_of_edge_change(int current_edge, int next_edge);
         bool is_human_on_edge(int edge_input) const;
-        double distance(Point p, double heading);
+        double assignment_cost(Point p, double heading);
     private:
         // particle state
         int edge;

@@ -76,15 +76,15 @@ def train():
     for i, edge in enumerate(edges):
         print(f"Calculating prediction model parameters for edge {i}")
         pred_model_params_one_edge = []
-        relevant_samples = [sample for sample in training_data if sample["previous_edge"] == i]
+        relevant_samples = [sample for sample in training_data if sample["current_edge"] == i]
 
         # remove entries with no valid successor edge
         relevant_samples = [
-            sample for sample in relevant_samples if sample["current_edge"] in successor_edges[sample["previous_edge"]]
+            sample for sample in relevant_samples if sample["next_edge"] in successor_edges[sample["current_edge"]]
         ]
 
         for successor_edge in successor_edges[i]:
-            durations = [sample["duration"] for sample in relevant_samples if sample["current_edge"] == successor_edge]
+            durations = [sample["duration"] for sample in relevant_samples if sample["next_edge"] == successor_edge]
 
             epsilon = 1
             select_edge_prob = (len(durations) + epsilon) / (len(relevant_samples) + epsilon * len(successor_edges[i]))
@@ -95,7 +95,7 @@ def train():
                 durations.append(np.clip(np.random.normal(mean, 0.5 * mean), 0.1 * mean, np.inf))
 
             # use MLE to fit a Weibull distribution to all data points
-            # remove double entries to avoid singularity errors
+            # add small noise value to avoid singularity errors from doubled values
             durations = [duration + 0.01 * np.random.normal() for duration in durations]
             fitted_weibull = Fit_Weibull_2P(failures=durations, show_probability_plot=False, print_results=False)
             alpha = fitted_weibull.alpha
@@ -110,5 +110,5 @@ def train():
 
 
 if __name__ == "__main__":
-    get_magic_training_data("log_2024-10-11_21-06-28.pkl")
+    get_magic_training_data("log_2024-10-13_17-11-28.pkl")
     train()

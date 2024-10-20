@@ -33,11 +33,14 @@ Particle::Particle(const Particle& p)
       pred_model_params(p.pred_model_params),
       edge(p.edge),
       next_edge(p.next_edge),
+      time_of_edge_change(p.time_of_edge_change),
       time_since_edge_change(p.time_since_edge_change) {
-    std::random_device rd;
-    mt = std::mt19937(rd());
-    next_edge = get_random_successor_edge(edge);
-    time_of_edge_change = get_random_time_of_edge_change(edge, next_edge);
+    // std::random_device rd;
+    // mt = std::mt19937(rd());
+    // double t = p.time_since_edge_change / p.time_of_edge_change;
+    // next_edge = get_random_successor_edge(edge);
+    // time_of_edge_change = get_random_time_of_edge_change(edge, next_edge);
+    // time_since_edge_change = t * time_of_edge_change;
 }
 
 Particle::Particle(int edge_, double t, const Particle& p)
@@ -76,25 +79,12 @@ double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
     double particle_heading = get_heading();
     double likelihood = 1.0;
     for (const auto& robot_position : robot_positions) {
-        bool viewline = Agent::check_viewline(robot_position, particle_position, graph->racks);
-        if (!viewline) {
-            likelihood *= 1.0;
-        } else {
+        if (Agent::check_viewline(robot_position, particle_position, graph->racks)) {
             double dist = Agent::euclidean_distance(robot_position, particle_position);
             likelihood *= 1 - Agent::probability_in_viewrange(dist);
         }
     }
     return likelihood;
-}
-
-double Particle::measurement_noise_pdf(Point particle_position, Point measured_position) {
-    double x_diff = particle_position.first - measured_position.first;
-    double y_diff = particle_position.second - measured_position.second;
-    double normalization_factor =
-        1 / std::sqrt(std::pow(2 * 3.14159, 2) * std::pow(20 * XY_STDDEV, 4));
-    double exponent =
-        -0.5 * (std::pow(x_diff, 2) + std::pow(y_diff, 2)) / std::pow(20 * XY_STDDEV, 2);
-    return normalization_factor * std::exp(exponent);
 }
 
 void Particle::predict(double T_step) {
@@ -130,7 +120,7 @@ double Particle::get_random_time_of_edge_change(int current_edge, int next_edge)
 
 bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_input; }
 
-double Particle::distance(Point position, double heading) {
+double Particle::assignment_cost(Point position, double heading) {
     int measured_belonging_edge = Agent::get_belonging_edge(position, heading, *graph);
     double prob_distance = graph->prob_distance_matrix[edge][measured_belonging_edge];
     return 1 - prob_distance;

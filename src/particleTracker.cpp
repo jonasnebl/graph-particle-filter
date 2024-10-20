@@ -74,21 +74,29 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
                     perceived_humans[perception_index]["heading_stddev"].cast<double>();
                 particles[i][j] = generate_new_particle_from_perception(
                     perceived_pos, position_stddev, perceived_heading, heading_stddev);
+                particle_weights[i][j] = 1.0 / N_particles;
             }
         }
         normalize_weights(i);
 
-        // --- resample particles ---
-        const double resample_threshold = 1e-3 / static_cast<double>(N_particles);
-        std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
-                                                              particle_weights[i].end());
-        for (int j = 0; j < N_particles; j++) {
-            if (particle_weights[i][j] < resample_threshold) {
-                particles[i][j] = particles[i][resample_distribution(mt)];
-            }
-            particles[i][j] = Particle(particles[i][resample_distribution(mt)]);
-        }
-        normalize_weights(i);
+        // // --- resample particles ---
+        // const double resample_threshold = 0.5 / static_cast<double>(N_particles);
+        // std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
+        //                                                       particle_weights[i].end());
+        // for (int j = 0; j < N_particles; j++) {
+        //     if (particle_weights[i][j] < resample_threshold) {
+        //         particles[i][j] = particles[i][resample_distribution(mt)];
+        //     }
+        //     particles[i][j] = Particle(particles[i][resample_distribution(mt)]);
+        // }
+        // normalize_weights(i);
+
+        // calculate effective sample size
+        double effective_sample_size =
+            1.0 / std::accumulate(particle_weights[i].begin(), particle_weights[i].end(), 0.0,
+                                  [](double sum, double weight) { return sum + weight * weight; });
+        std::cout << "Effective sample size: " << effective_sample_size
+                  << "; N_particles: " << N_particles << std::endl;
     }
 
     return calc_individual_edge_probabilities();
@@ -179,7 +187,7 @@ Particle ParticleTracker::generate_new_particle_from_perception(Point perceived_
         get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading);
     int belonging_edge = std::get<0>(belonging_edge_and_t);
     double t = std::get<1>(belonging_edge_and_t);
-    return Particle(belonging_edge, t, particles[0][0]);  // any particle is fine here
+    return Particle(belonging_edge, t, particles[0][0]);  // any particle as copy origin works
 }
 
 std::tuple<int, double> ParticleTracker::get_belonging_edge(Point position, double heading) {
@@ -292,8 +300,8 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
                     auto particle = particles[j][get_random_particle(mt)];
                     auto perceived_human = perceived_humans[k];
                     double graph_distance =
-                        particle.distance(perceived_human["position"].cast<Point>(),
-                                          perceived_human["heading"].cast<double>());
+                        particle.assignment_cost(perceived_human["position"].cast<Point>(),
+                                                 perceived_human["heading"].cast<double>());
                     cost_matrix[j][k] += static_cast<int>(1e4 * graph_distance);
                 } else {
                     cost_matrix[j][k] = 1e8;
@@ -334,7 +342,6 @@ std::vector<std::vector<double>> ParticleTracker::calc_prob_distance_matrix() {
         graph.edges.size(), std::vector<double>(graph.edges.size(), 1.0));
     for (int i = 0; i < graph.edges.size(); i++) {
         for (int j = 0; j < graph.edges.size(); j++) {
-            
             if (i == j) {
                 prob_distance_matrix[i][j] = 1.0;
             } else {
@@ -365,13 +372,13 @@ std::vector<std::vector<double>> ParticleTracker::calc_prob_distance_matrix() {
             }
         }
     }
-    // print prob_distance_matrix
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            std::cout << prob_distance_matrix[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    // // print prob_distance_matrix
+    // for (int i = 0; i < 10; i++) {
+    //     for (int j = 0; j < 10; j++) {
+    //         std::cout << prob_distance_matrix[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
 
     return prob_distance_matrix;
 }
