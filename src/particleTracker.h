@@ -57,6 +57,7 @@ class ParticleTracker {
     const int N_humans_max;
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
+    Particle out_of_warehouse_particle;
     std::vector<std::vector<double>> particle_weights;
 };
 

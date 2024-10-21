@@ -13,7 +13,7 @@ class Particle {
    public:
     Particle(graph_struct* graph_);                    // random particle
     Particle(const Particle& p);                       // copy constructor
-    Particle(int edge_, double t, const Particle& p);  // new custom particle
+    Particle(int edge_, double t, graph_struct* graph_);  // new custom particle
     Point get_position();
     double get_heading();
     double distance(Point robot_position, Point measured_position, double measured_heading);

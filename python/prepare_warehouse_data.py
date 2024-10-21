@@ -93,7 +93,6 @@ for successors in successor_edges:
     header_content += "},\n"
 
 header_content += """    };
-std::vector<std::vector<double>> prob_distance_matrix;  // Will be initialized in the ParticleTracker constructor 
 };
 
 #endif  // WAREHOUSESIM_SRC_WAREHOUSE_DATA_H

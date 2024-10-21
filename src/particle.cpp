@@ -31,7 +31,7 @@ Particle::Particle(const Particle& p)
     time_since_edge_change = t * time_of_edge_change;
 }
 
-Particle::Particle(int edge_, double t, const Particle& p) : graph(p.graph) {
+Particle::Particle(int edge_, double t, graph_struct* graph_) : graph(graph_) {
     std::random_device rd;
     mt = std::mt19937(rd());
     edge = edge_;

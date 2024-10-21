@@ -32,7 +32,7 @@ class ParticleTracker:
         # self.k_best_assignments = ParticleTracker_cpp.k_best_assignments(self.merged_perceptions, self.tracker.N_humans)
 
         individual_edge_probabilities = np.array(self.tracker.add_observation(robot_perceptions))
-        return 1 - np.prod(1 - individual_edge_probabilities, axis=0)
+        return self.merge_individual_edge_probabilities(individual_edge_probabilities)
         # return individual_edge_probabilities
 
     def merge_individual_edge_probabilities(self, individual_edge_probabilities):

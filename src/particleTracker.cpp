@@ -19,19 +19,35 @@
 #include "warehouse_data.h"
 
 ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particles)
-    : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles) {
-    // init particles
+    : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles),
+      out_of_warehouse_particle(&graph) {
+
+    // -- find out of warehouse particle ---
+    int out_of_warehouse_edge;
+    for (int i = 0; i < graph.edges.size(); i++) {
+        if (graph.edges[i].first == graph.exit_nodes[0] && graph.edges[i].second == graph.exit_nodes[1]) {
+            out_of_warehouse_edge = i;
+            std::cout << out_of_warehouse_edge << std::endl;
+            break;
+        }
+    }
+    Particle out_of_warehouse_particle(out_of_warehouse_edge, 0.0, &graph);
+
+    // --- init particles ---
     for (int i = 0; i < N_humans_max; i++) {
         std::vector<Particle> particles_per_human;
-        for (int j = 0; j < N_particles; j++) {
+        particles_per_human.push_back(out_of_warehouse_particle);
+        for (int j = 1; j < N_particles; j++) { // starting at 1 to exclude out of warehouse particle
             particles_per_human.push_back(Particle(&graph));
         }
         particles.push_back(particles_per_human);
     }
+
+    // --- init particle weights ---
     particle_weights = std::vector<std::vector<double>>(
         N_humans_max, std::vector<double>(N_particles, 1.0 / N_particles));
 
-    // init random number generator
+    // --- random number generator ---
     std::random_device rd;
     mt = std::mt19937(rd());
 }
@@ -46,11 +62,14 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
 
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
-        for (int j = 0; j < N_particles; j++) {
-            int perception_index = hypothesis_generators[i]();
-            if (perception_index == -1) {
+        int perception_index = hypothesis_generators[i]();
+        if (perception_index == -1) {
+            for (int j = 1; j < N_particles; j++) {
                 particle_weights[i][j] *= particles[i][j].likelihood_no_perception(robot_positions);
-            } else {
+            }
+        } else {
+            particle_weights[i][0] = 1.0 / static_cast<double>(N_particles); // out of warehouse particle
+            for (int j = 1; j < N_particles; j++) {
                 Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
                 double position_stddev =
                     perceived_humans[perception_index]["position_stddev"].cast<double>();
@@ -60,16 +79,17 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
                     perceived_humans[perception_index]["heading_stddev"].cast<double>();
                 particles[i][j] = generate_new_particle_from_perception(
                     perceived_pos, position_stddev, perceived_heading, heading_stddev);
-                particle_weights[i][j] = 1.0 / N_particles;
+                particle_weights[i][j] = 1.0 / static_cast<double>(N_particles);
             }
         }
+
         normalize_weights(i);
 
         // --- resample particles ---
         const double resample_threshold = 0.1 / static_cast<double>(N_particles);
         std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
                                                               particle_weights[i].end());
-        for (int j = 0; j < N_particles; j++) {
+        for (int j = 1; j < N_particles; j++) { // starting at 1 to exclude out of warehouse particle
             if (particle_weights[i][j] < resample_threshold) {
                 particles[i][j] = particles[i][resample_distribution(mt)];
             }
@@ -182,7 +202,7 @@ Particle ParticleTracker::generate_new_particle_from_perception(Point perceived_
         get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading);
     int belonging_edge = std::get<0>(belonging_edge_and_t);
     double t = std::get<1>(belonging_edge_and_t);
-    return Particle(belonging_edge, t, particles[0][0]);  // any particle as copy origin works
+    return Particle(belonging_edge, t, &graph);
 }
 
 std::tuple<int, double> ParticleTracker::get_belonging_edge(Point position, double heading) {
@@ -230,8 +250,8 @@ std::tuple<double, double> ParticleTracker::edge_to_pose_distance_and_t(int edge
 
 std::vector<std::vector<double>> ParticleTracker::predict() {
     for (int i = 0; i < N_humans_max; i++) {
-        for (auto& particle : particles[i]) {
-            particle.predict(T_step);
+        for (int j = 1; j < N_particles; j++) { // don't predict out of warehouse particle
+            particles[i][j].predict(T_step);
         }
     }
     return calc_individual_edge_probabilities();
