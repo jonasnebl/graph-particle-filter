@@ -19,27 +19,11 @@
 #include "warehouse_data.h"
 
 ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particles)
-    : T_step(T_step),
-      N_humans_max(N_humans_max),
-      N_particles(N_particles),
-      out_of_warehouse_particle(&graph) {
-    // -- find out of warehouse particle ---
-    int out_of_warehouse_edge;
-    for (int i = 0; i < graph.edges.size(); i++) {
-        if (graph.edges[i].first == graph.exit_nodes[0] &&
-            graph.edges[i].second == graph.exit_nodes[1]) {
-            out_of_warehouse_edge = i;
-            break;
-        }
-    }
-    Particle out_of_warehouse_particle(out_of_warehouse_edge, 0.0, &graph);
-
+    : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles) {
     // --- init particles ---
     for (int i = 0; i < N_humans_max; i++) {
         std::vector<Particle> particles_per_human;
-        particles_per_human.push_back(out_of_warehouse_particle);
-        for (int j = 1; j < N_particles;
-             j++) {  // starting at 1 to exclude out of warehouse particle
+        for (int j = 0; j < N_particles; j++) {
             particles_per_human.push_back(Particle(&graph));
         }
         particles.push_back(particles_per_human);
@@ -71,29 +55,22 @@ std::vector<double> ParticleTracker::add_observation(
             if (perception_index == -1) {
                 likelihood *= particles[j][i].likelihood_no_perception(robot_positions);
             } else {
-                Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
-                double position_stddev =
-                    perceived_humans[perception_index]["position_stddev"].cast<double>();
-                double perceived_heading =
-                    perceived_humans[perception_index]["heading"].cast<double>();
-                double heading_stddev =
-                    perceived_humans[perception_index]["heading_stddev"].cast<double>();
                 particles[j][i] = generate_new_particle_from_perception(
-                    perceived_pos, position_stddev, perceived_heading, heading_stddev);
-                likelihood *=
-                    1.0;  // likelihood unchanged because particle is build from perception
+                    perceived_humans[perception_index]["position"].cast<Point>(),
+                    perceived_humans[perception_index]["position_stddev"].cast<double>(),
+                    perceived_humans[perception_index]["heading"].cast<double>(),
+                    perceived_humans[perception_index]["heading_stddev"].cast<double>());
             }
         }
         particle_weights[i] *= likelihood;  // sequential importance sampling
     }
-
     normalize_weights();
 
     // --- resample particles ---
     const double resample_threshold = 1e-2 / static_cast<double>(N_particles);
     std::discrete_distribution<int> resample_distribution(particle_weights.begin(),
                                                           particle_weights.end());
-    for (int i = 1; i < N_particles; i++) {  // starting at 1 to exclude out of warehouse particle
+    for (int i = 0; i < N_particles; i++) {
         int random_source_particle_index = resample_distribution(mt);
         // --- copy particles ---
         if (particle_weights[i] < resample_threshold) {
@@ -106,13 +83,11 @@ std::vector<double> ParticleTracker::add_observation(
     }
     normalize_weights();
 
-    // calculate effective sample size
-    double effective_sample_size =
-        1.0 / std::accumulate(particle_weights.begin(), particle_weights.end(), 0.0,
-                              [](double sum, double weight) { return sum + weight * weight; });
-    std::cout << "Effective sample size: " << effective_sample_size
+    // --- print effective sample size for debugging purposes ---
+    std::cout << "Effective sample size: " << calc_effective_sample_size()
               << "; N_particles: " << N_particles << std::endl;
 
+    // --- calculate edge probabiliities from internal state ---
     return calc_edge_probabilities();
 }
 
@@ -257,7 +232,7 @@ std::tuple<double, double> ParticleTracker::edge_to_pose_distance_and_t(int edge
 
 std::vector<double> ParticleTracker::predict() {
     for (int i = 0; i < N_humans_max; i++) {
-        for (int j = 1; j < N_particles; j++) {  // don't predict out of warehouse particle
+        for (int j = 0; j < N_particles; j++) {
             particles[i][j].predict(T_step);
         }
     }
@@ -351,4 +326,9 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
         free(cost_matrix[i]);
     }
     return perceived_human_per_internal_human;
+}
+
+double ParticleTracker::calc_effective_sample_size() const {
+    return 1.0 / std::accumulate(particle_weights.begin(), particle_weights.end(), 0.0,
+                                 [](double sum, double weight) { return sum + weight * weight; });
 }

@@ -7,6 +7,8 @@ and saves the resulting figure to the figures folder.
 from plotter import Plotter
 from utils import load_warehouse_data_from_json, get_successor_edges
 import os
+import json
+from paths import *
 
 nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
 
@@ -90,6 +92,19 @@ header_content += """    };
 for successors in successor_edges:
     header_content += "        {"
     header_content += ", ".join(map(str, successors))
+    header_content += "},\n"
+
+header_content += """    };
+    std::vector<std::vector<double>> successor_edge_probabilities = {
+"""
+
+# Add successor edge probabilities to the header content
+with open(os.path.join(MODEL_PATH, "successor_edge_probabilities.json"), "r") as f:
+    successor_edge_probabilities = json.load(f)
+
+for successor_edge_probabilities_one_edge in successor_edge_probabilities:
+    header_content += "    {"
+    header_content += ", ".join(map(str, successor_edge_probabilities_one_edge))
     header_content += "},\n"
 
 header_content += """    };

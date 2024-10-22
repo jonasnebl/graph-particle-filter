@@ -1,7 +1,7 @@
-run_new_simulation: False
+run_new_simulation: True
 
 # --- Run a new simulation with the following parameters ---
-T_simulation: 120 # seconds
+T_simulation: 720 # seconds
 T_step: 0.5 # seconds
 N_humans: 3
 N_robots: 4

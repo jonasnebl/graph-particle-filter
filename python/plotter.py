@@ -9,7 +9,7 @@ import numpy as np
 from moviepy.editor import VideoClip, ImageSequenceClip
 from moviepy.video.io.bindings import mplfig_to_npimage
 from datetime import datetime
-from constants import *
+from paths import *
 import os
 
 

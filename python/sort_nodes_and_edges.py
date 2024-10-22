@@ -6,7 +6,7 @@ Additionally, it sorts the edges based on the mean of the edge
 """
 
 import json
-from constants import *
+from paths import *
 
 # Load graph_data.json
 with open(GRAPH_PATH, "r") as graph_file:

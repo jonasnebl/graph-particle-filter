@@ -87,8 +87,10 @@ void Particle::predict(double T_step) {
 }
 
 int Particle::get_random_successor_edge(int current_edge) {
-    return graph->successor_edges[current_edge][std::uniform_int_distribution<int>(
-        0, graph->successor_edges[current_edge].size() - 1)(mt)];
+    int relative_edge_index = std::discrete_distribution<int>(
+        graph->successor_edge_probabilities[current_edge].begin(),
+        graph->successor_edge_probabilities[current_edge].end())(mt);
+    return graph->successor_edges[current_edge][relative_edge_index];
 }
 
 double Particle::get_random_time_of_edge_change(int edge) {

@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from constants import *
+from paths import *
 
 
 def load_warehouse_data_from_json():

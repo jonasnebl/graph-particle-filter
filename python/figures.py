@@ -4,7 +4,7 @@ Functions to generate figures for the final project report.
 
 import sys
 import os
-from constants import *
+from paths import *
 import matplotlib.pyplot as plt
 import matplotlib
 import json

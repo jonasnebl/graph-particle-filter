@@ -8,7 +8,7 @@ from time import time, sleep
 from plotter import Plotter
 from particleTracker import ParticleTracker
 from simulation import Simulation
-from constants import *
+from paths import *
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
