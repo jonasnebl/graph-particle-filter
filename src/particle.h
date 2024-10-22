@@ -11,8 +11,8 @@ using Point = std::pair<double, double>;
 
 class Particle {
    public:
-    Particle(graph_struct* graph_);                    // random particle
-    Particle(const Particle& p);                       // copy constructor
+    Particle(graph_struct* graph_);                       // random particle
+    Particle(const Particle& p);                          // copy constructor
     Particle(int edge_, double t, graph_struct* graph_);  // new custom particle
     Point get_position();
     double get_heading();

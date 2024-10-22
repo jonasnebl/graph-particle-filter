@@ -19,15 +19,16 @@
 #include "warehouse_data.h"
 
 ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particles)
-    : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles),
+    : T_step(T_step),
+      N_humans_max(N_humans_max),
+      N_particles(N_particles),
       out_of_warehouse_particle(&graph) {
-
     // -- find out of warehouse particle ---
     int out_of_warehouse_edge;
     for (int i = 0; i < graph.edges.size(); i++) {
-        if (graph.edges[i].first == graph.exit_nodes[0] && graph.edges[i].second == graph.exit_nodes[1]) {
+        if (graph.edges[i].first == graph.exit_nodes[0] &&
+            graph.edges[i].second == graph.exit_nodes[1]) {
             out_of_warehouse_edge = i;
-            std::cout << out_of_warehouse_edge << std::endl;
             break;
         }
     }
@@ -37,7 +38,8 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
     for (int i = 0; i < N_humans_max; i++) {
         std::vector<Particle> particles_per_human;
         particles_per_human.push_back(out_of_warehouse_particle);
-        for (int j = 1; j < N_particles; j++) { // starting at 1 to exclude out of warehouse particle
+        for (int j = 1; j < N_particles;
+             j++) {  // starting at 1 to exclude out of warehouse particle
             particles_per_human.push_back(Particle(&graph));
         }
         particles.push_back(particles_per_human);
@@ -57,8 +59,10 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
     auto merged_perceptions = merge_perceptions(robot_perceptions);
     std::vector<Point> robot_positions = merged_perceptions.first;
     std::vector<pybind11::dict> perceived_humans = merged_perceptions.second;
+    std::vector<std::vector<int>> assignment_cost_matrix =
+        calc_assignment_cost_matrix(perceived_humans);
     std::vector<std::function<int()>> hypothesis_generators =
-        assign_perceived_humans_to_internal_humans(perceived_humans);
+        assign_perceived_humans_to_internal_humans(assignment_cost_matrix);
 
     // --- update particles for each human individually ---
     for (int i = 0; i < N_humans_max; i++) {
@@ -68,7 +72,8 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
                 particle_weights[i][j] *= particles[i][j].likelihood_no_perception(robot_positions);
             }
         } else {
-            particle_weights[i][0] = 1.0 / static_cast<double>(N_particles); // out of warehouse particle
+            particle_weights[i][0] =
+                1.0 / static_cast<double>(N_particles);  // out of warehouse particle
             for (int j = 1; j < N_particles; j++) {
                 Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
                 double position_stddev =
@@ -89,7 +94,8 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
         const double resample_threshold = 0.1 / static_cast<double>(N_particles);
         std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
                                                               particle_weights[i].end());
-        for (int j = 1; j < N_particles; j++) { // starting at 1 to exclude out of warehouse particle
+        for (int j = 1; j < N_particles;
+             j++) {  // starting at 1 to exclude out of warehouse particle
             if (particle_weights[i][j] < resample_threshold) {
                 particles[i][j] = particles[i][resample_distribution(mt)];
             }
@@ -250,7 +256,7 @@ std::tuple<double, double> ParticleTracker::edge_to_pose_distance_and_t(int edge
 
 std::vector<std::vector<double>> ParticleTracker::predict() {
     for (int i = 0; i < N_humans_max; i++) {
-        for (int j = 1; j < N_particles; j++) { // don't predict out of warehouse particle
+        for (int j = 1; j < N_particles; j++) {  // don't predict out of warehouse particle
             particles[i][j].predict(T_step);
         }
     }
@@ -291,19 +297,12 @@ std::vector<std::vector<double>> ParticleTracker::calc_individual_edge_probabili
     return individual_edge_probabilities;
 }
 
-std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_internal_humans(
+std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
     std::vector<pybind11::dict> perceived_humans) {
-    // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
-    int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
-    for (int i = 0; i < N_humans_max; i++) {
-        cost_matrix[i] = (int*)calloc(N_humans_max, sizeof(int));
-        for (int j = 0; j < N_humans_max; j++) {
-            cost_matrix[i][j] = 0;
-        }
-    }
-    for (int i = 0; i < N_humans_max; i++) {  // tracks
-        for (int j = 0; j < N_particles; j++) {
-            for (int k = 0; k < N_humans_max; k++) {  // perceived humans
+    std::vector<std::vector<int>> cost_matrix(N_humans_max, std::vector<int>(N_humans_max, 0));
+    for (int i = 0; i < N_humans_max; i++) {      // tracks
+        for (int k = 0; k < N_humans_max; k++) {  // perceived humans
+            for (int j = 0; j < N_particles; j++) {
                 if (k < perceived_humans.size()) {
                     auto particle = particles[i][j];
                     auto perceived_human = perceived_humans[k];
@@ -313,9 +312,22 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
                     cost_matrix[i][k] +=
                         static_cast<int>(1e4 * particle_weights[i][j] * graph_distance);
                 } else {
-                    cost_matrix[i][k] = 1e6;
+                    cost_matrix[i][k] = 1e8;
                 }
             }
+        }
+    }
+    return cost_matrix;
+}
+
+std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_internal_humans(
+    std::vector<std::vector<int>> cost_matrix_input) {
+    // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
+    int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
+    for (int i = 0; i < N_humans_max; i++) {
+        cost_matrix[i] = (int*)calloc(N_humans_max, sizeof(int));
+        for (int j = 0; j < N_humans_max; j++) {
+            cost_matrix[i][j] = cost_matrix_input[i][j];
         }
     }
 
@@ -323,13 +335,14 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
     hungarian_problem_t prob;
     int matrix_size = hungarian_init(&prob, cost_matrix, N_humans_max, N_humans_max,
                                      HUNGARIAN_MODE_MINIMIZE_COST);
+    hungarian_print_costmatrix(&prob);
     hungarian_solve(&prob);
     std::vector<std::function<int()>> perceived_human_per_internal_human(N_humans_max,
                                                                          []() { return -1; });
     for (int i = 0; i < N_humans_max; i++) {
         for (int j = 0; j < N_humans_max; j++) {
             if (prob.assignment[i][j] == 1) {
-                if (j < perceived_humans.size()) {
+                if (cost_matrix[i][j] < 0.5e8) {
                     perceived_human_per_internal_human[i] = [j]() { return j; };
                 } else {
                     perceived_human_per_internal_human[j] = []() { return -1; };

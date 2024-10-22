@@ -9,6 +9,9 @@ import sys
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import ParticleTracker as ParticleTracker_cpp
 
+sys.path.append("third-party/Murty")
+from getkBestNoRankHung import getkBestNoRankHung
+
 
 class ParticleTracker:
     def __init__(self, T_step: float, N_humans: int, N_particles: int):
@@ -28,20 +31,16 @@ class ParticleTracker:
         :return: list of edge probabilities for the tracker.
         """
 
-        # self.merged_perceptions = ParticleTracker_cpp.merge_perceptions(robot_perceptions)
-        # self.k_best_assignments = ParticleTracker_cpp.k_best_assignments(self.merged_perceptions, self.tracker.N_humans)
+        # merged_perceptions = self.tracker.merge_perceptions(robot_perceptions)
+        # robot_positions = merged_perceptions[0]
+        # perceived_humans = merged_perceptions[1]
+        # cost_matrix = np.array(self.tracker.calc_assignment_cost_matrix(perceived_humans))
+        
+        # assignment_proposals = self._assign_perceived_humans_to_tracks(cost_matrix)
 
         individual_edge_probabilities = np.array(self.tracker.add_observation(robot_perceptions))
-        return self.merge_individual_edge_probabilities(individual_edge_probabilities)
-        # return individual_edge_probabilities
-
-    def merge_individual_edge_probabilities(self, individual_edge_probabilities):
-        """Merge the edge probabilities of the tracker with the given edge probabilities.
-
-        :param individual_edge_probabilities: List of list of edge probabilities to merge with the tracker.
-        :return: List of merged edge probabilities for the tracker.
-        """
-        return 1 - np.prod(1 - np.array(individual_edge_probabilities), axis=0)
+        # return 1 - np.prod(1 - np.array(individual_edge_probabilities), axis=0)
+        return individual_edge_probabilities
 
     def predict(self):
         """Predict the internal state of the tracker by T_step.
@@ -49,8 +48,18 @@ class ParticleTracker:
         :return: list of edge probabilities for the tracker.
         """
         individual_edge_probabilities = self.tracker.predict()
-        return individual_edge_probabilities
+        return 1 - np.prod(1 - np.array(individual_edge_probabilities), axis=0)
+    
+    def _assign_perceived_humans_to_tracks(self, cost_matrix):
+        """Assign perceived humans to internal humans.
+        Uses Murty's algorithms to propose k best assignments.
 
-    def save_training_data(self):
-        """Save the collected training data of the tracker to a json file in the log folder."""
-        self.tracker.save_training_data()
+        :param cost_matrix: np.array, cost matrix for the assignment problem.
+        :return: list of assignment proposals.
+        """
+        cost_matrix = 1e-5 * cost_matrix.astype(np.float64)
+        solutions, costs = getkBestNoRankHung(cost_matrix, 5)
+        # print("Solutions:", solutions)
+        print("Costs", costs)
+        cols = solutions.argmax(axis=-1)    
+        return -1
