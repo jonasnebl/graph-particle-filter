@@ -63,7 +63,7 @@ record_video = config["record_video"]  # slows down loop even more!
 if record_video:
     plot = True
 if plot:
-    plotter = Plotter(print_probabilites=True)
+    plotter = Plotter(print_probabilites=True, clear_threshold=config["clear_threshold"])
 
 if config["N_humans_tracker"] == -1:
     N_humans_tracker = N_humans
@@ -90,10 +90,13 @@ for i in pbar:
     _ = particleTracker.predict()
     particleTracker_execution_times.append(time() - start)
 
+    cleared_edges = particleTracker.get_cleared_edges(particleTracker_edge_probabilities[-1])
+
     if plot:
         plotter.clear()
         plotter.update_sim_state(sim_states[i])
         plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
+        plotter.update_cleared_edges(cleared_edges)
         # plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
         plotter.show(blocking=False)
     if record_video:

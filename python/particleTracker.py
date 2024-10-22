@@ -4,10 +4,16 @@ Enables documentation and type hints for the ParticleTracker class.
 """
 
 import numpy as np
+import yaml
+from utils import load_warehouse_data_from_json
 import sys
 
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import ParticleTracker as ParticleTracker_cpp
+
+
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 
 class ParticleTracker:
@@ -20,6 +26,15 @@ class ParticleTracker:
         :return: ParticleTracker object.
         """
         self.tracker = ParticleTracker_cpp(T_step, N_humans, N_particles)
+        (
+            self.nodes,
+            self.edges,
+            self.edge_weights,
+            self.polygons,
+            self.staging_nodes,
+            self.storage_nodes,
+            self.exit_nodes,
+        ) = load_warehouse_data_from_json()
 
     def add_observation(self, robot_perceptions) -> np.ndarray:
         """Update the tracker based on a list of robot perceptions.
@@ -35,3 +50,24 @@ class ParticleTracker:
         :return: (N_edges,) np.ndarray of edge probabilities for the tracker.
         """
         return np.array(self.tracker.predict())
+
+    def get_cleared_edges(self, probabilities: np.ndarray) -> np.ndarray:
+        """Return an array of edges that are considered cleared based on a very low probability.
+        Both the edge and its opposing edge must have a probability below the clear_threshold.
+
+        :param probabilities: (N_edges,) np.ndarray of edge probabilities.
+        :return: (N_edges,) np.ndarray of cleared edge probabilities.
+        """
+        opposing_edge_probabilities = np.array(
+            [probabilities[self.edges.index([edge[1], edge[0]])] for edge in self.edges]
+        )
+        cleared_edges = np.zeros_like(probabilities, dtype=bool)
+        for i in range(len(probabilities)):
+            if (
+                probabilities[i] < config["clear_threshold"]
+                and opposing_edge_probabilities[i] < config["clear_threshold"]
+            ):
+                cleared_edges[i] = True  # edge is cleared
+            else:
+                cleared_edges[i] = False  # edge is not cleared
+        return cleared_edges

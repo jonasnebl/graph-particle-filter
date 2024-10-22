@@ -14,7 +14,7 @@ import os
 
 
 class Plotter:
-    def __init__(self, print_probabilites=False, print_edge_indices=False):
+    def __init__(self, print_probabilites=False, print_edge_indices=False, clear_threshold=1e-3):
         """Plotter to plot robot and human movement in the warehouse
 
         :param show: Show the warehouse structure after initializing the tracker object. Blocking!
@@ -23,6 +23,7 @@ class Plotter:
         """
 
         self.print_probabilites = print_probabilites
+        self.clear_threshold = clear_threshold
 
         with open(GRAPH_PATH, "r") as f:
             graph_data = json.load(f)
@@ -71,6 +72,7 @@ class Plotter:
 
         # List to keep track of perception-related elements
         self.perception_elements = []
+        self.green_lines = []
 
         # List to store frames to later generate a video
         self.frames = []
@@ -80,6 +82,9 @@ class Plotter:
         for patch in self.ax.patches:
             if isinstance(patch, matplotlib.patches.FancyArrow):
                 patch.remove()
+        for green_line in self.green_lines:
+            green_line[0].remove()
+        self.green_lines = []
         for text in self.ax.texts:
             text.remove()
 
@@ -126,7 +131,7 @@ class Plotter:
 
         :param edge_probabilities: List of edge probabilities for each human
         """
-        # Update the edges with arrows based on edge_probabilities
+        # --- Update the edges with arrows based on edge_probabilities ---
         cmap = plt.get_cmap("coolwarm")
         for i, edge in enumerate(self.edges):
             start, end = edge
@@ -153,6 +158,19 @@ class Plotter:
 
         if self.print_probabilites:
             self.annotate_edges(["{:.3f}".format(probability) for probability in edge_probabilities])
+
+    def update_cleared_edges(self, cleared_edges):
+        """Highlight the edges that are considered cleared based on a very low probability.
+
+        :param cleared_edges: List of cleared edge probabilities
+        """
+        for i, edge_cleared in enumerate(cleared_edges):
+            if edge_cleared:
+                start_pos = self.node_positions[self.edges[i][0]]
+                end_pos = self.node_positions[self.edges[i][1]]
+                self.green_lines.append(
+                    plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], "lime", zorder=-10, linewidth=20)
+                )
 
     def update_individual_edge_probabilities(self, individual_edge_probabilities):
         """Displays the edge probabilities for each tracked human individually
