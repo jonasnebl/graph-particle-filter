@@ -1,20 +1,20 @@
-run_new_simulation: True
+run_new_simulation: False
 
 # --- Run a new simulation with the following parameters ---
-T_simulation: 60 # seconds
-T_step: 0.3333333 # seconds
+T_simulation: 120 # seconds
+T_step: 0.5 # seconds
 N_humans: 3
 N_robots: 4
 
 # --- Load a previous simulation (ignored if run_new_simulation == True) ---
 # ignores the above parameters and uses the parameters from the log file
-log_file: "log_2024-10-09_21-41-50.pkl"
+log_file: "log_2024-10-22_08-55-57.pkl"
 
 # --- Plotting parameters ---
 plot: True
-record_video: False # sets plot to True
-playback_speed: 2 # 1 is normal speed
+record_video: True # sets plot to True
+playback_speed: 1 # 1 is normal speed
 
 # --- Tracker parameters ---
-N_particles: 200
+N_particles: 1000
 N_humans_tracker: 6 # -1 same as in the simulation

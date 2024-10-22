@@ -46,35 +46,31 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
     }
 
     // --- init particle weights ---
-    particle_weights = std::vector<std::vector<double>>(
-        N_humans_max, std::vector<double>(N_particles, 1.0 / N_particles));
+    particle_weights = std::vector<double>(N_particles, 1.0 / N_particles);
 
     // --- random number generator ---
     std::random_device rd;
     mt = std::mt19937(rd());
 }
 
-std::vector<std::vector<double>> ParticleTracker::add_observation(
+std::vector<double> ParticleTracker::add_observation(
     std::vector<pybind11::dict> robot_perceptions) {
     auto merged_perceptions = merge_perceptions(robot_perceptions);
     std::vector<Point> robot_positions = merged_perceptions.first;
     std::vector<pybind11::dict> perceived_humans = merged_perceptions.second;
-    std::vector<std::vector<int>> assignment_cost_matrix =
-        calc_assignment_cost_matrix(perceived_humans);
-    std::vector<std::function<int()>> hypothesis_generators =
-        assign_perceived_humans_to_internal_humans(assignment_cost_matrix);
 
     // --- update particles for each human individually ---
-    for (int i = 0; i < N_humans_max; i++) {
-        int perception_index = hypothesis_generators[i]();
-        if (perception_index == -1) {
-            for (int j = 1; j < N_particles; j++) {
-                particle_weights[i][j] *= particles[i][j].likelihood_no_perception(robot_positions);
-            }
-        } else {
-            particle_weights[i][0] =
-                1.0 / static_cast<double>(N_particles);  // out of warehouse particle
-            for (int j = 1; j < N_particles; j++) {
+    for (int i = 0; i < N_particles; i++) {
+        std::vector<std::vector<int>> assignment_cost_matrix =
+            calc_assignment_cost_matrix(perceived_humans, i);
+        std::vector<int> hypotheses =
+            assign_perceived_humans_to_internal_humans(assignment_cost_matrix);
+        double likelihood = 1.0;
+        for (int j = 0; j < N_humans_max; j++) {
+            int perception_index = hypotheses[j];
+            if (perception_index == -1) {
+                likelihood *= particles[j][i].likelihood_no_perception(robot_positions);
+            } else {
                 Point perceived_pos = perceived_humans[perception_index]["position"].cast<Point>();
                 double position_stddev =
                     perceived_humans[perception_index]["position_stddev"].cast<double>();
@@ -82,37 +78,42 @@ std::vector<std::vector<double>> ParticleTracker::add_observation(
                     perceived_humans[perception_index]["heading"].cast<double>();
                 double heading_stddev =
                     perceived_humans[perception_index]["heading_stddev"].cast<double>();
-                particles[i][j] = generate_new_particle_from_perception(
+                particles[j][i] = generate_new_particle_from_perception(
                     perceived_pos, position_stddev, perceived_heading, heading_stddev);
-                particle_weights[i][j] = 1.0 / static_cast<double>(N_particles);
+                likelihood *=
+                    1.0;  // likelihood unchanged because particle is build from perception
             }
         }
-
-        normalize_weights(i);
-
-        // --- resample particles ---
-        const double resample_threshold = 0.1 / static_cast<double>(N_particles);
-        std::discrete_distribution<int> resample_distribution(particle_weights[i].begin(),
-                                                              particle_weights[i].end());
-        for (int j = 1; j < N_particles;
-             j++) {  // starting at 1 to exclude out of warehouse particle
-            if (particle_weights[i][j] < resample_threshold) {
-                particles[i][j] = particles[i][resample_distribution(mt)];
-            }
-            particles[i][j] = Particle(particles[i][resample_distribution(mt)]);
-        }
-        normalize_weights(i);
-
-        // // calculate effective sample size
-        // double effective_sample_size =
-        //     1.0 / std::accumulate(particle_weights[i].begin(), particle_weights[i].end(), 0.0,
-        //                           [](double sum, double weight) { return sum + weight * weight;
-        //                           });
-        // std::cout << "Effective sample size: " << effective_sample_size
-        //           << "; N_particles: " << N_particles << std::endl;
+        particle_weights[i] *= likelihood;  // sequential importance sampling
     }
 
-    return calc_individual_edge_probabilities();
+    normalize_weights();
+
+    // --- resample particles ---
+    const double resample_threshold = 1e-2 / static_cast<double>(N_particles);
+    std::discrete_distribution<int> resample_distribution(particle_weights.begin(),
+                                                          particle_weights.end());
+    for (int i = 1; i < N_particles; i++) {  // starting at 1 to exclude out of warehouse particle
+        int random_source_particle_index = resample_distribution(mt);
+        // --- copy particles ---
+        if (particle_weights[i] < resample_threshold) {
+            for (int j = 0; j < N_humans_max; j++) {
+                particles[j][i] = particles[j][random_source_particle_index];
+            }
+        }
+        // --- copy weight ---
+        particle_weights[i] = particle_weights[random_source_particle_index];
+    }
+    normalize_weights();
+
+    // calculate effective sample size
+    double effective_sample_size =
+        1.0 / std::accumulate(particle_weights.begin(), particle_weights.end(), 0.0,
+                              [](double sum, double weight) { return sum + weight * weight; });
+    std::cout << "Effective sample size: " << effective_sample_size
+              << "; N_particles: " << N_particles << std::endl;
+
+    return calc_edge_probabilities();
 }
 
 std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merge_perceptions(
@@ -254,73 +255,69 @@ std::tuple<double, double> ParticleTracker::edge_to_pose_distance_and_t(int edge
     return std::make_tuple(cartesian_distance + HEADING_WEIGHT * heading_dist, t);
 }
 
-std::vector<std::vector<double>> ParticleTracker::predict() {
+std::vector<double> ParticleTracker::predict() {
     for (int i = 0; i < N_humans_max; i++) {
         for (int j = 1; j < N_particles; j++) {  // don't predict out of warehouse particle
             particles[i][j].predict(T_step);
         }
     }
-    return calc_individual_edge_probabilities();
+    return calc_edge_probabilities();
 }
 
-void ParticleTracker::normalize_weights(int index_human) {
-    double sum_weights = std::accumulate(particle_weights[index_human].begin(),
-                                         particle_weights[index_human].end(), 0.0);
+void ParticleTracker::normalize_weights() {
+    double sum_weights = std::accumulate(particle_weights.begin(), particle_weights.end(), 0.0);
     for (int j = 0; j < N_particles; j++) {
-        particle_weights[index_human][j] /= sum_weights;
-        if (std::isnan(particle_weights[index_human][j])) {
+        particle_weights[j] /= sum_weights;
+        if (std::isnan(particle_weights[j])) {
             throw std::runtime_error("NaN detected in particle weights");
         }
     }
 }
 
-void ParticleTracker::print_weights(int index_human) {
+void ParticleTracker::print_weights() {
     for (int i = 0; i < N_particles; i++) {
-        std::cout << particle_weights[index_human][i] << " ";
+        std::cout << particle_weights[i] << " ";
     }
     std::cout << std::endl;
 }
 
-std::vector<std::vector<double>> ParticleTracker::calc_individual_edge_probabilities() {
-    std::vector<std::vector<double>> individual_edge_probabilities;
-    for (int i = 0; i < N_humans_max; i++) {
-        std::vector<double> edge_probabilities_human_i(graph.edges.size(), 0.0);
+std::vector<double> ParticleTracker::calc_edge_probabilities() {
+    std::vector<double> edge_probabilities(graph.edges.size(), 0.0);
+    for (int i = 0; i < N_particles; i++) {
         for (int j = 0; j < graph.edges.size(); j++) {
-            for (int k = 0; k < N_particles; k++) {
-                if (particles[i][k].is_human_on_edge(j)) {
-                    edge_probabilities_human_i[j] += particle_weights[i][k];
+            for (int k = 0; k < N_humans_max; k++) {
+                if (particles[k][i].is_human_on_edge(j)) {
+                    edge_probabilities[j] += particle_weights[i];
+                    break;
                 }
             }
         }
-        individual_edge_probabilities.push_back(edge_probabilities_human_i);
     }
-    return individual_edge_probabilities;
+    return edge_probabilities;
 }
 
 std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
-    std::vector<pybind11::dict> perceived_humans) {
+    std::vector<pybind11::dict> perceived_humans, int particle_index) {
     std::vector<std::vector<int>> cost_matrix(N_humans_max, std::vector<int>(N_humans_max, 0));
     for (int i = 0; i < N_humans_max; i++) {      // tracks
-        for (int k = 0; k < N_humans_max; k++) {  // perceived humans
-            for (int j = 0; j < N_particles; j++) {
-                if (k < perceived_humans.size()) {
-                    auto particle = particles[i][j];
-                    auto perceived_human = perceived_humans[k];
-                    double graph_distance =
-                        particle.assignment_cost(perceived_human["position"].cast<Point>(),
-                                                 perceived_human["heading"].cast<double>());
-                    cost_matrix[i][k] +=
-                        static_cast<int>(1e4 * particle_weights[i][j] * graph_distance);
-                } else {
-                    cost_matrix[i][k] = 1e8;
-                }
+        for (int j = 0; j < N_humans_max; j++) {  // perceived humans
+            if (j < perceived_humans.size()) {
+                auto particle = particles[i][particle_index];
+                auto perceived_human = perceived_humans[j];
+                double assignment_cost =
+                    particle.assignment_cost(perceived_human["position"].cast<Point>(),
+                                             perceived_human["heading"].cast<double>());
+                cost_matrix[i][j] +=
+                    static_cast<int>(1e4 * assignment_cost);  // library expects integers
+            } else {
+                cost_matrix[i][j] = 1e8;
             }
         }
     }
     return cost_matrix;
 }
 
-std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_internal_humans(
+std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     std::vector<std::vector<int>> cost_matrix_input) {
     // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
     int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
@@ -335,17 +332,15 @@ std::vector<std::function<int()>> ParticleTracker::assign_perceived_humans_to_in
     hungarian_problem_t prob;
     int matrix_size = hungarian_init(&prob, cost_matrix, N_humans_max, N_humans_max,
                                      HUNGARIAN_MODE_MINIMIZE_COST);
-    hungarian_print_costmatrix(&prob);
     hungarian_solve(&prob);
-    std::vector<std::function<int()>> perceived_human_per_internal_human(N_humans_max,
-                                                                         []() { return -1; });
+    std::vector<int> perceived_human_per_internal_human(N_humans_max, -1);
     for (int i = 0; i < N_humans_max; i++) {
         for (int j = 0; j < N_humans_max; j++) {
             if (prob.assignment[i][j] == 1) {
                 if (cost_matrix[i][j] < 0.5e8) {
-                    perceived_human_per_internal_human[i] = [j]() { return j; };
+                    perceived_human_per_internal_human[i] = j;
                 } else {
-                    perceived_human_per_internal_human[j] = []() { return -1; };
+                    perceived_human_per_internal_human[j] = -1;
                 }
                 break;
             }

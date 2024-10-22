@@ -22,9 +22,9 @@ class ParticleTracker {
     std::pair<std::vector<Point>, std::vector<pybind11::dict>> merge_perceptions(
         std::vector<pybind11::dict> robot_perceptions);
     std::vector<std::vector<int>> calc_assignment_cost_matrix(
-        std::vector<pybind11::dict> perceived_humans);
-    std::vector<std::vector<double>> add_observation(std::vector<pybind11::dict> robot_perceptions);
-    std::vector<std::vector<double>> predict();
+        std::vector<pybind11::dict> perceived_humans, int particle_index);
+    std::vector<double> add_observation(std::vector<pybind11::dict> robot_perceptions);
+    std::vector<double> predict();
 
     graph_struct graph;
 
@@ -39,16 +39,16 @@ class ParticleTracker {
     Particle prediction_model(Particle particle);
 
     // calc node probabilities from internal system state
-    std::vector<std::vector<double>> calc_individual_edge_probabilities();
+    std::vector<double> calc_edge_probabilities();
 
     // helper functions
     Particle generate_new_particle_from_perception(Point perceived_pos, double position_stddev,
                                                    double perceived_heading, double heading_stddev);
     std::tuple<int, double> get_belonging_edge(Point position, double heading);
-    std::vector<std::function<int()>> assign_perceived_humans_to_internal_humans(
+    std::vector<int> assign_perceived_humans_to_internal_humans(
         std::vector<std::vector<int>> cost_matrix);
-    void normalize_weights(int index_human);
-    void print_weights(int index_human);
+    void normalize_weights();
+    void print_weights();
     static double heading_distance(double h1, double h2);
 
     // random number generator variables
@@ -60,7 +60,7 @@ class ParticleTracker {
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
     Particle out_of_warehouse_particle;
-    std::vector<std::vector<double>> particle_weights;
+    std::vector<double> particle_weights;
 };
 
 #endif

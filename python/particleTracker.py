@@ -35,12 +35,10 @@ class ParticleTracker:
         # robot_positions = merged_perceptions[0]
         # perceived_humans = merged_perceptions[1]
         # cost_matrix = np.array(self.tracker.calc_assignment_cost_matrix(perceived_humans))
-        
+
         # assignment_proposals = self._assign_perceived_humans_to_tracks(cost_matrix)
 
-        individual_edge_probabilities = np.array(self.tracker.add_observation(robot_perceptions))
-        # return 1 - np.prod(1 - np.array(individual_edge_probabilities), axis=0)
-        return individual_edge_probabilities
+        return np.array(self.tracker.add_observation(robot_perceptions))
 
     def predict(self):
         """Predict the internal state of the tracker by T_step.
@@ -49,7 +47,7 @@ class ParticleTracker:
         """
         individual_edge_probabilities = self.tracker.predict()
         return 1 - np.prod(1 - np.array(individual_edge_probabilities), axis=0)
-    
+
     def _assign_perceived_humans_to_tracks(self, cost_matrix):
         """Assign perceived humans to internal humans.
         Uses Murty's algorithms to propose k best assignments.
@@ -61,5 +59,5 @@ class ParticleTracker:
         solutions, costs = getkBestNoRankHung(cost_matrix, 5)
         # print("Solutions:", solutions)
         print("Costs", costs)
-        cols = solutions.argmax(axis=-1)    
+        cols = solutions.argmax(axis=-1)
         return -1

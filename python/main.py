@@ -93,8 +93,8 @@ for i in pbar:
     if plot:
         plotter.clear()
         plotter.update_sim_state(sim_states[i])
-        # plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
-        plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
+        plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
+        # plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
         plotter.show(blocking=False)
     if record_video:
         plotter.capture_frame()
