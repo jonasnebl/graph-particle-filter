@@ -10,7 +10,9 @@ import os
 import json
 from paths import *
 
-nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
+nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = (
+    load_warehouse_data_from_json()
+)
 
 # Calculate successor edges
 successor_edges = get_successor_edges(edges)

@@ -19,7 +19,9 @@ with open(NODE_MEANING_PATH, "r") as f:
 range_vec = list(range(len(graph_data["nodes"])))
 sort_mask = [
     index
-    for _, index in sorted(zip(graph_data["nodes"], range_vec), key=lambda pair: 1000 * pair[0]["y"] + pair[0]["x"])
+    for _, index in sorted(
+        zip(graph_data["nodes"], range_vec), key=lambda pair: 1000 * pair[0]["y"] + pair[0]["x"]
+    )
 ]
 graph_data["nodes"] = [graph_data["nodes"][i] for i in sort_mask]
 

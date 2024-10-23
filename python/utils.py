@@ -10,7 +10,10 @@ def load_warehouse_data_from_json():
     nodes = graph_data["nodes"]
     edges = graph_data["edges"]
     edge_weights = [
-        np.sqrt((nodes[edge[0]]["x"] - nodes[edge[1]]["x"]) ** 2 + (nodes[edge[0]]["y"] - nodes[edge[1]]["y"]) ** 2)
+        np.sqrt(
+            (nodes[edge[0]]["x"] - nodes[edge[1]]["x"]) ** 2
+            + (nodes[edge[0]]["y"] - nodes[edge[1]]["y"]) ** 2
+        )
         for edge in edges
     ]
 

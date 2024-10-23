@@ -2,7 +2,7 @@
 Functions to generate figures for the final project report.
 """
 
-import sys
+import pickle
 import os
 from paths import *
 import matplotlib.pyplot as plt
@@ -10,6 +10,7 @@ import matplotlib
 import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
+from evaluator import calc_cleared_edges_rate, calc_false_negative_rate
 
 matplotlib.use("TkAgg")
 
@@ -24,7 +25,9 @@ def plot_pred_model(edge):
     with open(os.path.join(MODEL_PATH, "pred_model_params.json"), "r") as f:
         pred_model_params = json.load(f)
 
-    nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
+    nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = (
+        load_warehouse_data_from_json()
+    )
     successor_edges = get_successor_edges(edges)
 
     N_successors = len(pred_model_params[edge])
@@ -47,7 +50,15 @@ def plot_pred_model(edge):
         # Add textbox with alpha and beta parameters
         textstr = f"$\\alpha={alpha:.2f}$\n$\\beta={beta:.2f}$"
         props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
-        ax_dist.text(0.73, 0.95, textstr, transform=ax_dist.transAxes, fontsize=12, verticalalignment="top", bbox=props)
+        ax_dist.text(
+            0.73,
+            0.95,
+            textstr,
+            transform=ax_dist.transAxes,
+            fontsize=12,
+            verticalalignment="top",
+            bbox=props,
+        )
 
         # Quiver plot for the input edge and successor edges
         def update_lim(point, x_lim, y_lim):
@@ -71,7 +82,9 @@ def plot_pred_model(edge):
             width=0.01,
             zorder=2,
         )
-        x_lim, y_lim = update_lim(edge_start, [edge_start["x"], edge_start["x"]], [edge_end["y"], edge_end["y"]])
+        x_lim, y_lim = update_lim(
+            edge_start, [edge_start["x"], edge_start["x"]], [edge_end["y"], edge_end["y"]]
+        )
         x_lim, y_lim = update_lim(edge_end, x_lim, y_lim)
 
         # display node
@@ -106,5 +119,76 @@ def plot_pred_model(edge):
     plt.show()
 
 
+def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates):
+    """Plot the results for the ParticleTracker for multiple thresholds.
+
+    :param thresholds: List of thresholds.
+    :param false_negative_rates: List of false negative rates.
+    :param cleared_edges_rates: List of cleared edges rates.
+    """
+    e = 1e-10
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    for i in range(len(thresholds)):
+        ax.scatter(
+            cleared_edges_rates[i],
+            false_negative_rates[i] + e,
+            label="$p_{{lim}}=${:.10g}%".format(100*thresholds[i]),
+            marker="o",
+        )
+        # ax.annotate(annotation_text, (cleared_edges_rates[i], false_negative_rates[i]))
+        if i > 0:
+            ax.plot(
+                [cleared_edges_rates[i - 1], cleared_edges_rates[i]],
+                [false_negative_rates[i - 1] + e, false_negative_rates[i] + e],
+                color="gray",
+                zorder=-10,
+            )
+    ax.set_title(
+        "Anteil von freigegebenen Kanten $r_{n}$ und davon \n "
+        + "fälschlicherweise freigegebenen Kanten $r_{fn}$ für verschiedene Schwellwerte $p_{lim}$"
+    )
+    ax.set_xlabel("Anteil von freigegebenen Kanten $r_{n}$")
+    ax.set_xlim([0, 1.01])
+    ax.set_yscale("log")
+    ax.grid(which="both") 
+    ax.set_ylabel("Anteil von fälschlicherweise freigegebenen Kanten $r_{fn}$")
+    ax.set_ylim(ax.get_ylim()[::-1])
+    ax.set_yticklabels(["{:,.2%}".format(x) for x in ax.get_yticks()])
+    ax.legend(loc="lower left")
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURE_PATH, "results_multiple_thresholds.pdf"))
+    plt.show()
+
+
 if __name__ == "__main__":
-    plot_pred_model(int(sys.argv[1]))
+    # plot_pred_model(int(sys.argv[1]))
+
+    with open(os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37_10000particles.pkl"), "rb") as f:
+        edge_probabilities_log = pickle.load(f)
+    with open(os.path.join(LOG_FOLDER, "log_2024-10-23_19-23-37.pkl"), "rb") as f:
+        sim_log = pickle.load(f)
+
+    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    false_negative_rates = []
+    cleared_edges_rates = []
+    for threshold in thresholds:
+        false_negative_rate = calc_false_negative_rate(
+            np.array(edge_probabilities_log), threshold, sim_log
+        )
+        cleared_edges_rate = calc_cleared_edges_rate(np.array(edge_probabilities_log), threshold)
+
+        # TO BE REMOVED
+        if false_negative_rate < 1e-10:
+            false_negative_rate = 1e-5
+
+
+
+        false_negative_rates.append(false_negative_rate)
+        cleared_edges_rates.append(cleared_edges_rate)
+        print(
+            "Threshold {:.10g}%:  false_negative_rate={:.5f}%  cleared_edges_rate={:.1f}%".format(
+                100 * threshold, 100 * false_negative_rate, 100 * cleared_edges_rate
+            )
+        )
+
+    plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates)

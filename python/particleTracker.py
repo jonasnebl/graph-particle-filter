@@ -51,23 +51,36 @@ class ParticleTracker:
         """
         return np.array(self.tracker.predict())
 
-    def get_cleared_edges(self, probabilities: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def static_get_cleared_edges(
+        probabilities: np.ndarray, clear_threshold: float, edges: list
+    ) -> np.ndarray:
         """Return an array of edges that are considered cleared based on a very low probability.
         Both the edge and its opposing edge must have a probability below the clear_threshold.
 
         :param probabilities: (N_edges,) np.ndarray of edge probabilities.
+        :param edges: list of edges as tuples of start and end node index
         :return: (N_edges,) np.ndarray of cleared edge probabilities.
         """
         opposing_edge_probabilities = np.array(
-            [probabilities[self.edges.index([edge[1], edge[0]])] for edge in self.edges]
+            [probabilities[edges.index([edge[1], edge[0]])] for edge in edges]
         )
         cleared_edges = np.zeros_like(probabilities, dtype=bool)
         for i in range(len(probabilities)):
             if (
-                probabilities[i] < config["clear_threshold"]
-                and opposing_edge_probabilities[i] < config["clear_threshold"]
+                probabilities[i] < clear_threshold
+                and opposing_edge_probabilities[i] < clear_threshold
             ):
                 cleared_edges[i] = True  # edge is cleared
             else:
                 cleared_edges[i] = False  # edge is not cleared
         return cleared_edges
+
+    def get_cleared_edges(self, probabilities: np.ndarray) -> np.ndarray:
+        """Non-static wrapper for static_get_cleared_edges
+
+        :param probabilities: (N_edges,) np.ndarray of edge probabilities.
+        :return: (N_edges,) np.ndarray of cleared edge probabilities.
+        """
+        clear_threshold = config["clear_threshold"]
+        return self.static_get_cleared_edges(probabilities, clear_threshold, self.edges)

@@ -11,7 +11,9 @@ import numpy as np
 import pickle
 import time
 
-nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = load_warehouse_data_from_json()
+nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = (
+    load_warehouse_data_from_json()
+)
 successor_edges = get_successor_edges(edges)
 
 
@@ -62,7 +64,9 @@ def get_magic_training_data(log_filename):
                 # save values for next iteration
                 edge_start_time = simulation_time
                 previous_edge = belonging_edges[j - 1]
-    print(f"Extracted {len(training_data)} training data samples in {time.time() - start:.2f} seconds.")
+    print(
+        f"Extracted {len(training_data)} training data samples in {time.time() - start:.2f} seconds."
+    )
 
     with open(TRAINING_DATA_PATH, "w") as f:
         json.dump(training_data, f, indent=4)
@@ -85,14 +89,18 @@ def train_successor_edge_probabilities():
 
         # remove entries with no valid successor edge
         relevant_samples = [
-            sample for sample in relevant_samples if sample["next_edge"] in successor_edges[sample["current_edge"]]
+            sample
+            for sample in relevant_samples
+            if sample["next_edge"] in successor_edges[sample["current_edge"]]
         ]
 
         # calculate the successor edge probabilities for every possible successor edge
         e = 0.01
         if len(relevant_samples) == 0:
             # no samples for this edge -> uniform distribution
-            successor_edge_probabilties[i] = [1 / len(successor_edges[i]) for _ in range(len(successor_edges[i]))]
+            successor_edge_probabilties[i] = [
+                1 / len(successor_edges[i]) for _ in range(len(successor_edges[i]))
+            ]
         else:
             # samples available -> use them to calculate the probability
             for j, successor_edge in enumerate(successor_edges[i]):
@@ -103,7 +111,10 @@ def train_successor_edge_probabilities():
                     len(samples_where_successor_edge_was_taken) + e * len(relevant_samples)
                 ) / (len(relevant_samples) * (1 + len(successor_edges[i]) * e))
 
-        print(f"Calculated successor edge probabilities for edge {i} " + f"based on {len(relevant_samples)} samples.")
+        print(
+            f"Calculated successor edge probabilities for edge {i} "
+            + f"based on {len(relevant_samples)} samples."
+        )
 
     with open(os.path.join(MODEL_PATH, "successor_edge_probabilities.json"), "w") as f:
         json.dump(successor_edge_probabilties, f, indent=4)

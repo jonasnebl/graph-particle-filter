@@ -17,7 +17,9 @@ with open("config.yaml", "r") as f:
 # --- Run new simulation ---
 if config["run_new_simulation"]:
     T_simulation = config["T_simulation"]
-    sim = Simulation(T_step=config["T_step"], N_humans=config["N_humans"], N_robots=config["N_robots"])
+    sim = Simulation(
+        T_step=config["T_step"], N_humans=config["N_humans"], N_robots=config["N_robots"]
+    )
     sim_states = []
     N_minutes = int(T_simulation / 60)
     N_hours = int(T_simulation / 3600)
@@ -40,7 +42,8 @@ if config["run_new_simulation"]:
         "sim_states": sim_states,
     }
 
-    filename = os.path.join(LOG_FOLDER, "log_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pkl")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = os.path.join(LOG_FOLDER, "log_" + timestamp + ".pkl")
     with open(filename, "wb") as outp:
         pickle.dump(sim_log, outp, pickle.HIGHEST_PROTOCOL)
 
@@ -48,6 +51,7 @@ if config["run_new_simulation"]:
 # --- Load simulation ---
 if "sim_log" not in locals():  # no new simulation has been run
     filename = os.path.join(LOG_FOLDER, config["log_file"])
+    timestamp = config["log_file"].split("log_")[1].split(".pkl")[0]
     with open(filename, "rb") as f:
         sim_log = pickle.load(f)
 sim_states = sim_log["sim_states"]
@@ -119,8 +123,23 @@ for i in pbar:
 # --- Evaluate results ---
 print(
     "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
-        1e3 * np.mean(particleTracker_execution_times), 1e3 * np.max(particleTracker_execution_times)
+        1e3 * np.mean(particleTracker_execution_times),
+        1e3 * np.max(particleTracker_execution_times),
     )
 )
 if record_video:
     plotter.create_video(T_step, speed=config["playback_speed"])
+with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + timestamp + ".pkl"), "wb") as f:
+    pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
+
+
+from evaluator import calc_false_negative_rate, calc_cleared_edges_rate
+
+false_negative_rate = calc_false_negative_rate(
+    np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
+)
+cleared_edges_rate = calc_cleared_edges_rate(
+    np.array(particleTracker_edge_probabilities), config["clear_threshold"]
+)
+print("False negative rate: {:.5f}".format(false_negative_rate))
+print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))

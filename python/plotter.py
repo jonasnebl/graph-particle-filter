@@ -52,7 +52,9 @@ class Plotter:
         # Plot the polygons for the racks
         for polygon in self.polygons:
             polygon_points = np.array(polygon)
-            poly = Polygon(polygon_points, closed=True, fill=True, facecolor="gray", alpha=1, zorder=1)
+            poly = Polygon(
+                polygon_points, closed=True, fill=True, facecolor="gray", alpha=1, zorder=1
+            )
             plt.gca().add_patch(poly)
 
         # Annotate the nodes with their indices
@@ -140,7 +142,9 @@ class Plotter:
             probability = edge_probabilities[i]
             color = cmap(probability)
             linewidth = 1 + 19 * probability  # Line width ranges from 1 to 20
-            alpha = 0.1 if probability == 0 else 1  # Make arrow almost invisible if probability is zero
+            alpha = (
+                0.1 if probability == 0 else 1
+            )  # Make arrow almost invisible if probability is zero
             arrow = matplotlib.patches.FancyArrow(
                 start_pos[0],
                 start_pos[1],
@@ -157,7 +161,9 @@ class Plotter:
             self.ax.add_patch(arrow)
 
         if self.print_probabilites:
-            self.annotate_edges(["{:.3f}".format(probability) for probability in edge_probabilities])
+            self.annotate_edges(
+                ["{:.3f}".format(probability) for probability in edge_probabilities]
+            )
 
     def update_cleared_edges(self, cleared_edges):
         """Highlight the edges that are considered cleared based on a very low probability.
@@ -169,7 +175,13 @@ class Plotter:
                 start_pos = self.node_positions[self.edges[i][0]]
                 end_pos = self.node_positions[self.edges[i][1]]
                 self.green_lines.append(
-                    plt.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], "lime", zorder=-10, linewidth=20)
+                    plt.plot(
+                        [start_pos[0], end_pos[0]],
+                        [start_pos[1], end_pos[1]],
+                        "lime",
+                        zorder=-10,
+                        linewidth=20,
+                    )
                 )
 
     def update_individual_edge_probabilities(self, individual_edge_probabilities):
@@ -188,7 +200,9 @@ class Plotter:
                 end_pos = self.node_positions[end]
                 probability = edge_probabilities[i]
                 linewidth = 1 + 19 * probability  # Line width ranges from 1 to 20
-                alpha = 0.1 if probability == 0 else 1  # Make arrow almost invisible if probability is zero
+                alpha = (
+                    0.1 if probability == 0 else 1
+                )  # Make arrow almost invisible if probability is zero
                 arrow = matplotlib.patches.FancyArrow(
                     start_pos[0],
                     start_pos[1],
@@ -206,7 +220,9 @@ class Plotter:
 
         if self.print_probabilites:
             max_edge_probabilities = np.max(individual_edge_probabilities, axis=0)
-            self.annotate_edges(["{:.3f}".format(max_probability) for max_probability in max_edge_probabilities])
+            self.annotate_edges(
+                ["{:.3f}".format(max_probability) for max_probability in max_edge_probabilities]
+            )
 
     def show(self, blocking=True):
         """Show the current state of the warehouse plot.
@@ -259,4 +275,12 @@ class Plotter:
                 text_pos = mid_pos + np.array([offset, offset])
             else:
                 text_pos = mid_pos - np.array([offset, offset])
-            self.ax.text(text_pos[0], text_pos[1], f"{annotation}", fontsize=9, ha="center", color="black", zorder=3)
+            self.ax.text(
+                text_pos[0],
+                text_pos[1],
+                f"{annotation}",
+                fontsize=9,
+                ha="center",
+                color="black",
+                zorder=3,
+            )
