@@ -132,7 +132,7 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
         ax.scatter(
             cleared_edges_rates[i],
             false_negative_rates[i] + e,
-            label="$p_{{lim}}=${:.10g}%".format(100*thresholds[i]),
+            label="$p_{{lim}}=${:.10g}%".format(100 * thresholds[i]),
             marker="o",
         )
         # ax.annotate(annotation_text, (cleared_edges_rates[i], false_negative_rates[i]))
@@ -150,7 +150,7 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
     ax.set_xlabel("Anteil von freigegebenen Kanten $r_{n}$")
     ax.set_xlim([0, 1.01])
     ax.set_yscale("log")
-    ax.grid(which="both") 
+    ax.grid(which="both")
     ax.set_ylabel("Anteil von fälschlicherweise freigegebenen Kanten $r_{fn}$")
     ax.set_ylim(ax.get_ylim()[::-1])
     ax.set_yticklabels(["{:,.2%}".format(x) for x in ax.get_yticks()])
@@ -163,7 +163,9 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
 if __name__ == "__main__":
     # plot_pred_model(int(sys.argv[1]))
 
-    with open(os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37_10000particles.pkl"), "rb") as f:
+    with open(
+        os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37_10000particles.pkl"), "rb"
+    ) as f:
         edge_probabilities_log = pickle.load(f)
     with open(os.path.join(LOG_FOLDER, "log_2024-10-23_19-23-37.pkl"), "rb") as f:
         sim_log = pickle.load(f)
@@ -180,8 +182,6 @@ if __name__ == "__main__":
         # TO BE REMOVED
         if false_negative_rate < 1e-10:
             false_negative_rate = 1e-5
-
-
 
         false_negative_rates.append(false_negative_rate)
         cleared_edges_rates.append(cleared_edges_rate)

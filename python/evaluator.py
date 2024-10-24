@@ -15,22 +15,19 @@ def calc_false_negative_rate(
     :param sim_log: list of simulation states
     :return: float, False negative rate.
     """
-    true_occupied_edges = np.zeros(shape=edge_probabilities_log.shape, dtype=bool)
+    N_sim_states = len(sim_log["sim_states"])
+    human_belonging_edges = np.zeros((N_sim_states, sim_log["N_humans"]), dtype=int)
     for i, sim_state in enumerate(sim_log["sim_states"]):
-        human_belonging_edges = [
-            agent["belonging_edge"] for agent in sim_state if agent["type"] == "human"
-        ]
-        true_occupied_edges[i] = [
-            edge in human_belonging_edges for edge in range(true_occupied_edges.shape[1])
-        ]
+        human_belonging_edges[i] = np.array(
+            [agent["belonging_edge"] for agent in sim_state if agent["type"] == "human"]
+        )
     cleared_edges_log = calc_cleared_edges_log(edge_probabilities_log, clear_threshold)
 
-    # divide by cleared edges rate to only consider the false negatives when the edges are cleared
-    cleared_edges_rate = calc_cleared_edges_rate(edge_probabilities_log, clear_threshold)
-    return (
-        np.mean(np.logical_and(cleared_edges_log, true_occupied_edges).astype(np.float64))
-        / cleared_edges_rate
-    )
+    is_the_human_belonging_edge_cleared = cleared_edges_log[
+        np.arange(N_sim_states)[:, None], human_belonging_edges
+    ]
+
+    return np.mean(is_the_human_belonging_edge_cleared.astype(np.float64))
 
 
 def calc_cleared_edges_rate(edge_probabilites_log: np.ndarray, clear_threshold: float) -> float:
