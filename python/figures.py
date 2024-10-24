@@ -4,6 +4,7 @@ Functions to generate figures for the final project report.
 
 import pickle
 import os
+import sys
 from paths import *
 import matplotlib.pyplot as plt
 import matplotlib
@@ -11,6 +12,9 @@ import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
 from evaluator import calc_cleared_edges_rate, calc_false_negative_rate
+
+sys.path.append("build/")  # allos to import cpp_utils
+from cpp_utils import Agent
 
 matplotlib.use("TkAgg")
 
@@ -161,35 +165,56 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
     plt.show()
 
 
+def plot_detection_probability():
+    """Generate a plot of the detection probability."""
+    distances = np.linspace(0, 25, 1000)
+    detection_probabilities = np.array(
+        [Agent.probability_in_viewrange(distance) for distance in distances]
+    )
+    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+    ax.plot(distances, detection_probabilities)
+    ax.set_xlim([0, 25])
+    ax.axhline(1.0, color="gray", linestyle="--")
+    ax.axhline(0.0, color="gray", linestyle="--")
+    ax.set_title("Detektionswahrscheinlichkeit in Abhängigkeit der Entfernung")
+    ax.set_xlabel("Entfernung in Metern")
+    ax.set_ylabel("Detektionswahrscheinlichkeit")
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURE_PATH, "detection_probability.pdf"))
+    plt.show()
+
+
 if __name__ == "__main__":
+    plot_detection_probability()
+
     # plot_pred_model(int(sys.argv[1]))
 
-    with open(
-        os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37_10000particles.pkl"), "rb"
-    ) as f:
-        edge_probabilities_log = pickle.load(f)
-    with open(os.path.join(LOG_FOLDER, "log_2024-10-23_19-23-37.pkl"), "rb") as f:
-        sim_log = pickle.load(f)
+    # with open(
+    #     os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37_10000particles.pkl"), "rb"
+    # ) as f:
+    #     edge_probabilities_log = pickle.load(f)
+    # with open(os.path.join(LOG_FOLDER, "log_2024-10-23_19-23-37.pkl"), "rb") as f:
+    #     sim_log = pickle.load(f)
 
-    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    false_negative_rates = []
-    cleared_edges_rates = []
-    for threshold in thresholds:
-        false_negative_rate = calc_false_negative_rate(
-            np.array(edge_probabilities_log), threshold, sim_log
-        )
-        cleared_edges_rate = calc_cleared_edges_rate(np.array(edge_probabilities_log), threshold)
+    # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    # false_negative_rates = []
+    # cleared_edges_rates = []
+    # for threshold in thresholds:
+    #     false_negative_rate = calc_false_negative_rate(
+    #         np.array(edge_probabilities_log), threshold, sim_log
+    #     )
+    #     cleared_edges_rate = calc_cleared_edges_rate(np.array(edge_probabilities_log), threshold)
 
-        # TODO TO BE REMOVED
-        if false_negative_rate < 1e-10:
-            false_negative_rate = 1e-5
+    #     # TODO TO BE REMOVED
+    #     if false_negative_rate < 1e-10:
+    #         false_negative_rate = 1e-5
 
-        false_negative_rates.append(false_negative_rate)
-        cleared_edges_rates.append(cleared_edges_rate)
-        print(
-            "Threshold {:.10g}%:  false_negative_rate={:.5f}%  cleared_edges_rate={:.1f}%".format(
-                100 * threshold, 100 * false_negative_rate, 100 * cleared_edges_rate
-            )
-        )
+    #     false_negative_rates.append(false_negative_rate)
+    #     cleared_edges_rates.append(cleared_edges_rate)
+    #     print(
+    #         "Threshold {:.10g}%:  false_negative_rate={:.5f}%  cleared_edges_rate={:.1f}%".format(
+    #             100 * threshold, 100 * false_negative_rate, 100 * cleared_edges_rate
+    #         )
+    #     )
 
-    plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates)
+    # plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates)

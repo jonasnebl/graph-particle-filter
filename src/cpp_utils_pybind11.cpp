@@ -22,4 +22,8 @@ PYBIND11_MODULE(cpp_utils, m) {
         .def("add_observation", &ParticleTracker::add_observation, "Add robot oservations",
              pybind11::arg("robot_perceptions"))
         .def("predict", &ParticleTracker::predict, "Predict by one T_step");
+
+    pybind11::class_<Agent>(m, "Agent")
+        .def_static("probability_in_viewrange", &Agent::probability_in_viewrange,
+                    "Calculate the euclidean distance between two points", pybind11::arg("dist"));
 }

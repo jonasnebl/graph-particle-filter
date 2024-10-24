@@ -1,7 +1,7 @@
-run_new_simulation: False
+run_new_simulation: True
 
 # --- Run a new simulation with the following parameters ---
-T_simulation: 1200 # seconds
+T_simulation: 600 # seconds
 T_step: 0.5 # seconds
 N_humans: 3
 N_robots: 4
@@ -17,5 +17,5 @@ playback_speed: 1 # 1 is normal speed
 clear_threshold: 0.001 # maximum probability to consider an edge cleared
 
 # --- Tracker parameters ---
-N_particles: 10000
-N_humans_tracker: 3 # -1 same as in the simulation
+N_particles: 1000
+N_humans_tracker: 6 # -1 same as in the simulation
