@@ -153,6 +153,7 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
     ax.grid(which="both")
     ax.set_ylabel("Anteil von fälschlicherweise freigegebenen Kanten $r_{fn}$")
     ax.set_ylim(ax.get_ylim()[::-1])
+    ax.set_yticks([1e-2, 1e-1, 1])
     ax.set_yticklabels(["{:,.2%}".format(x) for x in ax.get_yticks()])
     ax.legend(loc="lower left")
     plt.tight_layout()
@@ -179,7 +180,7 @@ if __name__ == "__main__":
         )
         cleared_edges_rate = calc_cleared_edges_rate(np.array(edge_probabilities_log), threshold)
 
-        # TO BE REMOVED
+        # TODO TO BE REMOVED
         if false_negative_rate < 1e-10:
             false_negative_rate = 1e-5
 
