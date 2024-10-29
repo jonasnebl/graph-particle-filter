@@ -110,6 +110,19 @@ for successor_edge_probabilities_one_edge in successor_edge_probabilities:
     header_content += "},\n"
 
 header_content += """    };
+    std::vector<std::vector<double>> duration_params = {
+"""
+
+# Add duration parameters to the header content
+with open(os.path.join(MODEL_PATH, "duration_params.json"), "r") as f:
+    duration_params = json.load(f)
+
+for duration_params_one_edge in duration_params:
+    header_content += "    {"
+    header_content += ", ".join(map(str, duration_params_one_edge))
+    header_content += "},\n"
+
+header_content += """    };
 };
 
 #endif  // WAREHOUSESIM_SRC_WAREHOUSE_DATA_H

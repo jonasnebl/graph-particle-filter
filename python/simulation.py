@@ -14,7 +14,7 @@ class Simulation:
         """Initialize the simulation.
 
         :param T_step: double, step time of the simulation.
-        :param N_humans: int, Number of humans in the simulation.
+        :param N_humans: int, Number of humans in tshe simulation.
         :param N_robots: int, Number of robots in the simulation.
         :return: Simulation object.
         """

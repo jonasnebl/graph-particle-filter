@@ -94,7 +94,7 @@ for i in pbar:
     _ = particleTracker.predict()
     particleTracker_execution_times.append(time() - start)
 
-    print(particleTracker_edge_probabilities[-1][44:47])
+    print(sum(particleTracker_edge_probabilities[-1][44:48]))
 
     cleared_edges = particleTracker.get_cleared_edges(particleTracker_edge_probabilities[-1])
 

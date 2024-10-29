@@ -75,7 +75,8 @@ std::vector<double> ParticleTracker::add_observation(
         // --- copy particles ---
         if (particle_weights[i] < resample_threshold) {
             for (int j = 0; j < N_humans_max; j++) {
-                particles[j][i] = particles[j][random_source_particle_index];
+                // use the copy constructor to reseed the random number generator
+                particles[j][i] = Particle(particles[j][random_source_particle_index]);
             }
         }
         // --- copy weight ---

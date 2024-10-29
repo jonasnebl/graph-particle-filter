@@ -120,6 +120,38 @@ def train_successor_edge_probabilities():
         json.dump(successor_edge_probabilties, f, indent=4)
 
 
+def train_durations():
+    """Train the duration parameters for the prediction model."""
+    with open(TRAINING_DATA_PATH, "r") as f:
+        training_data = json.load(f)
+
+    duration_params = np.zeros((len(edges), 2))
+    for i, edge_start_and_end_node in enumerate(edges):
+        relevant_samples = [sample for sample in training_data if sample["current_edge"] == i]
+        durations = [sample["duration"] for sample in relevant_samples]
+
+        if len(durations) < 2:
+            # not enough samples to fit a distribution
+            duration_params[i, :] = [1.0, 1.0]
+        else:
+            # fit a Weibull distribution to the durations
+            fitted_weibull = Fit_Weibull_2P(
+                failures=durations, show_probability_plot=False, print_results=False
+            )
+            duration_params[i, :] = [fitted_weibull.alpha, fitted_weibull.beta]
+
+        print(
+            f"Calculated duration distribution parameters for edge {i} "
+            + f"based on {len(relevant_samples)} samples."
+        )
+
+    with open(os.path.join(MODEL_PATH, "duration_params.json"), "w") as f:
+        json.dump(duration_params.tolist(), f, indent=4)
+
+    print(np.max(duration_params, axis=0))
+
+
 if __name__ == "__main__":
     get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
     train_successor_edge_probabilities()
+    train_durations()

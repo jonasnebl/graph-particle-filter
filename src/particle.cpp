@@ -94,7 +94,8 @@ int Particle::get_random_successor_edge(int current_edge) {
 }
 
 double Particle::get_random_time_of_edge_change(int edge) {
-    return std::weibull_distribution<double>(3.0, 2.0)(mt);
+    return std::weibull_distribution<double>(graph->duration_params[edge][0],
+                                             graph->duration_params[edge][1])(mt);
 }
 
 bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_input; }
