@@ -9,7 +9,7 @@ from utils import load_warehouse_data_from_json
 import sys
 from paths import *
 
-sys.path.append("build/")  # allos to import cpp_utils
+sys.path.append("build/")  # allows to import cpp_utils
 from cpp_utils import ParticleTracker as ParticleTracker_cpp
 
 

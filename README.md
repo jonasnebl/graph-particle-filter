@@ -19,12 +19,12 @@ $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
 Generate a Header-File containing the topological information about the warehouse
-as well as model parameters for the ParticleTracker's prediction model.
+as well as the model parameters for the ParticleTracker's prediction model.
 ```
 $ python python/prepare_warehouse_data.py
 ```
 Make a build folder and build the project using CMake.
-Make sure you have the required dependencies `pybind11` and `hungarian` (from vckpg) installed.
+Make sure you have the required dependencies `pybind11` and `libhungarian` (`hungarian` from vckpg) installed.
 Vcpkg is recommended for dependency management.
 ```
 $ mkdir build && cd build && cmake .. && make && cd ..

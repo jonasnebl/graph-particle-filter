@@ -17,7 +17,7 @@ nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes =
 successor_edges = get_successor_edges(edges)
 
 
-def get_magic_training_data(log_filename):
+def get_magic_training_data(log_filename: str):
     """Directly extracts the exact training data from a simulation log (magically).
 
     :param log_filename: Path to the simulation log
@@ -152,7 +152,7 @@ def train_durations():
 
 
 def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
-    """ """
+    """Trains the likelihood matrix for the number of humans estimation."""
     N_tracks_max = len(N_perceived_log_filepaths)
     likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
     likelihood_matrix[0, 0] = 1.0
@@ -162,13 +162,13 @@ def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
     print(likelihood_matrix)
-    np.savetxt(os.path.join(MODEL_PATH, "likelihood_matrix.csv"), likelihood_matrix, delimiter=",")
+    np.savetxt(os.path.join(MODEL_PATH, "N_humans_likelihood_matrix.csv"), likelihood_matrix, delimiter=",")
 
 
 if __name__ == "__main__":
-    # get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
-    # train_successor_edge_probabilities()
-    # train_durations()
+    get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
+    train_successor_edge_probabilities()
+    train_durations()
     train_likelihood_matrix(
         [
             "N_perceived_1humans.pkl",
