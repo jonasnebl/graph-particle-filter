@@ -3,7 +3,21 @@ import numpy as np
 from paths import *
 
 
-def load_warehouse_data_from_json():
+def load_warehouse_data_from_json() -> (
+    tuple[
+        list[dict],  # nodes
+        list[tuple[int, int]],  # edges
+        list[float],  # edge_weights
+        list[list[list[float]]],  # polygons
+        list[int],  # staging_nodes
+        list[int],  # storage_nodes
+        list[int],  # exit_nodes
+    ]
+):
+    """Loads the warehouse data from the JSON files.
+
+    :return: nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes
+    """
     with open(GRAPH_PATH, "r") as f:
         graph_data = json.load(f)
 
@@ -32,5 +46,10 @@ def load_warehouse_data_from_json():
     return nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes
 
 
-def get_successor_edges(edges):
+def get_successor_edges(edges: list[tuple[int, int]]) -> list[list[int]]:
+    """Get the successor edges for each edge.
+
+    :param edges: list of list of int, List of edges.
+    :return: list of list of int, List of successor edges.
+    """
     return [[i for i, next_edge in enumerate(edges) if edge[1] == next_edge[0]] for edge in edges]

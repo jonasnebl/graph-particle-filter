@@ -5,7 +5,7 @@ Enables documentation and type hints for the Simulation class.
 
 import sys
 
-sys.path.append("build/")  # allos to import cpp_utils
+sys.path.append("build/")  # allows to import cpp_utils
 from cpp_utils import Simulation as Simulation_cpp
 
 
@@ -23,10 +23,10 @@ class Simulation:
         self.N_robots = N_robots
         self.sim = Simulation_cpp(T_step, N_humans, N_robots)
 
-    def step(self, N_steps: int):
+    def step(self, N_steps: int) -> list[dict]:
         """Run the simulation for N_steps steps.
 
         :param N_steps: int, Number of steps to run the simulation for.
-        :return: current simulation state.
+        :return: current simulation state as a list of dictionaries, one for every agent
         """
         return self.sim.step(N_steps)

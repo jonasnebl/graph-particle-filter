@@ -3,7 +3,6 @@ import matplotlib
 from matplotlib.patches import Polygon
 
 matplotlib.use("TkAgg")
-# plt.style.use('./figures/latex_matplotlib.mplstyle')
 import json
 import numpy as np
 from moviepy.editor import VideoClip, ImageSequenceClip

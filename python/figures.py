@@ -11,7 +11,7 @@ import matplotlib
 import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
-from evaluator import calc_cleared_edges_rate, calc_false_negative_rate
+from evaluator import *
 
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import Agent
@@ -189,30 +189,14 @@ if __name__ == "__main__":
 
     # plot_pred_model(int(sys.argv[1]))
 
-    with open(os.path.join(LOG_FOLDER, "edge_probabilities_2024-10-23_19-23-37.pkl"), "rb") as f:
-        edge_probabilities_log = pickle.load(f)
-    with open(os.path.join(LOG_FOLDER, "log_2024-10-23_19-23-37.pkl"), "rb") as f:
-        sim_log = pickle.load(f)
-
+    # --- Plot result metrics ---
     thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    false_negative_rates = []
-    cleared_edges_rates = []
-    for threshold in thresholds:
-        false_negative_rate = calc_false_negative_rate(
-            np.array(edge_probabilities_log), threshold, sim_log
-        )
-        cleared_edges_rate = calc_cleared_edges_rate(np.array(edge_probabilities_log), threshold)
-
-        # TODO TO BE REMOVED
-        if false_negative_rate < 1e-10:
-            false_negative_rate = 1e-5
-
-        false_negative_rates.append(false_negative_rate)
-        cleared_edges_rates.append(cleared_edges_rate)
-        print(
-            "Threshold {:.10g}%:  false_negative_rate={:.5f}%  cleared_edges_rate={:.1f}%".format(
-                100 * threshold, 100 * false_negative_rate, 100 * cleared_edges_rate
-            )
-        )
-
-    plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates)
+    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
+        evaluate_multiple_thresholds(thresholds, filename="2024-10-23_19-23-37")
+    )
+    plot_results_multiple_thresholds(
+        thresholds, false_negative_rates_human_centric, cleared_edges_rates
+    )
+    plot_results_multiple_thresholds(
+        thresholds, false_negative_rates_edge_centric, cleared_edges_rates
+    )

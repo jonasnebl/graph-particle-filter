@@ -71,7 +71,7 @@ class ParticleTracker:
         """
         return np.array(self.tracker.predict())
 
-    def calc_N_tracks(self, perceived_humans):
+    def calc_N_tracks(self, perceived_humans) -> int:
         """Calculate the proposed number of tracks based on the perceived humans."""
         self.N_perceived_humans_log.append(len(perceived_humans))
         self.N_perceived_humans_window = np.concatenate(
@@ -80,7 +80,6 @@ class ParticleTracker:
         N_humans_max_likelihood = np.argmax(
             np.prod(self.likelihood_matrix[:, self.N_perceived_humans_window], axis=1)
         )
-        print("Estimated number of humans:", N_humans_max_likelihood)
         return N_humans_max_likelihood + 1  # 1 for one safety track
 
     @staticmethod

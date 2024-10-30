@@ -126,7 +126,7 @@ if config["run_tracker"]:
         )
         simulation_time += T_step
 
-    # --- Evaluate results ---
+    # --- Evaluate and save results ---
     print(
         "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
             1e3 * np.mean(particleTracker_execution_times),
@@ -148,5 +148,6 @@ if config["run_tracker"]:
     cleared_edges_rate = calc_cleared_edges_rate(
         np.array(particleTracker_edge_probabilities), config["clear_threshold"]
     )
-    print("False negative rate: {:.5f}".format(false_negative_rate))
+    print("False negative rate human centric: {:.5f}".format(false_negative_rate))
+    print("False negative rate edge centric: {:.5f}".format(cleared_edges_rate))
     print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))
