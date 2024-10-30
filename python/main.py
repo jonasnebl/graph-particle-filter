@@ -42,106 +42,111 @@ if config["run_new_simulation"]:
         "sim_states": sim_states,
     }
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = os.path.join(LOG_FOLDER, "log_" + timestamp + ".pkl")
-    with open(filename, "wb") as outp:
+    if config["filename"] is None:
+        filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    else:
+        filename = config["filename"]
+    filepath = os.path.join(LOG_FOLDER, "log_" + filename + ".pkl")
+    with open(filepath, "wb") as outp:
         pickle.dump(sim_log, outp, pickle.HIGHEST_PROTOCOL)
 
 
-# --- Load simulation ---
-if "sim_log" not in locals():  # no new simulation has been run
-    filename = os.path.join(LOG_FOLDER, config["log_file"])
-    timestamp = config["log_file"].split("log_")[1].split(".pkl")[0]
-    with open(filename, "rb") as f:
-        sim_log = pickle.load(f)
-sim_states = sim_log["sim_states"]
-T_simulation = sim_log["T_simulation"]
-T_step = sim_log["T_step"]
-N_humans = sim_log["N_humans"]
-N_robots = sim_log["N_robots"]
+if config["run_tracker"]:
+    # --- Load simulation ---
+    if "sim_log" not in locals():  # no new simulation has been run
+        filepath = os.path.join(LOG_FOLDER, config["log_file"])
+        filename = config["log_file"].split("log_")[1].split(".pkl")[0]
+        with open(filepath, "rb") as f:
+            sim_log = pickle.load(f)
+    sim_states = sim_log["sim_states"]
+    T_simulation = sim_log["T_simulation"]
+    T_step = sim_log["T_step"]
+    N_humans = sim_log["N_humans"]
+    N_robots = sim_log["N_robots"]
 
-
-# --- Run tracker on playback simulation data ---
-plot = config["plot"]  # slows down loop significantly!
-record_video = config["record_video"]  # slows down loop even more!
-if record_video:
-    plot = True
-if plot:
-    plotter = Plotter(print_probabilites=True, clear_threshold=config["clear_threshold"])
-
-if config["N_humans_tracker"] == -1:
-    N_humans_tracker = N_humans
-else:
-    N_humans_tracker = config["N_humans_tracker"]
-particleTracker = ParticleTracker(T_step, N_humans_tracker, config["N_particles"])
-
-pbar = tqdm(range(0, int(len(sim_states))), desc="Simulation")
-simulation_time = 0
-particleTracker_edge_probabilities = []
-particleTracker_execution_times = []
-for i in pbar:
-    robot_perceptions = [
-        {
-            "position": agent["position"],
-            "perceived_humans": agent["perceived_humans"],
-        }
-        for agent in sim_states[i]
-        if agent["type"] == "robot"
-    ]
-
-    start = time()
-    particleTracker_edge_probabilities.append(particleTracker.add_observation(robot_perceptions))
-    _ = particleTracker.predict()
-    particleTracker_execution_times.append(time() - start)
-
-    print(sum(particleTracker_edge_probabilities[-1][44:48]))
-
-    cleared_edges = particleTracker.get_cleared_edges(particleTracker_edge_probabilities[-1])
-
-    if plot:
-        plotter.clear()
-        plotter.update_sim_state(sim_states[i])
-        plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
-        plotter.update_cleared_edges(cleared_edges)
-        # plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
-        plotter.show(blocking=False)
+    # --- Run tracker on playback simulation data ---
+    plot = config["plot"]  # slows down loop significantly!
+    record_video = config["record_video"]  # slows down loop even more!
     if record_video:
-        plotter.capture_frame()
+        plot = True
+    if plot:
+        plotter = Plotter(print_probabilites=True, clear_threshold=config["clear_threshold"])
 
-    pbar.set_postfix(
-        {
-            "Simulated time": "{:d}:{:02d} of {:d}:{:02d} hours; T_Tracker: {:.0f}ms".format(
-                int(simulation_time / 3600),
-                int(simulation_time / 60) % 60,
-                int(T_simulation / 3600),
-                int(T_simulation / 60) % 60,
-                1e3 * particleTracker_execution_times[-1],
-            )
-        }
+    if config["N_tracks_init"] == -1:
+        N_tracks_init = N_humans
+    else:
+        N_tracks_init = config["N_tracks_init"]
+    particleTracker = ParticleTracker(
+        T_step=T_step, N_tracks_init=N_tracks_init, N_particles=config["N_particles"]
     )
-    simulation_time += T_step
 
+    pbar = tqdm(range(0, int(len(sim_states))), desc="Simulation")
+    simulation_time = 0
+    particleTracker_edge_probabilities = []
+    particleTracker_execution_times = []
+    for i in pbar:
+        robot_perceptions = [
+            {
+                "position": agent["position"],
+                "perceived_humans": agent["perceived_humans"],
+            }
+            for agent in sim_states[i]
+            if agent["type"] == "robot"
+        ]
 
-# --- Evaluate results ---
-print(
-    "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
-        1e3 * np.mean(particleTracker_execution_times),
-        1e3 * np.max(particleTracker_execution_times),
+        start = time()
+        particleTracker_edge_probabilities.append(
+            particleTracker.add_observation(robot_perceptions)
+        )
+        _ = particleTracker.predict()
+        particleTracker_execution_times.append(time() - start)
+
+        cleared_edges = particleTracker.get_cleared_edges(particleTracker_edge_probabilities[-1])
+
+        if plot:
+            plotter.clear()
+            plotter.update_sim_state(sim_states[i])
+            plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
+            plotter.update_cleared_edges(cleared_edges)
+            # plotter.update_individual_edge_probabilities(particleTracker_edge_probabilities[-1])
+            plotter.show(blocking=False)
+        if record_video:
+            plotter.capture_frame()
+
+        pbar.set_postfix(
+            {
+                "Simulated time": "{:d}:{:02d} of {:d}:{:02d} hours; T_Tracker: {:.0f}ms".format(
+                    int(simulation_time / 3600),
+                    int(simulation_time / 60) % 60,
+                    int(T_simulation / 3600),
+                    int(T_simulation / 60) % 60,
+                    1e3 * particleTracker_execution_times[-1],
+                )
+            }
+        )
+        simulation_time += T_step
+
+    # --- Evaluate results ---
+    print(
+        "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
+            1e3 * np.mean(particleTracker_execution_times),
+            1e3 * np.max(particleTracker_execution_times),
+        )
     )
-)
-if record_video:
-    plotter.create_video(T_step, speed=config["playback_speed"])
-with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + timestamp + ".pkl"), "wb") as f:
-    pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
+    if record_video:
+        plotter.create_video(T_step, speed=config["playback_speed"])
+    with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + filename + ".pkl"), "wb") as f:
+        pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
+    with open(os.path.join(LOG_FOLDER, "N_perceived_" + str(N_humans) + "humans.pkl"), "wb") as f:
+        pickle.dump(particleTracker.N_perceived_humans_log, f, pickle.HIGHEST_PROTOCOL)
 
+    from evaluator import calc_false_negative_rate, calc_cleared_edges_rate
 
-from evaluator import calc_false_negative_rate, calc_cleared_edges_rate
-
-false_negative_rate = calc_false_negative_rate(
-    np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
-)
-cleared_edges_rate = calc_cleared_edges_rate(
-    np.array(particleTracker_edge_probabilities), config["clear_threshold"]
-)
-print("False negative rate: {:.5f}".format(false_negative_rate))
-print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))
+    false_negative_rate = calc_false_negative_rate(
+        np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
+    )
+    cleared_edges_rate = calc_cleared_edges_rate(
+        np.array(particleTracker_edge_probabilities), config["clear_threshold"]
+    )
+    print("False negative rate: {:.5f}".format(false_negative_rate))
+    print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))

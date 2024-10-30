@@ -18,10 +18,10 @@
 #include "simulation.h"
 #include "warehouse_data.h"
 
-ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particles)
-    : T_step(T_step), N_humans_max(N_humans_max), N_particles(N_particles) {
+ParticleTracker::ParticleTracker(double T_step, int N_tracks, int N_particles)
+    : T_step(T_step), N_tracks(N_tracks), N_particles(N_particles) {
     // --- init particles ---
-    for (int i = 0; i < N_humans_max; i++) {
+    for (int i = 0; i < N_tracks; i++) {
         std::vector<Particle> particles_per_human;
         for (int j = 0; j < N_particles; j++) {
             particles_per_human.push_back(Particle(&graph));
@@ -37,12 +37,8 @@ ParticleTracker::ParticleTracker(double T_step, int N_humans_max, int N_particle
     mt = std::mt19937(rd());
 }
 
-std::vector<double> ParticleTracker::add_observation(
-    std::vector<pybind11::dict> robot_perceptions) {
-    auto merged_perceptions = merge_perceptions(robot_perceptions);
-    std::vector<Point> robot_positions = merged_perceptions.first;
-    std::vector<pybind11::dict> perceived_humans = merged_perceptions.second;
-
+std::vector<double> ParticleTracker::add_merged_perceptions(
+    std::vector<pybind11::dict> perceived_humans, std::vector<Point> robot_positions) {
     // --- update particles for each human individually ---
     for (int i = 0; i < N_particles; i++) {
         std::vector<std::vector<int>> assignment_cost_matrix =
@@ -50,7 +46,7 @@ std::vector<double> ParticleTracker::add_observation(
         std::vector<int> hypotheses =
             assign_perceived_humans_to_internal_humans(assignment_cost_matrix);
         double likelihood = 1.0;
-        for (int j = 0; j < N_humans_max; j++) {
+        for (int j = 0; j < N_tracks; j++) {
             int perception_index = hypotheses[j];
             if (perception_index == -1) {
                 likelihood *= particles[j][i].likelihood_no_perception(robot_positions);
@@ -74,7 +70,7 @@ std::vector<double> ParticleTracker::add_observation(
         int random_source_particle_index = resample_distribution(mt);
         // --- copy particles ---
         if (particle_weights[i] < resample_threshold) {
-            for (int j = 0; j < N_humans_max; j++) {
+            for (int j = 0; j < N_tracks; j++) {
                 // use the copy constructor to reseed the random number generator
                 particles[j][i] = Particle(particles[j][random_source_particle_index]);
             }
@@ -84,20 +80,34 @@ std::vector<double> ParticleTracker::add_observation(
     }
     normalize_weights();
 
-    // --- print effective sample size for debugging purposes ---
-    std::cout << "Effective sample size: " << calc_effective_sample_size()
-              << "; N_particles: " << N_particles << std::endl;
+    // // --- print effective sample size for debugging purposes ---
+    // std::cout << "Effective sample size: " << calc_effective_sample_size()
+    //           << "; N_particles: " << N_particles << std::endl;
 
     // --- calculate edge probabiliities from internal state ---
     return calc_edge_probabilities();
 }
 
-std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merge_perceptions(
+void ParticleTracker::add_one_track() {
+    N_tracks++;
+    std::vector<Particle> particles_new_track;
+    for (int i = 0; i < N_particles; i++) {
+        particles_new_track.push_back(Particle(&graph));
+    }
+    particles.push_back(particles_new_track);
+}
+
+void ParticleTracker::remove_one_track() {
+    N_tracks--;
+    particles.pop_back();  // remove last track
+}
+
+std::pair<std::vector<pybind11::dict>, std::vector<Point>> ParticleTracker::merge_perceptions(
     std::vector<pybind11::dict> robot_perceptions) {
-    std::pair<std::vector<Point>, std::vector<pybind11::dict>> merged_perceptions;
+    std::pair<std::vector<pybind11::dict>, std::vector<Point>> merged_perceptions;
     for (const auto& perception : robot_perceptions) {
         Point robot_position = perception["position"].cast<Point>();
-        merged_perceptions.first.push_back(robot_position);
+        merged_perceptions.second.push_back(robot_position);
         auto perceived_humans = perception["perceived_humans"].cast<std::vector<pybind11::dict>>();
         std::vector<pybind11::dict> new_perceptions_this_robot;
         for (const auto& perceived_human : perceived_humans) {
@@ -108,7 +118,7 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
             double perceived_heading_variance = std::pow(HEADING_STDDEV, 2);
 
             bool matching_perception_found = false;
-            for (auto& merged_human : merged_perceptions.second) {
+            for (auto& merged_human : merged_perceptions.first) {
                 Point merged_pos = merged_human["position"].cast<Point>();
                 double merged_heading = merged_human["heading"].cast<double>();
                 double merged_pos_variance =
@@ -154,9 +164,9 @@ std::pair<std::vector<Point>, std::vector<pybind11::dict>> ParticleTracker::merg
                     std::sqrt(perceived_heading_variance);
             }
         }
-        merged_perceptions.second.insert(merged_perceptions.second.end(),
-                                         new_perceptions_this_robot.begin(),
-                                         new_perceptions_this_robot.end());
+        merged_perceptions.first.insert(merged_perceptions.first.end(),
+                                        new_perceptions_this_robot.begin(),
+                                        new_perceptions_this_robot.end());
     }
     return merged_perceptions;
 }
@@ -232,7 +242,7 @@ std::tuple<double, double> ParticleTracker::edge_to_pose_distance_and_t(int edge
 }
 
 std::vector<double> ParticleTracker::predict() {
-    for (int i = 0; i < N_humans_max; i++) {
+    for (int i = 0; i < N_tracks; i++) {
         for (int j = 0; j < N_particles; j++) {
             particles[i][j].predict(T_step);
         }
@@ -261,7 +271,7 @@ std::vector<double> ParticleTracker::calc_edge_probabilities() {
     std::vector<double> edge_probabilities(graph.edges.size(), 0.0);
     for (int i = 0; i < N_particles; i++) {
         for (int j = 0; j < graph.edges.size(); j++) {
-            for (int k = 0; k < N_humans_max; k++) {
+            for (int k = 0; k < N_tracks; k++) {
                 if (particles[k][i].is_human_on_edge(j)) {
                     edge_probabilities[j] += particle_weights[i];
                     break;
@@ -274,9 +284,9 @@ std::vector<double> ParticleTracker::calc_edge_probabilities() {
 
 std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
     std::vector<pybind11::dict> perceived_humans, int particle_index) {
-    std::vector<std::vector<int>> cost_matrix(N_humans_max, std::vector<int>(N_humans_max, 0));
-    for (int i = 0; i < N_humans_max; i++) {      // tracks
-        for (int j = 0; j < N_humans_max; j++) {  // perceived humans
+    std::vector<std::vector<int>> cost_matrix(N_tracks, std::vector<int>(N_tracks, 0));
+    for (int i = 0; i < N_tracks; i++) {      // tracks
+        for (int j = 0; j < N_tracks; j++) {  // perceived humans
             if (j < perceived_humans.size()) {
                 auto particle = particles[i][particle_index];
                 auto perceived_human = perceived_humans[j];
@@ -296,22 +306,22 @@ std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
 std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     std::vector<std::vector<int>> cost_matrix_input) {
     // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
-    int** cost_matrix = (int**)calloc(N_humans_max, sizeof(int*));
-    for (int i = 0; i < N_humans_max; i++) {
-        cost_matrix[i] = (int*)calloc(N_humans_max, sizeof(int));
-        for (int j = 0; j < N_humans_max; j++) {
+    int** cost_matrix = (int**)calloc(N_tracks, sizeof(int*));
+    for (int i = 0; i < N_tracks; i++) {
+        cost_matrix[i] = (int*)calloc(N_tracks, sizeof(int));
+        for (int j = 0; j < N_tracks; j++) {
             cost_matrix[i][j] = cost_matrix_input[i][j];
         }
     }
 
     // --- assign perceived humans to internal humans using the hungarian algorithm ---
     hungarian_problem_t prob;
-    int matrix_size = hungarian_init(&prob, cost_matrix, N_humans_max, N_humans_max,
-                                     HUNGARIAN_MODE_MINIMIZE_COST);
+    int matrix_size =
+        hungarian_init(&prob, cost_matrix, N_tracks, N_tracks, HUNGARIAN_MODE_MINIMIZE_COST);
     hungarian_solve(&prob);
-    std::vector<int> perceived_human_per_internal_human(N_humans_max, -1);
-    for (int i = 0; i < N_humans_max; i++) {
-        for (int j = 0; j < N_humans_max; j++) {
+    std::vector<int> perceived_human_per_internal_human(N_tracks, -1);
+    for (int i = 0; i < N_tracks; i++) {
+        for (int j = 0; j < N_tracks; j++) {
             if (prob.assignment[i][j] == 1) {
                 if (cost_matrix[i][j] < 0.5e8) {
                     perceived_human_per_internal_human[i] = j;
@@ -323,7 +333,7 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
         }
     }
     hungarian_free(&prob);
-    for (int i = 0; i < N_humans_max; i++) {
+    for (int i = 0; i < N_tracks; i++) {
         free(cost_matrix[i]);
     }
     return perceived_human_per_internal_human;

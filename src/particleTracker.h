@@ -18,12 +18,14 @@ using Point = std::pair<double, double>;
 
 class ParticleTracker {
    public:
-    ParticleTracker(double T_step, int N_humans_max, int N_particles);
-    std::pair<std::vector<Point>, std::vector<pybind11::dict>> merge_perceptions(
+    ParticleTracker(double T_step, int N_tracks, int N_particles);
+    std::pair<std::vector<pybind11::dict>, std::vector<Point>> merge_perceptions(
         std::vector<pybind11::dict> robot_perceptions);
-    std::vector<std::vector<int>> calc_assignment_cost_matrix(
-        std::vector<pybind11::dict> perceived_humans, int particle_index);
-    std::vector<double> add_observation(std::vector<pybind11::dict> robot_perceptions);
+    std::vector<double> add_merged_perceptions(std::vector<pybind11::dict> perceived_humans,
+                                               std::vector<Point> robot_positions);
+    void add_one_track();
+    void remove_one_track();
+                                    
     std::vector<double> predict();
 
     graph_struct graph;
@@ -45,6 +47,8 @@ class ParticleTracker {
     Particle generate_new_particle_from_perception(Point perceived_pos, double position_stddev,
                                                    double perceived_heading, double heading_stddev);
     std::tuple<int, double> get_belonging_edge(Point position, double heading);
+    std::vector<std::vector<int>> calc_assignment_cost_matrix(
+        std::vector<pybind11::dict> perceived_humans, int particle_index);
     std::vector<int> assign_perceived_humans_to_internal_humans(
         std::vector<std::vector<int>> cost_matrix);
     void normalize_weights();
@@ -57,7 +61,7 @@ class ParticleTracker {
 
     // particle filter attributes
     const double T_step;
-    const int N_humans_max;
+    int N_tracks; // not const because we can add and remove tracks
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
     std::vector<double> particle_weights;

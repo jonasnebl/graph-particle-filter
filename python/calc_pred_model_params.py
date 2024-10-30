@@ -151,7 +151,32 @@ def train_durations():
     print(np.max(duration_params, axis=0))
 
 
+def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
+    """ """
+    N_tracks_max = len(N_perceived_log_filepaths)
+    likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
+    likelihood_matrix[0, 0] = 1.0
+    for i in range(1, N_tracks_max + 1): # true number of humans
+        with open(os.path.join(LOG_FOLDER, N_perceived_log_filepaths[i-1]), "rb") as f:
+            N_perceived_log = pickle.load(f)
+        for j in range(0, N_tracks_max + 1): # perceived number of humans
+            likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
+    print(likelihood_matrix)
+    np.savetxt(os.path.join(MODEL_PATH, "likelihood_matrix.csv"), likelihood_matrix, delimiter=",")
+
+
 if __name__ == "__main__":
-    get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
-    train_successor_edge_probabilities()
-    train_durations()
+    # get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
+    # train_successor_edge_probabilities()
+    # train_durations()
+    train_likelihood_matrix(
+        [
+            "N_perceived_1humans.pkl",
+            "N_perceived_2humans.pkl",
+            "N_perceived_3humans.pkl",
+            "N_perceived_4humans.pkl",
+            "N_perceived_5humans.pkl",
+            "N_perceived_6humans.pkl",
+            "N_perceived_7humans.pkl",
+        ]
+    )
