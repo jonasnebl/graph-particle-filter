@@ -22,6 +22,7 @@ if not os.path.exists(FIGURE_PATH):
     os.makedirs(FIGURE_PATH)
 
 TRAINING_DATA_PATH = os.path.join(LOG_FOLDER, "training_data.json")
+N_HUMANS_LIKELIHOOD_MATRIX_PATH = os.path.join(MODEL_PATH, "N_humans_likelihood_matrix.csv")
 GRAPH_PATH = os.path.join(WAREHOUSE_FOLDER, "graph_data.json")
 RACK_PATH = os.path.join(WAREHOUSE_FOLDER, "rack_data.json")
 NODE_MEANING_PATH = os.path.join(WAREHOUSE_FOLDER, "node_meanings.json")

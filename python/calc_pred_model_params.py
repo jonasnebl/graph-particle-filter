@@ -162,7 +162,7 @@ def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
     print(likelihood_matrix)
-    np.savetxt(os.path.join(MODEL_PATH, "N_humans_likelihood_matrix.csv"), likelihood_matrix, delimiter=",")
+    np.savetxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, likelihood_matrix, delimiter=",")
 
 
 if __name__ == "__main__":

@@ -151,8 +151,9 @@ class Plotter:
             start_pos = self.node_positions[start]
             end_pos = self.node_positions[end]
             probability = edge_probabilities[i]
-            color = cmap(probability)
-            linewidth = 1 + 19 * probability  # Line width ranges from 1 to 20
+            nonlinearity = 1/3 # value < 1 to make low probabilities more distinguishable
+            color = cmap(probability**nonlinearity)  
+            linewidth = 1 + 19 * probability**nonlinearity  # Line width ranges from 1 to 25
             alpha = (
                 0.1 if probability == 0 else 1
             )  # Make arrow almost invisible if probability is zero

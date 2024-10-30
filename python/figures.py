@@ -184,6 +184,21 @@ def plot_detection_probability():
     plt.show()
 
 
+def plot_N_humans_in_warehouse():
+    """Plot the number of humans in the warehouse over time."""
+    with open(os.path.join(LOG_FOLDER, "N_perceived_5humans.pkl"), "rb") as f:
+        N_perceived_log = pickle.load(f)
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+    ax.plot(N_perceived_log)
+    ax.set_title("Anzahl der wahrgenommenen Menschen im Lager")
+    ax.set_xlabel("Zeit in 0.5s Schritten")
+    ax.set_ylabel("Anzahl der wahrgenommenen Menschen")
+    plt.tight_layout()
+    plt.savefig(os.path.join(FIGURE_PATH, "N_perceived_5humans.pdf"))
+    plt.show()
+
+
 if __name__ == "__main__":
     # plot_detection_probability()
 

@@ -40,9 +40,7 @@ class ParticleTracker:
         # variables for the number of tracks
         self.N_tracks = N_tracks_init
         self.N_perceived_humans_log = []
-        self.likelihood_matrix = np.loadtxt(
-            os.path.join(MODEL_PATH, "likelihood_matrix.csv"), delimiter=","
-        )
+        self.likelihood_matrix = np.loadtxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, delimiter=",")
         self.N_perceived_humans_window = np.array([N_tracks_init] * int(120 / 0.5), dtype=int)
 
     def add_observation(self, robot_perceptions) -> np.ndarray:
