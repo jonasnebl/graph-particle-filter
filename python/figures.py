@@ -190,6 +190,8 @@ def plot_N_humans_in_warehouse(filename: str):
         N_estimated_log = np.array(pickle.load(f))
     with open(os.path.join(LOG_FOLDER, f"log_{filename}.pkl"), "rb") as f:
         sim_log = pickle.load(f)
+    with open(os.path.join(LOG_FOLDER, f"N_tracks_{filename}.pkl"), "rb") as f:
+        N_tracks_log = np.array(pickle.load(f))
 
     # determine true number of humans in the simulation
     N_humans_true = np.ones(N_estimated_log.shape) * sim_log["N_humans"]
@@ -205,12 +207,13 @@ def plot_N_humans_in_warehouse(filename: str):
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
     ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{Schätzung}$")
     ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
+    ax.plot(timevec_minutes, N_tracks_log, label="$N_{Tracks}$")
     ax.legend()
     ax.set_title("Anzahl der wahrgenommenen Menschen im Lager")
     ax.set_xlabel("Zeit in Minuten")
     ax.set_xlim([0, timevec_minutes[-1]])
     ax.set_ylabel("Anzahl der wahrgenommenen Menschen")
-    ax.set_ylim([0, max(N_estimated_log) + 1])
+    ax.set_ylim([0, max(N_tracks_log) + 0.1])
     ax.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "N_estimated.pdf"))

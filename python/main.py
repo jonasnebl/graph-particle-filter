@@ -135,7 +135,8 @@ if config["run_tracker"]:
         pickle.dump(particleTracker.N_perceived_humans_log, f, pickle.HIGHEST_PROTOCOL)
     with open(os.path.join(LOG_FOLDER, "N_estimated_" + filename + ".pkl"), "wb") as f:
         pickle.dump(particleTracker.N_humans_estimated_log, f, pickle.HIGHEST_PROTOCOL)
-
+    with open(os.path.join(LOG_FOLDER, "N_tracks_" + filename + ".pkl"), "wb") as f:
+        pickle.dump(particleTracker.N_tracks_log, f, pickle.HIGHEST_PROTOCOL)
     # --- Evaluate results ---
     print(
         "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(

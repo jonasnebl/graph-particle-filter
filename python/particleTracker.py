@@ -38,9 +38,15 @@ class ParticleTracker:
         ) = load_warehouse_data_from_json()
 
         # variables for the number of tracks
+        self.simulation_time = 0
+        self.T_step = T_step
+        self.DEBOUNCE_TIME_SECONDS = 3 * 60
+        self.last_time_track_added = -self.DEBOUNCE_TIME_SECONDS
+        self.last_time_track_removed = -self.DEBOUNCE_TIME_SECONDS
         self.N_tracks = N_tracks_init
         self.N_perceived_humans_log = []
         self.N_humans_estimated_log = []
+        self.N_tracks_log = []
         self.likelihood_matrix = np.loadtxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, delimiter=",")
         self.WINDOW_LENGTH_SECONDS = 10 * 60
         self.N_perceived_humans_window = np.array(
@@ -59,12 +65,21 @@ class ParticleTracker:
         N_humans_estimated = self.tracker.estimate_N_humans(len(perceived_humans))
         self.N_humans_estimated_log.append(N_humans_estimated)
         N_tracks_new = N_humans_estimated + 1  # add a safety margin
-        if N_tracks_new > self.N_tracks:
+        if (
+            N_tracks_new > self.N_tracks
+            and self.simulation_time - self.last_time_track_removed >= self.DEBOUNCE_TIME_SECONDS
+        ):
             self.tracker.add_one_track()
+            self.last_time_track_added = self.simulation_time
             self.N_tracks += 1
-        elif N_tracks_new < self.N_tracks:
+        elif (
+            N_tracks_new < self.N_tracks
+            and self.simulation_time - self.last_time_track_added >= self.DEBOUNCE_TIME_SECONDS
+        ):
             self.tracker.remove_one_track()
+            self.last_time_track_removed = self.simulation_time
             self.N_tracks -= 1
+        self.N_tracks_log.append(self.N_tracks)
 
         return np.array(self.tracker.add_merged_perceptions(perceived_humans, robot_positions))
 
@@ -73,6 +88,7 @@ class ParticleTracker:
 
         :return: (N_edges,) np.ndarray of edge probabilities for the tracker.
         """
+        self.simulation_time += self.T_step
         return np.array(self.tracker.predict())
 
     @staticmethod
