@@ -184,18 +184,36 @@ def plot_detection_probability():
     plt.show()
 
 
-def plot_N_humans_in_warehouse():
+def plot_N_humans_in_warehouse(filename: str):
     """Plot the number of humans in the warehouse over time."""
-    with open(os.path.join(LOG_FOLDER, "N_perceived_5humans.pkl"), "rb") as f:
-        N_perceived_log = pickle.load(f)
+    with open(os.path.join(LOG_FOLDER, f"N_estimated_{filename}.pkl"), "rb") as f:
+        N_estimated_log = np.array(pickle.load(f))
+    with open(os.path.join(LOG_FOLDER, f"log_{filename}.pkl"), "rb") as f:
+        sim_log = pickle.load(f)
+
+    # determine true number of humans in the simulation
+    N_humans_true = np.ones(N_estimated_log.shape) * sim_log["N_humans"]
+    _, edges, _, _, _, _, exit_nodes = load_warehouse_data_from_json()
+    for i, sim_state in enumerate(sim_log["sim_states"]):
+        for agent in sim_state:
+            if agent["type"] == "human" and agent["position"][0] > 62:  # 62 meters
+                N_humans_true[i] -= 1
+
+    timevec = np.arange(0, len(sim_log["sim_states"]) * sim_log["T_step"], sim_log["T_step"])
+    timevec_minutes = timevec / 60
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 3))
-    ax.plot(N_perceived_log)
+    ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{Schätzung}$")
+    ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
+    ax.legend()
     ax.set_title("Anzahl der wahrgenommenen Menschen im Lager")
-    ax.set_xlabel("Zeit in 0.5s Schritten")
+    ax.set_xlabel("Zeit in Minuten")
+    ax.set_xlim([0, timevec_minutes[-1]])
     ax.set_ylabel("Anzahl der wahrgenommenen Menschen")
+    ax.set_ylim([0, max(N_estimated_log) + 1])
+    ax.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGURE_PATH, "N_perceived_5humans.pdf"))
+    plt.savefig(os.path.join(FIGURE_PATH, "N_estimated.pdf"))
     plt.show()
 
 
@@ -204,14 +222,17 @@ if __name__ == "__main__":
 
     # plot_pred_model(int(sys.argv[1]))
 
-    # --- Plot result metrics ---
-    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-        evaluate_multiple_thresholds(thresholds, filename="2024-10-23_19-23-37")
-    )
-    plot_results_multiple_thresholds(
-        thresholds, false_negative_rates_human_centric, cleared_edges_rates
-    )
-    plot_results_multiple_thresholds(
-        thresholds, false_negative_rates_edge_centric, cleared_edges_rates
-    )
+    # --- plot number of perceived humans comparison ---
+    plot_N_humans_in_warehouse("2024-10-31_13-14-45")
+
+    # # --- Plot result metrics ---
+    # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
+    #     evaluate_multiple_thresholds(thresholds, filename="2024-10-23_19-23-37")
+    # )
+    # plot_results_multiple_thresholds(
+    #     thresholds, false_negative_rates_human_centric, cleared_edges_rates
+    # )
+    # plot_results_multiple_thresholds(
+    #     thresholds, false_negative_rates_edge_centric, cleared_edges_rates
+    # )

@@ -88,6 +88,28 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     return calc_edge_probabilities();
 }
 
+int ParticleTracker::estimate_N_humans(int N_perceived) {
+    N_perceived_window.push_back(N_perceived);
+    if (N_perceived_window.size() > T_WINDOW / T_step) {
+        N_perceived_window.pop_front();
+    }
+    std::vector<double> N_estimated_likelihood(graph.N_perceived_likelihood_matrix.size(), 1.0);
+    for (int i = 0; i < N_perceived_window.size(); i++) {
+        for (int j = 0; j < graph.N_perceived_likelihood_matrix.size(); j++) {
+            N_estimated_likelihood[j] *=
+                graph.N_perceived_likelihood_matrix[j][N_perceived_window[i]];
+        }
+        // normalize to avoid float point underflow
+        double sum =
+            std::accumulate(N_estimated_likelihood.begin(), N_estimated_likelihood.end(), 0.0);
+        for (int j = 0; j < graph.N_perceived_likelihood_matrix.size(); j++) {
+            N_estimated_likelihood[j] /= sum;
+        }
+    }
+    return std::max_element(N_estimated_likelihood.begin(), N_estimated_likelihood.end()) -
+           N_estimated_likelihood.begin();
+}
+
 void ParticleTracker::add_one_track() {
     N_tracks++;
     std::vector<Particle> particles_new_track;

@@ -90,8 +90,11 @@ class Plotter:
         # List to store frames to later generate a video
         self.frames = []
 
-    def clear(self):
+    def reset(self):
         """Clear previous arrows and text annotations"""
+        for elem in self.perception_elements:
+            elem.remove()
+        self.perception_elements.clear()
         for patch in self.ax.patches:
             if isinstance(patch, matplotlib.patches.FancyArrow):
                 patch.remove()
@@ -111,11 +114,6 @@ class Plotter:
         colors = ["orange" if agent["type"] == "robot" else "green" for agent in state]
         self.scat_agents.set_offsets(positions)
         self.scat_agents.set_color(colors)
-
-        # Clear previous perceptions
-        for elem in self.perception_elements:
-            elem.remove()
-        self.perception_elements.clear()
 
         # Visualize robot perceptions
         for agent in state:
@@ -151,8 +149,8 @@ class Plotter:
             start_pos = self.node_positions[start]
             end_pos = self.node_positions[end]
             probability = edge_probabilities[i]
-            nonlinearity = 1/3 # value < 1 to make low probabilities more distinguishable
-            color = cmap(probability**nonlinearity)  
+            nonlinearity = 1 / 3  # value < 1 to make low probabilities more distinguishable
+            color = cmap(probability**nonlinearity)
             linewidth = 1 + 19 * probability**nonlinearity  # Line width ranges from 1 to 25
             alpha = (
                 0.1 if probability == 0 else 1
@@ -177,10 +175,10 @@ class Plotter:
                 ["{:.3f}".format(probability) for probability in edge_probabilities]
             )
 
-    def update_cleared_edges(self, cleared_edges):
+    def update_cleared_edges(self, cleared_edges: list[bool]):
         """Highlight the edges that are considered cleared based on a very low probability.
 
-        :param cleared_edges: List of cleared edge probabilities
+        :param cleared_edges: List of bool cleared edge probabilities
         """
         for i, edge_cleared in enumerate(cleared_edges):
             if edge_cleared:
@@ -196,7 +194,9 @@ class Plotter:
                     )
                 )
 
-    def update_individual_edge_probabilities(self, individual_edge_probabilities):
+    def update_individual_edge_probabilities(
+        self, individual_edge_probabilities: list[list[float]]
+    ):
         """Displays the edge probabilities for each tracked human individually
 
         :param individual_edge_probabilities: List of list of edge probabilities for each human
@@ -236,7 +236,7 @@ class Plotter:
                 ["{:.3f}".format(max_probability) for max_probability in max_edge_probabilities]
             )
 
-    def show(self, blocking=True):
+    def show(self, blocking: bool = True):
         """Show the current state of the warehouse plot.
 
         :param blocking: If True, the plot will be blocking, otherwise non-blocking.
@@ -251,7 +251,7 @@ class Plotter:
         """Capture the current frame and store it for later video generation"""
         self.frames.append(mplfig_to_npimage(self.fig))
 
-    def create_video(self, T_step, speed=1.0):
+    def create_video(self, T_step: float, speed: float = 1.0):
         if len(self.frames) == 0:
             raise Exception("You must capture frames with capture_frame() before creating a video.")
         else:
@@ -265,7 +265,7 @@ class Plotter:
                 fps=fps,
             )
 
-    def savefig(self, filename, format="svg"):
+    def savefig(self, filename: str, format: str = "svg"):
         """Save the currently displayed warehouse as a pdf figure"""
         if format not in ["pdf", "svg", "png"]:
             raise ValueError(f"Invalid format: {format}. Use 'pdf', 'svg', or 'png' instead.")
@@ -273,7 +273,7 @@ class Plotter:
             filename += "." + format
         plt.savefig(os.path.join(FIGURE_PATH, filename))
 
-    def annotate_edges(self, annotations):
+    def annotate_edges(self, annotations: list[str]):
         """Annotate the edges with the given annotations"""
         for edge_index, annotation in enumerate(annotations):
             start, end = self.edges[edge_index]

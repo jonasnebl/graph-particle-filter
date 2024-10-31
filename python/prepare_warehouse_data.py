@@ -9,6 +9,7 @@ from utils import load_warehouse_data_from_json, get_successor_edges
 import os
 import json
 from paths import *
+import numpy as np
 
 nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = (
     load_warehouse_data_from_json()
@@ -120,6 +121,17 @@ with open(os.path.join(MODEL_PATH, "duration_params.json"), "r") as f:
 for duration_params_one_edge in duration_params:
     header_content += "    {"
     header_content += ", ".join(map(str, duration_params_one_edge))
+    header_content += "},\n"
+
+header_content += """    };
+    std::vector<std::vector<double>> N_perceived_likelihood_matrix = {
+"""
+
+# Add N perceived likelihood matrix to the header content
+likelihood_matrix = np.loadtxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, delimiter=",")
+for row in likelihood_matrix:
+    header_content += "        {"
+    header_content += ", ".join(map(str, row))
     header_content += "},\n"
 
 header_content += """    };

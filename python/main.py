@@ -1,14 +1,14 @@
 from tqdm import tqdm
 import numpy as np
 import pickle
-import sys
 from datetime import datetime
 import yaml
-from time import time, sleep
+from time import time
 from plotter import Plotter
 from particleTracker import ParticleTracker
 from simulation import Simulation
 from paths import *
+from evaluator import *
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -80,7 +80,7 @@ if config["run_tracker"]:
         T_step=T_step, N_tracks_init=N_tracks_init, N_particles=config["N_particles"]
     )
 
-    pbar = tqdm(range(0, int(len(sim_states))), desc="Simulation")
+    pbar = tqdm(range(0, int(len(sim_states))), desc="Tracker")
     simulation_time = 0
     particleTracker_edge_probabilities = []
     particleTracker_execution_times = []
@@ -104,7 +104,7 @@ if config["run_tracker"]:
         cleared_edges = particleTracker.get_cleared_edges(particleTracker_edge_probabilities[-1])
 
         if plot:
-            plotter.clear()
+            plotter.reset()
             plotter.update_sim_state(sim_states[i])
             plotter.update_edge_probabilities(particleTracker_edge_probabilities[-1])
             plotter.update_cleared_edges(cleared_edges)
@@ -126,28 +126,32 @@ if config["run_tracker"]:
         )
         simulation_time += T_step
 
-    # --- Evaluate and save results ---
+    # --- Save logs ---
+    if record_video:
+        plotter.create_video(T_step, speed=config["playback_speed"])
+    with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + filename + ".pkl"), "wb") as f:
+        pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
+    with open(os.path.join(LOG_FOLDER, "N_perceived_" + filename + ".pkl"), "wb") as f:
+        pickle.dump(particleTracker.N_perceived_humans_log, f, pickle.HIGHEST_PROTOCOL)
+    with open(os.path.join(LOG_FOLDER, "N_estimated_" + filename + ".pkl"), "wb") as f:
+        pickle.dump(particleTracker.N_humans_estimated_log, f, pickle.HIGHEST_PROTOCOL)
+
+    # --- Evaluate results ---
     print(
         "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
             1e3 * np.mean(particleTracker_execution_times),
             1e3 * np.max(particleTracker_execution_times),
         )
     )
-    if record_video:
-        plotter.create_video(T_step, speed=config["playback_speed"])
-    with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + filename + ".pkl"), "wb") as f:
-        pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(LOG_FOLDER, "N_perceived_" + str(N_humans) + "humans.pkl"), "wb") as f:
-        pickle.dump(particleTracker.N_perceived_humans_log, f, pickle.HIGHEST_PROTOCOL)
-
-    from evaluator import calc_false_negative_rate, calc_cleared_edges_rate
-
-    false_negative_rate = calc_false_negative_rate(
+    false_negative_rate_human_centric = calc_false_negative_human_centric(
+        np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
+    )
+    false_negative_rate_edge_centric = calc_false_negative_edge_centric(
         np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
     )
     cleared_edges_rate = calc_cleared_edges_rate(
         np.array(particleTracker_edge_probabilities), config["clear_threshold"]
     )
-    print("False negative rate human centric: {:.5f}".format(false_negative_rate))
-    print("False negative rate edge centric: {:.5f}".format(cleared_edges_rate))
+    print("False negative rate human centric: {:.5f}".format(false_negative_rate_human_centric))
+    print("False negative rate edge centric: {:.5f}".format(false_negative_rate_edge_centric))
     print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))

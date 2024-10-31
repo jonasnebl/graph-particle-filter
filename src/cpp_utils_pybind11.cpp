@@ -19,6 +19,8 @@ PYBIND11_MODULE(cpp_utils, m) {
         .def("add_merged_perceptions", &ParticleTracker::add_merged_perceptions,
              "Add robot oservations", pybind11::arg("perceived_humans"),
              pybind11::arg("robot_positions"))
+        .def("estimate_N_humans", &ParticleTracker::estimate_N_humans,
+             "Estimate the number of humans", pybind11::arg("N_perceived"))
         .def("add_one_track", &ParticleTracker::add_one_track)
         .def("remove_one_track", &ParticleTracker::remove_one_track)
         .def("predict", &ParticleTracker::predict, "Predict by one T_step");

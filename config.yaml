@@ -1,23 +1,23 @@
-run_new_simulation: True # if False, loads a previous simulation
-filename:  # if None, uses the current date and time
+run_new_simulation: False # if False, loads a previous simulation
+filename:  # if empty, uses the current date and time
 run_tracker: True # only runs simulation
 
 # --- Run a new simulation with the following parameters ---
-T_simulation: 120 # seconds
+T_simulation: 10800 # seconds
 T_step: 0.5 # seconds
 N_humans: 3
 N_robots: 4
 
 # --- Load a previous simulation (ignored if run_new_simulation == True) ---
 # ignores the above parameters and uses the parameters from the log file
-log_file: "log_2024-10-23_19-23-37.pkl"
+log_file: "log_2024-10-31_13-14-45.pkl"
 
 # --- Plotting parameters ---
-plot: True
-record_video: True # sets plot to True
+plot: False
+record_video: False # sets plot to True
 playback_speed: 1 # 1 is normal speed
 clear_threshold: 0.001 # maximum probability to consider an edge cleared
 
 # --- Tracker parameters ---
-N_particles: 1000
-N_tracks_init: 0 # -1 same as in the simulation
+N_particles: 1
+N_tracks_init: 1 # -1 same as in the simulation

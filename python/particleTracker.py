@@ -40,8 +40,12 @@ class ParticleTracker:
         # variables for the number of tracks
         self.N_tracks = N_tracks_init
         self.N_perceived_humans_log = []
+        self.N_humans_estimated_log = []
         self.likelihood_matrix = np.loadtxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, delimiter=",")
-        self.N_perceived_humans_window = np.array([N_tracks_init] * int(120 / 0.5), dtype=int)
+        self.WINDOW_LENGTH_SECONDS = 10 * 60
+        self.N_perceived_humans_window = np.array(
+            [N_tracks_init] * int(self.WINDOW_LENGTH_SECONDS / 0.5), dtype=int
+        )
 
     def add_observation(self, robot_perceptions) -> np.ndarray:
         """Update the tracker based on a list of robot perceptions.
@@ -52,7 +56,9 @@ class ParticleTracker:
         perceived_humans, robot_positions = self.tracker.merge_perceptions(robot_perceptions)
 
         # handle number of tracks
-        N_tracks_new = self.calc_N_tracks(perceived_humans)
+        N_humans_estimated = self.tracker.estimate_N_humans(len(perceived_humans))
+        self.N_humans_estimated_log.append(N_humans_estimated)
+        N_tracks_new = N_humans_estimated + 1  # add a safety margin
         if N_tracks_new > self.N_tracks:
             self.tracker.add_one_track()
             self.N_tracks += 1
@@ -68,17 +74,6 @@ class ParticleTracker:
         :return: (N_edges,) np.ndarray of edge probabilities for the tracker.
         """
         return np.array(self.tracker.predict())
-
-    def calc_N_tracks(self, perceived_humans) -> int:
-        """Calculate the proposed number of tracks based on the perceived humans."""
-        self.N_perceived_humans_log.append(len(perceived_humans))
-        self.N_perceived_humans_window = np.concatenate(
-            ([len(perceived_humans)], self.N_perceived_humans_window[:-1])
-        )
-        N_humans_max_likelihood = np.argmax(
-            np.prod(self.likelihood_matrix[:, self.N_perceived_humans_window], axis=1)
-        )
-        return N_humans_max_likelihood + 1  # 1 for one safety track
 
     @staticmethod
     def static_get_cleared_edges(

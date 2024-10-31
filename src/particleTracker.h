@@ -14,6 +14,8 @@
 #include "particle.h"
 #include "warehouse_data.h"
 
+const double T_WINDOW = 5 * 60;
+
 using Point = std::pair<double, double>;
 
 class ParticleTracker {
@@ -23,9 +25,10 @@ class ParticleTracker {
         std::vector<pybind11::dict> robot_perceptions);
     std::vector<double> add_merged_perceptions(std::vector<pybind11::dict> perceived_humans,
                                                std::vector<Point> robot_positions);
+    int estimate_N_humans(int N_perceived);
     void add_one_track();
     void remove_one_track();
-                                    
+
     std::vector<double> predict();
 
     graph_struct graph;
@@ -61,10 +64,11 @@ class ParticleTracker {
 
     // particle filter attributes
     const double T_step;
-    int N_tracks; // not const because we can add and remove tracks
+    int N_tracks;  // not const because we can add and remove tracks
     const int N_particles;
     std::vector<std::vector<Particle>> particles;
     std::vector<double> particle_weights;
+    std::deque<int> N_perceived_window;
 };
 
 #endif

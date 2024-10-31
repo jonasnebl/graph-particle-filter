@@ -14,7 +14,7 @@ using Point = std::pair<double, double>;
 
 const double D_MIN = 10.0;
 const double D_MAX = 20.0;
-const double DETECTION_PROBABILITY_IN_RANGE = 0.999; 
+const double DETECTION_PROBABILITY_IN_RANGE = 0.999;
 const double XY_STDDEV = 0.02;
 const double HEADING_STDDEV = 15.0 * M_PI / 180.0;
 const double ROBOT_VELOCITY = 2.2;
@@ -22,8 +22,9 @@ const double HUMAN_VELOCITY_MEAN = 1.3;
 const double HUMAN_VELOCITY_STDDEV = 0.1;
 
 const double PAUSE_VELOCITY = 0.1;
-const double OUT_OF_WAREHOUSE_VELOCITY = 0.01;
-const double LEAVE_WAREHOUSE_PROBABILITY = 0.01;
+const double OUT_OF_WAREHOUSE_VELOCITY =
+    0.01;  // the smaller, the longer the agent stays out of the warehouse
+const double LEAVE_WAREHOUSE_PROBABILITY = 0.02;
 
 const double SMOOTHING_STRENGTH = 0.1;
 const double SMOOTHING_ITERATIONS = 5;
