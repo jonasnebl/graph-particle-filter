@@ -20,7 +20,7 @@ using Point = std::pair<double, double>;
 
 class ParticleTracker {
    public:
-    ParticleTracker(double T_step, int N_tracks, int N_particles);
+    ParticleTracker(double T_step, int N_tracks_init, int N_particles);
     std::pair<std::vector<pybind11::dict>, std::vector<Point>> merge_perceptions(
         std::vector<pybind11::dict> robot_perceptions);
     std::vector<double> add_merged_perceptions(std::vector<pybind11::dict> perceived_humans,

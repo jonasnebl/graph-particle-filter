@@ -18,7 +18,7 @@
 #include "simulation.h"
 #include "warehouse_data.h"
 
-ParticleTracker::ParticleTracker(double T_step, int N_tracks, int N_particles)
+ParticleTracker::ParticleTracker(double T_step, int N_tracks_init, int N_particles)
     : T_step(T_step), N_tracks(N_tracks), N_particles(N_particles) {
     // --- init particles ---
     for (int i = 0; i < N_tracks; i++) {
@@ -35,6 +35,14 @@ ParticleTracker::ParticleTracker(double T_step, int N_tracks, int N_particles)
     // --- random number generator ---
     std::random_device rd;
     mt = std::mt19937(rd());
+
+    // --- init N_perceived window so that the tracker start's with N_tracks_init tracks ---
+    std::discrete_distribution<int> N_perceived_distribution(
+        graph.N_perceived_likelihood_matrix[N_tracks_init].begin(),
+        graph.N_perceived_likelihood_matrix[N_tracks_init].end());
+    for (int i = 0; i < T_WINDOW / T_step; i++) {
+        N_perceived_window.push_back(N_perceived_distribution(mt));
+    }
 }
 
 std::vector<double> ParticleTracker::add_merged_perceptions(
@@ -90,9 +98,7 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
 
 int ParticleTracker::estimate_N_humans(int N_perceived) {
     N_perceived_window.push_back(N_perceived);
-    if (N_perceived_window.size() > T_WINDOW / T_step) {
-        N_perceived_window.pop_front();
-    }
+    N_perceived_window.pop_front();
     std::vector<double> N_estimated_likelihood(graph.N_perceived_likelihood_matrix.size(), 1.0);
     for (int i = 0; i < N_perceived_window.size(); i++) {
         for (int j = 0; j < graph.N_perceived_likelihood_matrix.size(); j++) {
