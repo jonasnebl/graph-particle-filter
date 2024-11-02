@@ -45,6 +45,7 @@ class ParticleTracker {
 
     // calc node probabilities from internal system state
     std::vector<double> calc_edge_probabilities();
+    std::vector<std::vector<double>> calc_individual_edge_probabilities();
 
     // helper functions
     Particle generate_new_particle_from_perception(Point perceived_pos, double position_stddev,

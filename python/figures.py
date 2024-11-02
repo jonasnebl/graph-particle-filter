@@ -226,7 +226,7 @@ if __name__ == "__main__":
     # plot_pred_model(int(sys.argv[1]))
 
     # --- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse("2024-10-31_13-14-45")
+    plot_N_humans_in_warehouse("2024-11-02_10-14-55")
 
     # # --- Plot result metrics ---
     # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]

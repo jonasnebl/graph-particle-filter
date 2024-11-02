@@ -1,4 +1,4 @@
-run_new_simulation: False # if False, loads a previous simulation
+run_new_simulation: True # if False, loads a previous simulation
 filename:  # if empty, uses the current date and time
 run_tracker: True # only runs simulation
 
@@ -10,7 +10,7 @@ N_robots: 4
 
 # --- Load a previous simulation (ignored if run_new_simulation == True) ---
 # ignores the above parameters and uses the parameters from the log file
-log_file: "log_2024-10-31_13-14-45.pkl"
+log_file: "log_2024-11-02_09-52-35.pkl"
 
 # --- Plotting parameters ---
 plot: False

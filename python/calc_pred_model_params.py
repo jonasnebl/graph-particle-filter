@@ -17,14 +17,14 @@ nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes =
 successor_edges = get_successor_edges(edges)
 
 
-def get_magic_training_data(log_filename: str):
+def get_magic_training_data(filename: str):
     """Directly extracts the exact training data from a simulation log (magically).
 
     :param log_filename: Path to the simulation log
     :return: List of training data samples
     """
     start = time.time()
-    with open(os.path.join(LOG_FOLDER, log_filename), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, "log_" + filename + ".pkl"), "rb") as f:
         sim_log = pickle.load(f)
     sim_states = sim_log["sim_states"]
     T_step = sim_log["T_step"]
@@ -148,8 +148,6 @@ def train_durations():
     with open(os.path.join(MODEL_PATH, "duration_params.json"), "w") as f:
         json.dump(duration_params.tolist(), f, indent=4)
 
-    print(np.max(duration_params, axis=0))
-
 
 def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
     """Trains the likelihood matrix for the number of humans estimation."""
@@ -161,22 +159,23 @@ def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
             N_perceived_log = pickle.load(f)
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
+    print("Likelihood matrix:")
     print(likelihood_matrix)
     np.savetxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, likelihood_matrix, delimiter=",")
 
 
 if __name__ == "__main__":
-    get_magic_training_data("24hours_10humans_1robot_0.5seconds.pkl")
+    get_magic_training_data("24hours_10humans_1robot")
     train_successor_edge_probabilities()
     train_durations()
-    train_likelihood_matrix(
-        [
-            "N_perceived_1humans.pkl",
-            "N_perceived_2humans.pkl",
-            "N_perceived_3humans.pkl",
-            "N_perceived_4humans.pkl",
-            "N_perceived_5humans.pkl",
-            "N_perceived_6humans.pkl",
-            "N_perceived_7humans.pkl",
-        ]
-    )
+    # train_likelihood_matrix(
+    #     [
+    #         "N_perceived_1humans.pkl",
+    #         "N_perceived_2humans.pkl",
+    #         "N_perceived_3humans.pkl",
+    #         "N_perceived_4humans.pkl",
+    #         "N_perceived_5humans.pkl",
+    #         "N_perceived_6humans.pkl",
+    #         "N_perceived_7humans.pkl",
+    #     ]
+    # )
