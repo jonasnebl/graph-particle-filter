@@ -49,24 +49,12 @@ class Plotter:
         )
         self.scat_agents = self.ax.scatter([], [], s=200, facecolor=[], zorder=19)
         # Plot the polygons for the racks
-        x_limits = [10, 10]
-        y_limits = [10, 10]
         for polygon in self.polygons:
             polygon_points = np.array(polygon)
             poly = Polygon(
                 polygon_points, closed=True, fill=True, facecolor="gray", alpha=1, zorder=1
             )
             plt.gca().add_patch(poly)
-            x_limits = [
-                min(x_limits[0], np.min(polygon_points[:, 0])),
-                max(x_limits[1], np.max(polygon_points[:, 0])),
-            ]
-            y_limits = [
-                min(y_limits[0], np.min(polygon_points[:, 1])),
-                max(y_limits[1], np.max(polygon_points[:, 1])),
-            ]
-        self.ax.set_xlim(*x_limits)
-        self.ax.set_ylim(*y_limits)
 
         # Annotate the nodes with their indices
         for i, (x, y) in enumerate(self.node_positions):
