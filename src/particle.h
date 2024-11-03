@@ -11,15 +11,14 @@ using Point = std::pair<double, double>;
 
 class Particle {
    public:
-    Particle(graph_struct* graph_);                       // random particle
-    Particle(const Particle& p);                          // copy constructor
-    Particle(int edge_, double t, graph_struct* graph_);  // new custom particle
+    Particle(graph_struct* graph_);
     Point get_position();
     double get_heading();
     double distance(Point robot_position, Point measured_position, double measured_heading);
     double likelihood_no_perception(std::vector<Point> robot_position);
     void rewrite_from_perception(Point perceived_pos, double position_stddev,
                                  double perceived_heading, double heading_stddev);
+    void rewrite_from_other_particle(const Particle& p);
     static std::tuple<int, double> get_belonging_edge(Point position, double heading,
                                                       const graph_struct& graph);
     static std::tuple<double, double> edge_to_pose_distance_and_t(int edge, Point position,

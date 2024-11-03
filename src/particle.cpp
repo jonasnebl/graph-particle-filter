@@ -12,31 +12,12 @@
 #include "simulation.h"
 
 Particle::Particle(graph_struct* graph_) : graph(graph_) {
+    // random initialization
     std::random_device rd;
     mt = std::mt19937(rd());
     edge = std::uniform_int_distribution<int>(0, graph->successor_edges.size() - 1)(mt);
     time_since_edge_change = 0.0;
     time_of_edge_change = get_random_time_of_edge_change(edge);
-}
-
-Particle::Particle(const Particle& p)
-    : graph(p.graph),
-      edge(p.edge),
-      time_of_edge_change(p.time_of_edge_change),
-      time_since_edge_change(p.time_since_edge_change) {
-    std::random_device rd;
-    mt = std::mt19937(rd());
-    double t = p.time_since_edge_change / p.time_of_edge_change;
-    time_of_edge_change = get_random_time_of_edge_change(edge);
-    time_since_edge_change = t * time_of_edge_change;
-}
-
-Particle::Particle(int edge_, double t, graph_struct* graph_) : graph(graph_) {
-    std::random_device rd;
-    mt = std::mt19937(rd());
-    edge = edge_;
-    time_of_edge_change = get_random_time_of_edge_change(edge);
-    time_since_edge_change = t * time_of_edge_change;
 }
 
 Point Particle::get_position() {
@@ -87,6 +68,14 @@ void Particle::rewrite_from_perception(Point perceived_pos, double position_stdd
         get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading, *graph);
     edge = std::get<0>(belonging_edge_and_t);
     double t = std::get<1>(belonging_edge_and_t);
+    time_since_edge_change = t * time_of_edge_change;
+}
+
+void Particle::rewrite_from_other_particle(const Particle& p) {
+    edge = p.edge;
+    // sample time of edge change new to generate more variability in the particles
+    double t = p.time_since_edge_change / p.time_of_edge_change;
+    time_of_edge_change = get_random_time_of_edge_change(edge);
     time_since_edge_change = t * time_of_edge_change;
 }
 

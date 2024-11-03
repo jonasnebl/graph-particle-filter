@@ -3,7 +3,7 @@ filename:  # if empty, uses the current date and time
 run_tracker: True # only runs simulation
 
 # --- Run a new simulation with the following parameters ---
-T_simulation: 120 # seconds
+T_simulation: 60 # seconds
 T_step: 0.5 # seconds
 N_humans: 3
 N_robots: 4

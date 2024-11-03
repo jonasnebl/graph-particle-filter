@@ -49,10 +49,8 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     std::vector<pybind11::dict> perceived_humans, std::vector<Point> robot_positions) {
     // --- update particles for each human individually ---
     for (int i = 0; i < N_particles; i++) {
-        std::vector<std::vector<int>> assignment_cost_matrix =
-            calc_assignment_cost_matrix(perceived_humans, i);
         std::vector<int> hypotheses =
-            assign_perceived_humans_to_internal_humans(assignment_cost_matrix);
+            assign_perceived_humans_to_internal_humans(perceived_humans, i);
         double likelihood = 1.0;
         for (int j = 0; j < N_tracks; j++) {
             int perception_index = hypotheses[j];
@@ -79,8 +77,8 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
         // --- copy particles ---
         if (particle_weights[i] < resample_threshold) {
             for (int j = 0; j < N_tracks; j++) {
-                // use the copy constructor to reseed the random number generator
-                particles[j][i] = Particle(particles[j][random_source_particle_index]);
+                particles[j][i].rewrite_from_other_particle(
+                    particles[j][random_source_particle_index]);
             }
         }
         // --- copy weight ---
@@ -275,11 +273,13 @@ std::vector<std::vector<double>> ParticleTracker::calc_individual_edge_probabili
     return individual_edge_probabilities;
 }
 
-std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
+std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     std::vector<pybind11::dict> perceived_humans, int particle_index) {
-    std::vector<std::vector<int>> cost_matrix(N_tracks, std::vector<int>(N_tracks, 0));
-    for (int i = 0; i < N_tracks; i++) {      // tracks
-        for (int j = 0; j < N_tracks; j++) {  // perceived humans
+    // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
+    int** cost_matrix = (int**)calloc(N_tracks, sizeof(int*));
+    for (int i = 0; i < N_tracks; i++) {
+        cost_matrix[i] = (int*)calloc(N_tracks, sizeof(int));
+        for (int j = 0; j < N_tracks; j++) {
             if (j < perceived_humans.size()) {
                 double assignment_cost = particles[i][particle_index].assignment_cost(
                     perceived_humans[j]["position"].cast<Point>(),
@@ -289,19 +289,6 @@ std::vector<std::vector<int>> ParticleTracker::calc_assignment_cost_matrix(
             } else {
                 cost_matrix[i][j] = 1e8;
             }
-        }
-    }
-    return cost_matrix;
-}
-
-std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
-    std::vector<std::vector<int>> cost_matrix_input) {
-    // --- allocate and fill c style cost matrix for hungarian algorithm lib ---
-    int** cost_matrix = (int**)calloc(N_tracks, sizeof(int*));
-    for (int i = 0; i < N_tracks; i++) {
-        cost_matrix[i] = (int*)calloc(N_tracks, sizeof(int));
-        for (int j = 0; j < N_tracks; j++) {
-            cost_matrix[i][j] = cost_matrix_input[i][j];
         }
     }
 

@@ -46,10 +46,8 @@ class ParticleTracker {
     std::vector<std::vector<double>> calc_individual_edge_probabilities();
 
     // helper functions
-    std::vector<std::vector<int>> calc_assignment_cost_matrix(
-        std::vector<pybind11::dict> perceived_humans, int particle_index);
     std::vector<int> assign_perceived_humans_to_internal_humans(
-        std::vector<std::vector<int>> cost_matrix);
+        std::vector<pybind11::dict> perceived_humans, int particle_index);
     void normalize_weights();
     void print_weights();
     double calc_effective_sample_size() const;
