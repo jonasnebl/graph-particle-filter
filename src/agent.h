@@ -37,7 +37,6 @@ class Agent {
     AgentType type;
     void step();
     pybind11::dict log_state();
-    static int get_belonging_edge(Point position, double heading, graph_struct& graph);
     static bool check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks);
     static double manhattan_distance(Point p1, Point p2);
     static double euclidean_distance(Point p1, Point p2);

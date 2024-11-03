@@ -73,6 +73,67 @@ double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
     return likelihood;
 }
 
+void Particle::rewrite_from_perception(Point perceived_pos, double position_stddev,
+                                       double perceived_heading, double heading_stddev) {
+    std::normal_distribution<double> position_noise(0, position_stddev);
+    std::normal_distribution<double> heading_noise(0, heading_stddev);
+
+    Point noisy_perceived_pos = perceived_pos;
+    noisy_perceived_pos.first += position_noise(mt);
+    noisy_perceived_pos.second += position_noise(mt);
+    double noisy_perceived_heading = perceived_heading + heading_noise(mt);
+
+    std::tuple<int, double> belonging_edge_and_t =
+        get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading, *graph);
+    edge = std::get<0>(belonging_edge_and_t);
+    double t = std::get<1>(belonging_edge_and_t);
+    time_since_edge_change = t * time_of_edge_change;
+}
+
+std::tuple<int, double> Particle::get_belonging_edge(Point position, double heading,
+                                                     const graph_struct& graph) {
+    std::vector<double> distances;
+    std::vector<double> t_values;
+    for (int i = 0; i < graph.edges.size(); i++) {
+        std::tuple<double, double> edge_to_pose_distance_and_t_ =
+            edge_to_pose_distance_and_t(i, position, heading, graph);
+        distances.push_back(std::get<0>(edge_to_pose_distance_and_t_));
+        t_values.push_back(std::get<1>(edge_to_pose_distance_and_t_));
+    }
+    int min_index = std::min_element(distances.begin(), distances.end()) - distances.begin();
+    return std::make_tuple(min_index, t_values[min_index]);
+}
+
+std::tuple<double, double> Particle::edge_to_pose_distance_and_t(int edge, Point position,
+                                                                 double heading,
+                                                                 const graph_struct& graph) {
+    const Point edge_start = graph.nodes[graph.edges[edge].first];
+    const Point edge_end = graph.nodes[graph.edges[edge].second];
+
+    // --- calculate cartesian distance from edge to position ---
+    const double dx = edge_end.first - edge_start.first;
+    const double dy = edge_end.second - edge_start.second;
+    const double l2 = dx * dx + dy * dy;  // squared length of the edge
+    if (l2 == 0.0) {                      // edge_start == edge_end
+        return std::make_tuple(
+            std::hypot(position.first - edge_start.first, position.second - edge_start.second),
+            0.0);
+    }
+    const double t = std::max(0.0, std::min(1.0, ((position.first - edge_start.first) * dx +
+                                                  (position.second - edge_start.second) * dy) /
+                                                     l2));
+    const Point projection = {edge_start.first + t * dx, edge_start.second + t * dy};
+    double cartesian_distance =
+        std::hypot(position.first - projection.first, position.second - projection.second);
+
+    // --- calculate heading distance from edge to heading ---
+    double edge_heading = std::atan2(dy, dx);
+    double heading_dist = ParticleTracker::heading_distance(heading, edge_heading);
+
+    // --- return weighted sum of cartesian distance and heading difference ---
+    return std::make_tuple(cartesian_distance + ParticleTracker::HEADING_WEIGHT * heading_dist, t);
+}
+
 void Particle::predict(double T_step) {
     time_since_edge_change += T_step;
     if (time_since_edge_change > time_of_edge_change) {  // switch to next edge
@@ -102,6 +163,7 @@ bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_inpu
 
 double Particle::assignment_cost(Point position, double heading) {
     // assignment cost is a weighted sum of the cartesian distance and the heading difference
-    return std::get<0>(
-        ParticleTracker::edge_to_pose_distance_and_t(edge, position, heading, *graph));
+    return std::get<0>(edge_to_pose_distance_and_t(edge, position, heading, *graph)) +
+           ParticleTracker::HEADING_WEIGHT *
+               ParticleTracker::heading_distance(heading, get_heading());
 }

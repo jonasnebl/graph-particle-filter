@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD 20)
 project("WarehouseSim")
 
 find_package(pybind11 CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
 find_package(hungarian CONFIG REQUIRED)
 
 pybind11_add_module(cpp_utils 
@@ -18,4 +17,4 @@ pybind11_add_module(cpp_utils
                     src/particle.cpp)
 
 install(TARGETS cpp_utils DESTINATION .)
-target_link_libraries(cpp_utils PRIVATE hungarian::hungarian nlohmann_json)
+target_link_libraries(cpp_utils PRIVATE hungarian::hungarian)

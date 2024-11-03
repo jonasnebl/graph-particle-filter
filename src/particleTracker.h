@@ -35,9 +35,7 @@ class ParticleTracker {
 
     // helper function for simulation
     static constexpr double HEADING_WEIGHT = 20.0;
-    static std::tuple<double, double> edge_to_pose_distance_and_t(int edge, Point position,
-                                                                  double heading,
-                                                                  graph_struct &graph);
+    static double heading_distance(double h1, double h2);
 
    private:
     // prediction model
@@ -48,16 +46,12 @@ class ParticleTracker {
     std::vector<std::vector<double>> calc_individual_edge_probabilities();
 
     // helper functions
-    Particle generate_new_particle_from_perception(Point perceived_pos, double position_stddev,
-                                                   double perceived_heading, double heading_stddev);
-    std::tuple<int, double> get_belonging_edge(Point position, double heading);
     std::vector<std::vector<int>> calc_assignment_cost_matrix(
         std::vector<pybind11::dict> perceived_humans, int particle_index);
     std::vector<int> assign_perceived_humans_to_internal_humans(
         std::vector<std::vector<int>> cost_matrix);
     void normalize_weights();
     void print_weights();
-    static double heading_distance(double h1, double h2);
     double calc_effective_sample_size() const;
 
     // random number generator variables

@@ -4,8 +4,9 @@
 #include <cmath>
 #include <iostream>
 #include <random>
+#include <tuple>
 
-#include "particleTracker.h"
+#include "particle.h"
 #include "simulation.h"
 
 Agent::Agent(double T_step, AgentType type_, Simulation* simulation_)
@@ -53,7 +54,8 @@ void Agent::step() {
 pybind11::dict Agent::log_state() {
     pybind11::dict state;
     state["position"] = position;
-    state["belonging_edge"] = get_belonging_edge(position, heading, simulation->graph);
+    state["belonging_edge"] =
+        std::get<0>(Particle::get_belonging_edge(position, heading, simulation->graph));
     if (type == AgentType::HUMAN) {
         state["type"] = "human";
     } else {
@@ -61,15 +63,6 @@ pybind11::dict Agent::log_state() {
         state["perceived_humans"] = perceive_humans();
     }
     return state;
-}
-
-int Agent::get_belonging_edge(Point position, double heading, graph_struct& graph) {
-    std::vector<double> distances;
-    for (int i = 0; i < graph.edges.size(); i++) {
-        distances.push_back(
-            std::get<0>(ParticleTracker::edge_to_pose_distance_and_t(i, position, heading, graph)));
-    }
-    return std::min_element(distances.begin(), distances.end()) - distances.begin();
 }
 
 bool Agent::check_viewline(Point pos1, Point pos2, std::vector<std::vector<Point>> racks) {

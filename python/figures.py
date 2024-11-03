@@ -221,9 +221,9 @@ def plot_N_humans_in_warehouse(filename: str):
 
 
 if __name__ == "__main__":
-    #filename = "1hour_3_humans_4robots"
+    # filename = "1hour_3_humans_4robots"
     filename = "3hour_4humans_4robots"
-    
+
     # plot_detection_probability()
 
     # plot_pred_model(int(sys.argv[1]))
