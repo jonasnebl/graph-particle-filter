@@ -43,7 +43,6 @@ double Particle::get_heading() {
 double Particle::likelihood_no_perception(std::vector<Point> robot_positions) {
     // Gives the probability of NOT seeing the human given particle state and robot position
     Point particle_position = get_position();
-    double particle_heading = get_heading();
     double likelihood = 1.0;
     for (const auto& robot_position : robot_positions) {
         if (Agent::check_viewline(robot_position, particle_position, graph->racks)) {

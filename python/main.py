@@ -54,8 +54,8 @@ if config["run_new_simulation"]:
 if config["run_tracker"]:
     # --- Load simulation ---
     if "sim_log" not in locals():  # no new simulation has been run
-        filepath = os.path.join(LOG_FOLDER, config["log_file"])
-        filename = config["log_file"].split("log_")[1].split(".pkl")[0]
+        filename = config["filename"]
+        filepath = os.path.join(LOG_FOLDER, "log_" + filename + ".pkl")
         with open(filepath, "rb") as f:
             sim_log = pickle.load(f)
     sim_states = sim_log["sim_states"]
@@ -72,12 +72,8 @@ if config["run_tracker"]:
     if plot:
         plotter = Plotter(print_probabilites=True, clear_threshold=config["clear_threshold"])
 
-    if config["N_tracks_init"] == -1:
-        N_tracks_init = N_humans
-    else:
-        N_tracks_init = config["N_tracks_init"]
     particleTracker = ParticleTracker(
-        T_step=T_step, N_tracks_init=N_tracks_init, N_particles=config["N_particles"]
+        T_step=T_step, N_tracks_init=config["N_tracks_init"], N_particles=config["N_particles"]
     )
 
     pbar = tqdm(range(0, int(len(sim_states))), desc="Tracker")
