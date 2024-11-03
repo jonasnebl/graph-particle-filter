@@ -221,17 +221,20 @@ def plot_N_humans_in_warehouse(filename: str):
 
 
 if __name__ == "__main__":
+    #filename = "1hour_3_humans_4robots"
+    filename = "3hour_4humans_4robots"
+    
     # plot_detection_probability()
 
     # plot_pred_model(int(sys.argv[1]))
 
     # --- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse("2024-11-02_10-14-55")
+    plot_N_humans_in_warehouse(filename)
 
-    # # --- Plot result metrics ---
+    # --- Plot result metrics ---
     # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
     # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-    #     evaluate_multiple_thresholds(thresholds, filename="2024-10-23_19-23-37")
+    #     evaluate_multiple_thresholds(thresholds, filename)
     # )
     # plot_results_multiple_thresholds(
     #     thresholds, false_negative_rates_human_centric, cleared_edges_rates

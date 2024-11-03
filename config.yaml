@@ -1,5 +1,5 @@
 run_new_simulation: True # if False, loads a previous simulation
-filename:  # if empty, uses the current date and time
+filename: "3hour_4humans_4robots" # if empty, uses the current date and time
 run_tracker: True # only runs simulation
 
 # --- Run a new simulation with the following parameters ---
