@@ -149,33 +149,33 @@ def train_durations():
         json.dump(duration_params.tolist(), f, indent=4)
 
 
-def train_likelihood_matrix(N_perceived_log_filepaths: list[str]):
+def train_likelihood_matrix(filenames: list[str]):
     """Trains the likelihood matrix for the number of humans estimation."""
-    N_tracks_max = len(N_perceived_log_filepaths)
+    N_tracks_max = len(filenames)
     likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
     likelihood_matrix[0, 0] = 1.0
     for i in range(1, N_tracks_max + 1):  # true number of humans
-        with open(os.path.join(LOG_FOLDER, N_perceived_log_filepaths[i - 1]), "rb") as f:
+        with open(os.path.join(LOG_FOLDER, "N_perceived_" + filenames[i - 1]) + ".pkl", "rb") as f:
             N_perceived_log = pickle.load(f)
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
     print("Likelihood matrix:")
     print(likelihood_matrix)
-    np.savetxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, likelihood_matrix, delimiter=",")
+    np.savetxt(N_HUMANS_LIKELIHOOD_MATRIX_PATH, likelihood_matrix, delimiter=",", fmt="%.6f")
 
 
 if __name__ == "__main__":
-    get_magic_training_data("24hours_10humans_1robot")
-    train_successor_edge_probabilities()
-    train_durations()
-    # train_likelihood_matrix(
-    #     [
-    #         "N_perceived_1humans.pkl",
-    #         "N_perceived_2humans.pkl",
-    #         "N_perceived_3humans.pkl",
-    #         "N_perceived_4humans.pkl",
-    #         "N_perceived_5humans.pkl",
-    #         "N_perceived_6humans.pkl",
-    #         "N_perceived_7humans.pkl",
-    #     ]
-    # )
+    # get_magic_training_data("24hours_10humans_1robot")
+    # train_successor_edge_probabilities()
+    # train_durations()
+    train_likelihood_matrix(
+        [
+            "1h_1humans_4robots_noleaving",
+            "1h_2humans_4robots_noleaving",
+            "1h_3humans_4robots_noleaving",
+            "1h_4humans_4robots_noleaving",
+            "1h_5humans_4robots_noleaving",
+            "1h_6humans_4robots_noleaving",
+            "1h_7humans_4robots_noleaving"
+        ]
+    )

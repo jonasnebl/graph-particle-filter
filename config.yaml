@@ -3,14 +3,14 @@
 # --- Run a new simulation or load a previous one ---
 # if True, loads a previous simulation from the filename
 # if False, runs and saves new simulation under the filename
-run_new_simulation: False 
-filename: "1hour_3humans_4robots" # if empty, uses the current date and time
+run_new_simulation: True
+filename: "3h_4humans_4robots_N_tracks_test" # if empty, uses the current date and time
 
 # --- Simulation parameters (only relevant when running a new simulation) ---
 # if a previous simulation is used the parameters come from the previous simulation
-T_simulation: 60 # seconds
+T_simulation: 10800 # seconds
 T_step: 0.5 # seconds
-N_humans: 3
+N_humans: 4
 N_robots: 4
 
 
@@ -20,8 +20,8 @@ N_robots: 4
 run_tracker: True
 
 # --- Tracker parameters ---
-N_particles: 1000
-N_tracks_init: 3
+N_particles: 1
+N_tracks_init: 4
 
 # --- Plotting parameters ---
 plot: False

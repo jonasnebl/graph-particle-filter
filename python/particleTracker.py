@@ -60,6 +60,7 @@ class ParticleTracker:
         :return: (N_edges,) np.ndarray of edge probabilities for the tracker.
         """
         perceived_humans, robot_positions = self.tracker.merge_perceptions(robot_perceptions)
+        self.N_perceived_humans_log.append(len(perceived_humans))
 
         # handle number of tracks
         N_humans_estimated = self.tracker.estimate_N_humans(len(perceived_humans))
