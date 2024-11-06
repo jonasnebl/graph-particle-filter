@@ -42,11 +42,12 @@ if config["run_new_simulation"]:
         "sim_states": sim_states,
     }
 
-    if config["filename"] is None:
-        filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    if config["folder"] is None:
+        folder = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     else:
-        filename = config["filename"]
-    filepath = os.path.join(LOG_FOLDER, "log_" + filename + ".pkl")
+        folder = config["folder"]
+    os.makedirs(os.path.join(LOG_FOLDER, folder), exist_ok=True)
+    filepath = os.path.join(LOG_FOLDER, folder, "log.pkl")
     with open(filepath, "wb") as outp:
         pickle.dump(sim_log, outp, pickle.HIGHEST_PROTOCOL)
 
@@ -54,8 +55,8 @@ if config["run_new_simulation"]:
 if config["run_tracker"]:
     # --- Load simulation ---
     if "sim_log" not in locals():  # no new simulation has been run
-        filename = config["filename"]
-        filepath = os.path.join(LOG_FOLDER, "log_" + filename + ".pkl")
+        folder = config["folder"]
+        filepath = os.path.join(LOG_FOLDER, folder, "log.pkl")
         with open(filepath, "rb") as f:
             sim_log = pickle.load(f)
     sim_states = sim_log["sim_states"]
@@ -125,14 +126,15 @@ if config["run_tracker"]:
     # --- Save logs ---
     if record_video:
         plotter.create_video(T_step, speed=config["playback_speed"])
-    with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + filename + ".pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "edge_probabilities.pkl"), "wb") as f:
         pickle.dump(particleTracker_edge_probabilities, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(LOG_FOLDER, "N_perceived_" + filename + ".pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "N_perceived.pkl"), "wb") as f:
         pickle.dump(particleTracker.N_perceived_humans_log, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(LOG_FOLDER, "N_estimated_" + filename + ".pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "N_estimated.pkl"), "wb") as f:
         pickle.dump(particleTracker.N_humans_estimated_log, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(LOG_FOLDER, "N_tracks_" + filename + ".pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "N_tracks.pkl"), "wb") as f:
         pickle.dump(particleTracker.N_tracks_log, f, pickle.HIGHEST_PROTOCOL)
+
     # --- Evaluate results ---
     print(
         "Execution times: Mean: {:.2f}ms, Max: {:.2f}ms".format(
@@ -140,15 +142,3 @@ if config["run_tracker"]:
             1e3 * np.max(particleTracker_execution_times),
         )
     )
-    false_negative_rate_human_centric = calc_false_negative_human_centric(
-        np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
-    )
-    false_negative_rate_edge_centric = calc_false_negative_edge_centric(
-        np.array(particleTracker_edge_probabilities), config["clear_threshold"], sim_log
-    )
-    cleared_edges_rate = calc_cleared_edges_rate(
-        np.array(particleTracker_edge_probabilities), config["clear_threshold"]
-    )
-    print("False negative rate human centric: {:.5f}".format(false_negative_rate_human_centric))
-    print("False negative rate edge centric: {:.5f}".format(false_negative_rate_edge_centric))
-    print("Cleared edges rate: {:.5f}".format(cleared_edges_rate))

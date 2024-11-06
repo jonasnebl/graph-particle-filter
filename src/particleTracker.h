@@ -14,7 +14,7 @@
 #include "particle.h"
 #include "warehouse_data.h"
 
-const double T_WINDOW = 3 * 60;
+const double T_WINDOW = 10 * 60;
 
 using Point = std::pair<double, double>;
 

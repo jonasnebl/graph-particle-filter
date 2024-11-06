@@ -17,14 +17,14 @@ nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes =
 successor_edges = get_successor_edges(edges)
 
 
-def get_magic_training_data(filename: str):
+def get_magic_training_data(folder: str):
     """Directly extracts the exact training data from a simulation log (magically).
 
     :param log_filename: Path to the simulation log
     :return: List of training data samples
     """
     start = time.time()
-    with open(os.path.join(LOG_FOLDER, "log_" + filename + ".pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
         sim_log = pickle.load(f)
     sim_states = sim_log["sim_states"]
     T_step = sim_log["T_step"]
@@ -149,13 +149,13 @@ def train_durations():
         json.dump(duration_params.tolist(), f, indent=4)
 
 
-def train_likelihood_matrix(filenames: list[str]):
+def train_likelihood_matrix(folders: list[str]):
     """Trains the likelihood matrix for the number of humans estimation."""
-    N_tracks_max = len(filenames)
+    N_tracks_max = len(folders)
     likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
     likelihood_matrix[0, 0] = 1.0
     for i in range(1, N_tracks_max + 1):  # true number of humans
-        with open(os.path.join(LOG_FOLDER, "N_perceived_" + filenames[i - 1]) + ".pkl", "rb") as f:
+        with open(os.path.join(LOG_FOLDER, folders[i-1], "N_perceived.pkl", "rb")) as f:
             N_perceived_log = pickle.load(f)
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)

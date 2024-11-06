@@ -78,16 +78,16 @@ def calc_cleared_edges_rate(edge_probabilites_log: np.ndarray, clear_threshold: 
     return np.mean(cleared_edges_log.astype(np.float64))
 
 
-def evaluate_multiple_thresholds(thresholds: list[float], filename: str):
+def evaluate_multiple_thresholds(thresholds: list[float], folder: str):
     """Calculate all metrics for a list of multiple thresholds.
 
     :param thresholds: list of float, Thresholds for clearing an edge.
     :param filename: str, Filename of the log files.
     """
     # load edge_probabilities and sim_log
-    with open(os.path.join(LOG_FOLDER, "edge_probabilities_" + filename + ".pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "edge_probabilities.pkl"), "rb") as f:
         edge_probabilities_log = pickle.load(f)
-    with open(os.path.join(LOG_FOLDER, "log_" + filename + ".pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
         sim_log = pickle.load(f)
 
     false_negative_rates_human_centric = []

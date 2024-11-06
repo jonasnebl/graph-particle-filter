@@ -184,13 +184,13 @@ def plot_detection_probability():
     plt.show()
 
 
-def plot_N_humans_in_warehouse(filename: str):
+def plot_N_humans_in_warehouse(folder: str):
     """Plot the number of humans in the warehouse over time."""
-    with open(os.path.join(LOG_FOLDER, f"N_estimated_{filename}.pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "N_estimated.pkl"), "rb") as f:
         N_estimated_log = np.array(pickle.load(f))
-    with open(os.path.join(LOG_FOLDER, f"log_{filename}.pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
         sim_log = pickle.load(f)
-    with open(os.path.join(LOG_FOLDER, f"N_tracks_{filename}.pkl"), "rb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "N_tracks.pkl"), "rb") as f:
         N_tracks_log = np.array(pickle.load(f))
 
     # determine true number of humans in the simulation
@@ -204,7 +204,7 @@ def plot_N_humans_in_warehouse(filename: str):
     timevec = np.arange(0, len(sim_log["sim_states"]) * sim_log["T_step"], sim_log["T_step"])
     timevec_minutes = timevec / 60
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 3))
+    fig, ax = plt.subplots(1, 1, figsize=(16, 4))
     ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{Schätzung}$")
     ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
     ax.plot(timevec_minutes, N_tracks_log, label="$N_{Tracks}$")
@@ -222,23 +222,23 @@ def plot_N_humans_in_warehouse(filename: str):
 
 if __name__ == "__main__":
     # filename = "1hour_3_humans_4robots"
-    filename = "3h_4humans_4robots_N_tracks_test"
+    folder = "10mins_4humans_4robots"
 
     # plot_detection_probability()
 
     # plot_pred_model(int(sys.argv[1]))
 
     # --- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse(filename)
+    plot_N_humans_in_warehouse(folder)
 
     # --- Plot result metrics ---
-    # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-    #     evaluate_multiple_thresholds(thresholds, filename)
-    # )
-    # plot_results_multiple_thresholds(
-    #     thresholds, false_negative_rates_human_centric, cleared_edges_rates
-    # )
-    # plot_results_multiple_thresholds(
-    #     thresholds, false_negative_rates_edge_centric, cleared_edges_rates
-    # )
+    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
+        evaluate_multiple_thresholds(thresholds, folder)
+    )
+    plot_results_multiple_thresholds(
+        thresholds, false_negative_rates_human_centric, cleared_edges_rates
+    )
+    plot_results_multiple_thresholds(
+        thresholds, false_negative_rates_edge_centric, cleared_edges_rates
+    )
