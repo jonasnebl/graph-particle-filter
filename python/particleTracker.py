@@ -52,6 +52,7 @@ class ParticleTracker:
         self.N_perceived_humans_window = np.array(
             [N_tracks_init] * int(self.WINDOW_LENGTH_SECONDS / 0.5), dtype=int
         )
+        self.edge_change_training_data = []
 
     def add_observation(self, robot_perceptions) -> np.ndarray:
         """Update the tracker based on a list of robot perceptions.
@@ -82,7 +83,13 @@ class ParticleTracker:
             self.N_tracks -= 1
         self.N_tracks_log.append(self.N_tracks)
 
-        return np.array(self.tracker.add_merged_perceptions(perceived_humans, robot_positions))
+        edge_probabilities = np.array(
+            self.tracker.add_merged_perceptions(perceived_humans, robot_positions)
+        )
+
+        self.edge_change_training_data += self.tracker.edge_change_training_data()
+
+        return edge_probabilities
 
     def predict(self) -> np.ndarray:
         """Predict the internal state of the tracker by T_step.
@@ -115,6 +122,11 @@ class ParticleTracker:
                 cleared_edges[i] = True  # edge is cleared
             else:
                 cleared_edges[i] = False  # edge is not cleared
+
+        # don't clear out of warehouse edges
+        cleared_edges[52] = False
+        cleared_edges[53] = False
+
         return cleared_edges
 
     def get_cleared_edges(self, probabilities: np.ndarray) -> np.ndarray:

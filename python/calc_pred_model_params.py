@@ -17,11 +17,11 @@ nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes =
 successor_edges = get_successor_edges(edges)
 
 
-def get_magic_training_data(folder: str):
-    """Directly extracts the exact training data from a simulation log (magically).
+def get_magic_successor_edge_data(folder: str):
+    """Directly extracts the successor edge samples from a simulation log (magically).
 
-    :param log_filename: Path to the simulation log
-    :return: List of training data samples
+    :param folder: Path to the folder with the simulation log
+    :return: List of training data samples in the form of (edge, successor_edge) tuples.
     """
     start = time.time()
     with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
@@ -42,57 +42,42 @@ def get_magic_training_data(folder: str):
             i += 1
 
     # --- extract training data from belonging edge vectors ---
-    training_data = []
-    for i, belonging_edges in enumerate(human_belonging_edges):
-        simulation_time = 0
-        edge_start_time = 0
-        previous_edge = belonging_edges[0]
-        for j in range(2, len(belonging_edges) - 1):
-            simulation_time += T_step
+    edge_change_training_data = []
+    for belonging_edges in human_belonging_edges:
+        for j in range(1, len(belonging_edges)):
             if belonging_edges[j - 1] != belonging_edges[j]:
-                # save training data
-                duration = simulation_time - edge_start_time
-                training_data.append(
-                    {
-                        "previous_edge": previous_edge,
-                        "current_edge": belonging_edges[j - 1],
-                        "next_edge": belonging_edges[j],
-                        "duration": duration,
-                    }
-                )
-
-                # save values for next iteration
-                edge_start_time = simulation_time
-                previous_edge = belonging_edges[j - 1]
+                edge_change_training_data.append((belonging_edges[j - 1], belonging_edges[j]))
     print(
-        f"Extracted {len(training_data)} training data samples in {time.time() - start:.2f} seconds."
+        f"Extracted {len(edge_change_training_data)} training data samples in {time.time() - start:.2f} seconds."
     )
 
-    with open(TRAINING_DATA_PATH, "w") as f:
-        json.dump(training_data, f, indent=4)
+    # --- save generated training data ---
+    with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data_magic.pkl"), "wb") as f:
+        pickle.dump(edge_change_training_data, f, pickle.HIGHEST_PROTOCOL)
+    print(
+        f"{len(edge_change_training_data)} training data samples saved to {folder}/edge_change_training_data.pkl."
+    )
 
-    print(f"{len(training_data)} training data samples saved to {TRAINING_DATA_PATH}")
 
+def train_successor_edge_probabilities(folders: list[str]):
+    """Calculates the successor edge probabilities for all edges and saves them to a json file.
 
-def train_successor_edge_probabilities():
-    """Calculates the successor edge probabilities for all edges and saves them to a json file."""
+    :param folders: List of folder names containing the edge change training data.
+        All the edge_change_training_data.pkl files in the folders
+        will be used together to calculate the probabilities.
+    """
 
-    with open(TRAINING_DATA_PATH, "r") as f:
-        training_data = json.load(f)
+    edge_change_training_data = []
+    for folder in folders:
+        with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data.pkl"), "rb") as f:
+            edge_change_training_data += pickle.load(f)
 
     successor_edge_probabilties = [
         [float(el) for el in list_] for list_ in successor_edges
     ]  # same shape as successor_edges but with float entries
 
     for i, edge_start_and_end_node in enumerate(edges):
-        relevant_samples = [sample for sample in training_data if sample["current_edge"] == i]
-
-        # remove entries with no valid successor edge
-        relevant_samples = [
-            sample
-            for sample in relevant_samples
-            if sample["next_edge"] in successor_edges[sample["current_edge"]]
-        ]
+        relevant_samples = [sample for sample in edge_change_training_data if sample[0] == i]
 
         # calculate the successor edge probabilities for every possible successor edge
         e = 0.01
@@ -105,7 +90,7 @@ def train_successor_edge_probabilities():
             # samples available -> use them to calculate the probability
             for j, successor_edge in enumerate(successor_edges[i]):
                 samples_where_successor_edge_was_taken = [
-                    sample for sample in relevant_samples if sample["next_edge"] == successor_edge
+                    sample for sample in relevant_samples if sample[1] == successor_edge
                 ]
                 successor_edge_probabilties[i][j] = (
                     len(samples_where_successor_edge_was_taken) + e * len(relevant_samples)
@@ -155,7 +140,7 @@ def train_likelihood_matrix(folders: list[str]):
     likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
     likelihood_matrix[0, 0] = 1.0
     for i in range(1, N_tracks_max + 1):  # true number of humans
-        with open(os.path.join(LOG_FOLDER, folders[i-1], "N_perceived.pkl", "rb")) as f:
+        with open(os.path.join(LOG_FOLDER, folders[i - 1], "N_perceived.pkl", "rb")) as f:
             N_perceived_log = pickle.load(f)
         for j in range(0, N_tracks_max + 1):  # perceived number of humans
             likelihood_matrix[i, j] = N_perceived_log.count(j) / len(N_perceived_log)
@@ -165,17 +150,18 @@ def train_likelihood_matrix(folders: list[str]):
 
 
 if __name__ == "__main__":
-    # get_magic_training_data("24hours_10humans_1robot")
-    # train_successor_edge_probabilities()
+    folder = "24hours_4humans_4robots_100part"
+    # get_magic_successor_edge_data(folder)
+    train_successor_edge_probabilities([folder])
     # train_durations()
-    train_likelihood_matrix(
-        [
-            "1h_1humans_4robots_noleaving",
-            "1h_2humans_4robots_noleaving",
-            "1h_3humans_4robots_noleaving",
-            "1h_4humans_4robots_noleaving",
-            "1h_5humans_4robots_noleaving",
-            "1h_6humans_4robots_noleaving",
-            "1h_7humans_4robots_noleaving"
-        ]
-    )
+    # train_likelihood_matrix(
+    #     [
+    #         "1h_1humans_4robots_noleaving",
+    #         "1h_2humans_4robots_noleaving",
+    #         "1h_3humans_4robots_noleaving",
+    #         "1h_4humans_4robots_noleaving",
+    #         "1h_5humans_4robots_noleaving",
+    #         "1h_6humans_4robots_noleaving",
+    #         "1h_7humans_4robots_noleaving",
+    #     ]
+    # )

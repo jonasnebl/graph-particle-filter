@@ -15,6 +15,7 @@
 #include "warehouse_data.h"
 
 const double T_WINDOW = 10 * 60;
+const double EDGE_CHANGE_THRESHOLD = 0.9;
 
 using Point = std::pair<double, double>;
 
@@ -28,6 +29,7 @@ class ParticleTracker {
     int estimate_N_humans(int N_perceived);
     void add_one_track();
     void remove_one_track();
+    std::vector<std::pair<int, int>> edge_change_training_data();
 
     std::vector<double> predict();
 
@@ -62,6 +64,9 @@ class ParticleTracker {
     std::vector<std::vector<Particle>> particles;
     std::vector<double> particle_weights;
     std::deque<int> N_perceived_window;
+
+    // training data generation
+    std::vector<double> previous_edge_probabilities = std::vector<double>(graph.edges.size(), 0.0);
 };
 
 #endif

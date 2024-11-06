@@ -94,6 +94,24 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     return calc_edge_probabilities();
 }
 
+std::vector<std::pair<int, int>> ParticleTracker::edge_change_training_data() {
+    std::vector<std::pair<int, int>> new_training_data;
+    std::vector<double> edge_probabilities = calc_edge_probabilities();
+    for (int i = 0; i < graph.edges.size(); i++) {
+        if (previous_edge_probabilities[i] > EDGE_CHANGE_THRESHOLD &&
+            edge_probabilities[i] < EDGE_CHANGE_THRESHOLD) {
+            for (const auto& successor_edge : graph.successor_edges[i]) {
+                if (edge_probabilities[successor_edge] > EDGE_CHANGE_THRESHOLD) {
+                    new_training_data.push_back(std::make_pair(i, successor_edge));
+                    break;
+                }
+            }
+        }
+    }
+    previous_edge_probabilities = edge_probabilities;
+    return new_training_data;
+}
+
 int ParticleTracker::estimate_N_humans(int N_perceived) {
     N_perceived_window.push_back(N_perceived);
     N_perceived_window.pop_front();

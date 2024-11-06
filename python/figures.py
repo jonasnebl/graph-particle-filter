@@ -222,7 +222,7 @@ def plot_N_humans_in_warehouse(folder: str):
 
 if __name__ == "__main__":
     # filename = "1hour_3_humans_4robots"
-    folder = "10mins_4humans_4robots"
+    folder = "60min_4humans_4robots"
 
     # plot_detection_probability()
 
