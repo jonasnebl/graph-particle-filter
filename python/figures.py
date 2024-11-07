@@ -12,6 +12,7 @@ import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
 from evaluator import *
+from plotter import Plotter
 
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import Agent
@@ -220,25 +221,40 @@ def plot_N_humans_in_warehouse(folder: str):
     plt.show()
 
 
+def plot_training_data_distribution(folder: str):
+    """Plot the spatial distribution of the training data in the warehouse.
+
+    :param folder: Folder name of the simulation to be used.
+    """
+    plotter = Plotter()
+    with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data.pkl"), "rb") as f:
+        training_data = pickle.load(f)
+    plotter.display_training_data_distribution(training_data)
+    plotter.savefig("training_data_distribution.pdf")
+    plotter.show(blocking=True)
+
+
 if __name__ == "__main__":
     # filename = "1hour_3_humans_4robots"
-    folder = "60min_4humans_4robots"
+    folder = "24hours_4humans_4robots_100part"
+
+    plot_training_data_distribution(folder)
 
     # plot_detection_probability()
 
     # plot_pred_model(int(sys.argv[1]))
 
     # --- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse(folder)
+    # plot_N_humans_in_warehouse(folder)
 
-    # --- Plot result metrics ---
-    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-        evaluate_multiple_thresholds(thresholds, folder)
-    )
-    plot_results_multiple_thresholds(
-        thresholds, false_negative_rates_human_centric, cleared_edges_rates
-    )
-    plot_results_multiple_thresholds(
-        thresholds, false_negative_rates_edge_centric, cleared_edges_rates
-    )
+    # # --- Plot result metrics ---
+    # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
+    #     evaluate_multiple_thresholds(thresholds, folder)
+    # )
+    # plot_results_multiple_thresholds(
+    #     thresholds, false_negative_rates_human_centric, cleared_edges_rates
+    # )
+    # plot_results_multiple_thresholds(
+    #     thresholds, false_negative_rates_edge_centric, cleared_edges_rates
+    # )
