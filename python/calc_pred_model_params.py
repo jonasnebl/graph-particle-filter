@@ -17,11 +17,13 @@ nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes =
 successor_edges = get_successor_edges(edges)
 
 
-def get_magic_successor_edge_data(folder: str):
-    """Directly extracts the successor edge samples from a simulation log (magically).
+def get_belonging_edges(folder: str) -> tuple[list[list[int]], float]:
+    """Extract the belonging edges from a simulation log.
 
     :param folder: Path to the folder with the simulation log
-    :return: List of training data samples in the form of (edge, successor_edge) tuples.
+    :return: List of lists of belonging edges for each human
+            Outer list is for the humans, inner list is for the time steps
+            T_step is the time step of the simulation
     """
     start = time.time()
     with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
@@ -35,29 +37,81 @@ def get_magic_successor_edge_data(folder: str):
     # --- extract belonging edges ---
     start = time.time()
     human_belonging_edges = []
-    i = 0
     for i in range(N_humans + N_robots):
         if sim_states[0][i]["type"] == "human":
             human_belonging_edges.append([state[i]["belonging_edge"] for state in sim_states])
-            i += 1
 
-    # --- extract training data from belonging edge vectors ---
+    print(f"Extracted belonging edges in {time.time() - start:.2f} seconds.")
+
+
+    for i in range(100):
+        print(sim_states[-100+i][3])
+
+
+    return human_belonging_edges, T_step
+
+
+def get_magic_successor_edge_data(folder: str):
+    """Directly extracts the successor edge samples from a simulation log (magically).
+
+    :param folder: Path to the folder with the simulation log
+        Training data is a list of tuples (edge, next_edge)
+    """
+    human_belonging_edges, _ = get_belonging_edges(folder)
+
+    # --- extract edge change training data from belonging edge vectors ---
+    start = time.time()
     edge_change_training_data = []
     for belonging_edges in human_belonging_edges:
         for j in range(1, len(belonging_edges)):
             if belonging_edges[j - 1] != belonging_edges[j]:
                 edge_change_training_data.append((belonging_edges[j - 1], belonging_edges[j]))
     print(
-        f"Extracted {len(edge_change_training_data)} training data samples in {time.time() - start:.2f} seconds."
+        f"Extracted {len(edge_change_training_data)} edge change samples in {time.time() - start:.2f} seconds."
     )
 
-    # --- save generated training data ---
+    # --- save generated edge change training data ---
     with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data_magic.pkl"), "wb") as f:
         pickle.dump(edge_change_training_data, f, pickle.HIGHEST_PROTOCOL)
     print(
-        f"{len(edge_change_training_data)} training data samples saved to {folder}/edge_change_training_data.pkl."
+        f"{len(edge_change_training_data)} edge change samples saved to {folder}/edge_change_training_data.pkl."
     )
 
+
+def get_magic_duration_data(folder: str):
+    """Directly extracts the duration samples from a simulation log (magically).
+
+    :param folder: Path to the folder with the simulation log
+        Training data is a list of tuples (edge, duration)
+    """
+    belonging_edges, T_step = get_belonging_edges(folder)
+
+    # --- extract duration training data from belonging edge vectors ---
+    start = time.time()
+    duration_training_data = []
+
+    for belonging_edges_one_human in belonging_edges:
+        simulation_time = 0
+        last_time_changed = -1
+        for j in range(1, len(belonging_edges_one_human)):
+            if belonging_edges_one_human[j - 1] != belonging_edges_one_human[j]:
+                if last_time_changed != -1:
+                    duration_training_data.append(
+                        (belonging_edges_one_human[j - 1], simulation_time - last_time_changed)
+                    )
+                last_time_changed = simulation_time
+            simulation_time += T_step
+
+    print(
+        f"Extracted {len(duration_training_data)} duration samples in {time.time() - start:.2f} seconds."
+    )
+
+    # --- save generated training data ---
+    with open(os.path.join(LOG_FOLDER, folder, "duration_training_data_magic.pkl"), "wb") as f:
+        pickle.dump(duration_training_data, f, pickle.HIGHEST_PROTOCOL)
+    print(
+        f"{len(duration_training_data)} duration data samples saved to {folder}/duration_training_data.pkl."
+    )
 
 def train_successor_edge_probabilities(folders: list[str]):
     """Calculates the successor edge probabilities for all edges and saves them to a json file.
@@ -135,7 +189,15 @@ def train_durations():
 
 
 def train_likelihood_matrix(folders: list[str]):
-    """Trains the likelihood matrix for the number of humans estimation."""
+    """Trains the likelihood matrix for the number of humans estimation.
+
+    :param folders: List of folder names containing the N_perceived.pkl files.
+        The first folder corresponds to a simulation with 1 human,
+        the second folder to a simulation with 2 humans, and so on.
+        The size of the likelihood matrix will then be (len(folders)+1) x (len(folders)+1).
+        The +1 is for the case where the true number of humans is 0.
+        We don't need a folder for that, because N_perceived will always be 0.
+    """
     N_tracks_max = len(folders)
     likelihood_matrix = np.zeros((N_tracks_max + 1, N_tracks_max + 1))
     likelihood_matrix[0, 0] = 1.0
@@ -150,9 +212,10 @@ def train_likelihood_matrix(folders: list[str]):
 
 
 if __name__ == "__main__":
-    folder = "24hours_4humans_4robots_100part"
+    folder = "24hours_4humans_4robots_100part_2"
     # get_magic_successor_edge_data(folder)
-    train_successor_edge_probabilities([folder])
+    get_magic_duration_data(folder)
+    # train_successor_edge_probabilities([folder])
     # train_durations()
     # train_likelihood_matrix(
     #     [

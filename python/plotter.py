@@ -291,7 +291,10 @@ class Plotter:
 
         :param training_data: List of tuples containing the edge index and the successor edge index
         """
-        training_data_distribution_edges = [len([sample for sample in training_data if sample[0] == i]) for i in range(len(self.edges))]
+        training_data_distribution_edges = [
+            len([sample for sample in training_data if sample[0] == i])
+            for i in range(len(self.edges))
+        ]
 
         training_data_distribution = []
         for i in range(len(self.nodes)):
@@ -299,13 +302,12 @@ class Plotter:
             for j in range(len(self.edges)):
                 if self.edges[j][1] == i:
                     training_data_distribution[-1] += training_data_distribution_edges[j]
-                
 
         # Normalize the training data distribution for scatter plot sizes
         sizes = [50 * count for count in training_data_distribution]
 
         # Plot the scatter points at the tip of each edge
         for node, size in zip(self.nodes, sizes):
-            plt.scatter(node["x"], node["y"], s=size, c="red", alpha=0.6, zorder = -1)
+            plt.scatter(node["x"], node["y"], s=size, c="red", alpha=0.6, zorder=-1)
 
         plt.title("Training Data Distribution")

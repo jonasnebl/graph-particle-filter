@@ -36,7 +36,7 @@ class ParticleTracker {
     graph_struct graph;
 
     // helper function for simulation
-    static constexpr double HEADING_WEIGHT = 20.0;
+    static constexpr double HEADING_WEIGHT = 0.5;
     static double heading_distance(double h1, double h2);
 
    private:

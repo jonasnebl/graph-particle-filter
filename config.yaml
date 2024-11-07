@@ -4,7 +4,7 @@
 # if True, loads a previous simulation from the folder
 # if False, runs and saves new simulation under the folder
 run_new_simulation: True
-folder: "24hours_4humans_4robots_100part" # if empty, uses the current date and time
+folder: "24hours_4humans_4robots_100part_2" # if empty, uses the current date and time
 
 # --- Simulation parameters (only relevant when running a new simulation) ---
 # if a previous simulation is used the parameters come from the previous simulation
@@ -17,7 +17,7 @@ N_robots: 4
 # Tracker
 # ----------------------------------------------------------------------
 # Set to false if you only want to run the simulation
-run_tracker: True
+run_tracker: False
 
 # --- Tracker parameters ---
 N_particles: 100

@@ -48,7 +48,6 @@ void Agent::step() {
     if (dist_covered_in_one_step > dist_to_target) {  // target reached --> next target
         path.pop_front();
     }
-    return;
 }
 
 pybind11::dict Agent::log_state() {
@@ -125,7 +124,7 @@ void Agent::add_new_double_cycle_to_deque() {
             simulation->dijkstra(target_exit_node, target_staging_node, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_staging_node, PAUSE_VELOCITY);  // generates a pause
-        current_final_path_node = target_exit_node;
+        current_final_path_node = target_staging_node;
     } else {
         // --- 1. leg ---
         int target_node_1 = random_storage_node();
@@ -161,7 +160,7 @@ void Agent::add_path_to_deque(std::vector<int> path_to_target, double path_veloc
 
 void Agent::add_node_to_deque(int node_index, double path_velocity) {
     double node_x =
-        (simulation->graph.nodes)[node_index].first + simulation->get_trajectory_xy_noise();
+        simulation->graph.nodes[node_index].first + simulation->get_trajectory_xy_noise();
     double node_y =
         simulation->graph.nodes[node_index].second + simulation->get_trajectory_xy_noise();
     path.push_back(std::make_pair(std::make_pair(node_x, node_y), path_velocity));
