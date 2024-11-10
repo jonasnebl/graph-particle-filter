@@ -9,7 +9,8 @@ models/*
 !models/N_humans_likelihood_matrix.csv
 temp/
 .vscode/
-figures/
+figures/*
+!figures/copy_to_windows.sh
 .ruff_cache
 src/test_c_hungarian.c
 training_data/

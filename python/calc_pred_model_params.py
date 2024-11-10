@@ -43,11 +43,6 @@ def get_belonging_edges(folder: str) -> tuple[list[list[int]], float]:
 
     print(f"Extracted belonging edges in {time.time() - start:.2f} seconds.")
 
-
-    for i in range(100):
-        print(sim_states[-100+i][3])
-
-
     return human_belonging_edges, T_step
 
 
@@ -113,17 +108,21 @@ def get_magic_duration_data(folder: str):
         f"{len(duration_training_data)} duration data samples saved to {folder}/duration_training_data.pkl."
     )
 
-def train_successor_edge_probabilities(folders: list[str]):
+
+def train_successor_edge_probabilities(folders: list[str], use_magic_data: bool = False):
     """Calculates the successor edge probabilities for all edges and saves them to a json file.
 
     :param folders: List of folder names containing the edge change training data.
         All the edge_change_training_data.pkl files in the folders
         will be used together to calculate the probabilities.
     """
-
     edge_change_training_data = []
     for folder in folders:
-        with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data.pkl"), "rb") as f:
+        if use_magic_data:
+            filename = "duration_training_data_magic.pkl"
+        else:
+            "duration_training_data.pkl"
+        with open(os.path.join(LOG_FOLDER, folder, filename), "rb") as f:
             edge_change_training_data += pickle.load(f)
 
     successor_edge_probabilties = [
@@ -159,29 +158,41 @@ def train_successor_edge_probabilities(folders: list[str]):
         json.dump(successor_edge_probabilties, f, indent=4)
 
 
-def train_durations():
-    """Train the duration parameters for the prediction model."""
-    with open(TRAINING_DATA_PATH, "r") as f:
-        training_data = json.load(f)
+def train_durations(folders: list[str], use_magic_data: bool = False):
+    """Calculates the duration params of the weibull distribution for all edges
+        and saves them to a json file.
 
-    duration_params = np.zeros((len(edges), 2))
-    for i, edge_start_and_end_node in enumerate(edges):
-        relevant_samples = [sample for sample in training_data if sample["current_edge"] == i]
-        durations = [sample["duration"] for sample in relevant_samples]
+    :param folders: List of folder names containing the duration training data.
+        All the duration_training_data.pkl files in the folders
+        will be used together to calculate the probabilities.
+    """
+    duration_training_data = []
+    for folder in folders:
+        if use_magic_data:
+            filename = "duration_training_data_magic.pkl"
+        else:
+            "duration_training_data.pkl"
+        with open(os.path.join(LOG_FOLDER, folder, filename), "rb") as f:
+            duration_training_data += pickle.load(f)
+
+    start = time.time()
+    duration_params = []
+    for i in range(len(edges)):
+        durations = [sample[1] for sample in duration_training_data if sample[0] == i]
 
         if len(durations) < 2:
             # not enough samples to fit a distribution
-            duration_params[i, :] = [1.0, 1.0]
+            duration_params[i, :] = [4.0, 1.5]
         else:
             # fit a Weibull distribution to the durations
             fitted_weibull = Fit_Weibull_2P(
                 failures=durations, show_probability_plot=False, print_results=False
             )
-            duration_params[i, :] = [fitted_weibull.alpha, fitted_weibull.beta]
+            duration_params.append([fitted_weibull.alpha, fitted_weibull.beta])
 
         print(
             f"Calculated duration distribution parameters for edge {i} "
-            + f"based on {len(relevant_samples)} samples."
+            + f"based on {len(durations)} samples. Time passed: {time.time() - start:.2f} seconds."
         )
 
     with open(os.path.join(MODEL_PATH, "duration_params.json"), "w") as f:
@@ -215,8 +226,8 @@ if __name__ == "__main__":
     folder = "24hours_4humans_4robots_100part_2"
     # get_magic_successor_edge_data(folder)
     get_magic_duration_data(folder)
+    train_durations([folder], use_magic_data=True)
     # train_successor_edge_probabilities([folder])
-    # train_durations()
     # train_likelihood_matrix(
     #     [
     #         "1h_1humans_4robots_noleaving",
