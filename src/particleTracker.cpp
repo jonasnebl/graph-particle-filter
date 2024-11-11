@@ -185,10 +185,9 @@ std::pair<std::vector<pybind11::dict>, std::vector<Point>> ParticleTracker::merg
 
                 double eucl_distance = Agent::euclidean_distance(perceived_pos, merged_pos);
                 double head_distance = heading_distance(perceived_heading, merged_heading);
-                if (eucl_distance <
-                        4 * (std::sqrt(merged_pos_variance) + std::sqrt(perceived_pos_variance)) &&
-                    head_distance < 4 * (std::sqrt(merged_heading_variance) +
-                                         std::sqrt(perceived_heading_variance))) {
+                if (eucl_distance < 4 * (std::sqrt(merged_pos_variance + perceived_pos_variance)) &&
+                    head_distance <
+                        4 * (std::sqrt(merged_heading_variance + perceived_heading_variance))) {
                     // update position and heading
                     Point updated_position;
                     updated_position.first = (merged_pos_variance * perceived_pos.first +
