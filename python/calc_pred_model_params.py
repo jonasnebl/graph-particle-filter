@@ -174,6 +174,7 @@ def train_durations(folders: list[str], use_magic_data: bool = False):
             "duration_training_data.pkl"
         with open(os.path.join(LOG_FOLDER, folder, filename), "rb") as f:
             duration_training_data += pickle.load(f)
+    print(duration_training_data)
 
     start = time.time()
     duration_params = []
@@ -182,7 +183,7 @@ def train_durations(folders: list[str], use_magic_data: bool = False):
 
         if len(durations) < 2:
             # not enough samples to fit a distribution
-            duration_params[i, :] = [4.0, 1.5]
+            duration_params.append([4.0, 1.5])
         else:
             # fit a Weibull distribution to the durations
             fitted_weibull = Fit_Weibull_2P(
@@ -196,7 +197,7 @@ def train_durations(folders: list[str], use_magic_data: bool = False):
         )
 
     with open(os.path.join(MODEL_PATH, "duration_params.json"), "w") as f:
-        json.dump(duration_params.tolist(), f, indent=4)
+        json.dump(duration_params, f, indent=4)
 
 
 def train_likelihood_matrix(folders: list[str]):
