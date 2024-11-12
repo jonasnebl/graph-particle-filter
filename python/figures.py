@@ -158,8 +158,8 @@ def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_e
     ax.grid(which="both")
     ax.set_ylabel("Anteil von fälschlicherweise freigegebenen Kanten $r_{fn}$")
     ax.set_ylim(ax.get_ylim()[::-1])
-    ax.set_yticks([1e-2, 1e-1, 1])
-    ax.set_yticklabels(["{:,.2%}".format(x) for x in ax.get_yticks()])
+    # ax.set_yticks([1e-2, 1e-1, 1])
+    ax.set_yticklabels(["{:g}%".format(100 * x) for x in ax.get_yticks()])
     ax.legend(loc="lower left")
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "results_multiple_thresholds.pdf"))
@@ -221,24 +221,45 @@ def plot_N_humans_in_warehouse(folder: str):
     plt.show()
 
 
-def plot_training_data_distribution(folder: str):
+def plot_edge_change_data_distribution(
+    folder: str, use_magic_data: bool = False, scale: float = -1
+):
     """Plot the spatial distribution of the training data in the warehouse.
 
     :param folder: Folder name of the simulation to be used.
+    :param scale: float, scale the size of the displayed dots, -1: auto scale
     """
+    with open(
+        os.path.join(LOG_FOLDER, folder, edge_change_data_filename(use_magic_data)), "rb"
+    ) as f:
+        edge_change_data = pickle.load(f)
     plotter = Plotter()
-    with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data.pkl"), "rb") as f:
-        training_data = pickle.load(f)
-    plotter.display_training_data_distribution(training_data)
-    plotter.savefig("training_data_distribution.pdf")
+    plotter.display_edge_change_data_distribution(edge_change_data, scale=scale)
+    plotter.savefig("edge_change_data_distribution.pdf")
+    plotter.show(blocking=True)
+
+
+def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, scale: float = -1):
+    """Plot the spatial distribution of the training data in the warehouse.
+
+    :param folder: Folder name of the simulation to be used.
+    :param scale: float, scale the width of the displayed lines, -1: auto scale
+    """
+    with open(os.path.join(LOG_FOLDER, folder, duration_data_filename(use_magic_data)), "rb") as f:
+        duration_data = pickle.load(f)
+    plotter = Plotter()
+    plotter.display_duration_data_distribution(duration_data, scale=scale)
+    plotter.savefig("duration_data_distribution.pdf")
     plotter.show(blocking=True)
 
 
 if __name__ == "__main__":
-    # filename = "1hour_3_humans_4robots"
-    folder = "24hours_4humans_4robots_100part"
+    folder = "24h_4humans_4robots_100part"
 
-    plot_training_data_distribution(folder)
+    plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
+    plot_edge_change_data_distribution(folder, scale=8)
+    plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
+    plot_duration_data_distribution(folder, scale=0.1)
 
     # plot_detection_probability()
 

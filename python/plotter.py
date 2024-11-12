@@ -286,28 +286,77 @@ class Plotter:
                 zorder=3,
             )
 
-    def display_training_data_distribution(self, training_data: list[tuple[int, int]]):
-        """Display the training data on the warehouse plot
+    def display_edge_change_data_distribution(
+        self, edge_change_data: list[tuple[int, int]], scale: float = -1
+    ):
+        """Display the edge change data on the warehouse plot
 
-        :param training_data: List of tuples containing the edge index and the successor edge index
+        :param edge_change_data: List of tuples containing the edge index and the successor edge index
+        :param scale: float, scale the size of the displayed dots, -1: auto scale
         """
-        training_data_distribution_edges = [
-            len([sample for sample in training_data if sample[0] == i])
+        edge_change_data_distribution_edges = [
+            len([sample for sample in edge_change_data if sample[0] == i])
             for i in range(len(self.edges))
         ]
 
-        training_data_distribution = []
+        edge_change_data_distribution = []
         for i in range(len(self.nodes)):
-            training_data_distribution.append(0)
+            edge_change_data_distribution.append(0)
             for j in range(len(self.edges)):
                 if self.edges[j][1] == i:
-                    training_data_distribution[-1] += training_data_distribution_edges[j]
+                    edge_change_data_distribution[-1] += edge_change_data_distribution_edges[j]
 
-        # Normalize the training data distribution for scatter plot sizes
-        sizes = [50 * count for count in training_data_distribution]
+        # Scale the edge change data for a nice scatter plot
+        scale = scale if scale > 0 else 2.5e4 / max(edge_change_data_distribution)
+        sizes = [scale * count for count in edge_change_data_distribution]
 
         # Plot the scatter points at the tip of each edge
         for node, size in zip(self.nodes, sizes):
             plt.scatter(node["x"], node["y"], s=size, c="red", alpha=0.6, zorder=-1)
 
-        plt.title("Training Data Distribution")
+        plt.title(
+            "Edge Change Data Distribution\n"
+            + "Total number of edge change samples: "
+            + str(len(edge_change_data)),
+            fontsize=24,
+        )
+
+    def display_duration_data_distribution(
+        self, duration_data: list[tuple[int, float]], scale: float = -1
+    ):
+        """Display the duration data on the warehouse plot
+
+        :param duration_data: List of tuples containing the edge index and the spent time
+        :param scale: float, scale the size of the displayed widths, -1: auto scale
+        """
+        duration_data_distribution = [
+            len([sample for sample in duration_data if sample[0] == i])
+            for i in range(len(self.edges))
+        ]
+
+        # Normalize the duration data distribution for scatter plot sizes
+        scale = scale if scale > 0 else 5e1 / max(duration_data_distribution)
+        widths = [scale * count for count in duration_data_distribution]
+
+        # Plot the edges with varying width based on the duration data
+        for i, edge in enumerate(self.edges):
+            start, end = edge
+            start_pos = self.node_positions[start]
+            end_pos = self.node_positions[end]
+            width = widths[i]
+            plt.plot(
+                [start_pos[0], end_pos[0]],
+                [start_pos[1], end_pos[1]],
+                c="red",
+                alpha=0.6,
+                linewidth=width,
+                zorder=10,
+                solid_capstyle="butt",
+            )
+
+        plt.title(
+            "Duration Data Distribution\n"
+            + "Total number of duration data samples: "
+            + str(len(duration_data)),
+            fontsize=24,
+        )

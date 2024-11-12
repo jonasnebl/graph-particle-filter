@@ -18,7 +18,13 @@ with open("config.yaml", "r") as f:
 
 
 class ParticleTracker:
-    def __init__(self, T_step: float, N_tracks_init: int, N_particles: int):
+    def __init__(
+        self,
+        T_step: float,
+        N_tracks_init: int,
+        N_particles: int,
+        record_training_data: bool = config["record_training_data"],
+    ):
         """Initialize the ParticleTracker.
 
         :param T_step: double, step time of the tracker.
@@ -52,7 +58,12 @@ class ParticleTracker:
         self.N_perceived_humans_window = np.array(
             [N_tracks_init] * int(self.WINDOW_LENGTH_SECONDS / 0.5), dtype=int
         )
-        self.edge_change_training_data = []
+
+        # variables for training data
+        self.record_training_data = record_training_data
+        if self.record_training_data:
+            self.edge_change_training_data = []
+            self.duration_training_data = []
 
     def add_observation(self, robot_perceptions) -> np.ndarray:
         """Update the tracker based on a list of robot perceptions.
@@ -87,7 +98,10 @@ class ParticleTracker:
             self.tracker.add_merged_perceptions(perceived_humans, robot_positions)
         )
 
-        self.edge_change_training_data += self.tracker.edge_change_training_data()
+        if self.record_training_data:
+            new_training_data = self.tracker.calc_training_data()
+            self.edge_change_training_data += new_training_data[0]
+            self.duration_training_data += new_training_data[1]
 
         return edge_probabilities
 

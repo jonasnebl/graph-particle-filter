@@ -4,7 +4,7 @@
 # if True, loads a previous simulation from the folder
 # if False, runs and saves new simulation under the folder
 run_new_simulation: True
-folder: "24hours_4humans_4robots_100part_2" # if empty, uses the current date and time
+folder: "24h_4humans_4robots_100part"  # if empty, uses the current date and time
 
 # --- Simulation parameters (only relevant when running a new simulation) ---
 # if a previous simulation is used the parameters come from the previous simulation
@@ -17,11 +17,12 @@ N_robots: 4
 # Tracker
 # ----------------------------------------------------------------------
 # Set to false if you only want to run the simulation
-run_tracker: False
+run_tracker: True
 
 # --- Tracker parameters ---
 N_particles: 100
 N_tracks_init: 4
+record_training_data: True
 
 # --- Plotting parameters ---
 plot: False
@@ -31,5 +32,5 @@ playback_speed: 1 # 1 is normal speed
 # only relevant for the plot and the final printed results
 # The exact probabilities are logged,
 # so you can always evaluate with a different threshold later
-clear_threshold: 0.001 
+clear_threshold: 0.00001 
 

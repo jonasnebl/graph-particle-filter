@@ -134,8 +134,11 @@ if config["run_tracker"]:
         pickle.dump(particleTracker.N_humans_estimated_log, f, pickle.HIGHEST_PROTOCOL)
     with open(os.path.join(LOG_FOLDER, folder, "N_tracks.pkl"), "wb") as f:
         pickle.dump(particleTracker.N_tracks_log, f, pickle.HIGHEST_PROTOCOL)
-    with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data.pkl"), "wb") as f:
-        pickle.dump(particleTracker.edge_change_training_data, f, pickle.HIGHEST_PROTOCOL)
+    if config["record_training_data"]:
+        with open(os.path.join(LOG_FOLDER, folder, "edge_change_data.pkl"), "wb") as f:
+            pickle.dump(particleTracker.edge_change_training_data, f, pickle.HIGHEST_PROTOCOL)
+        with open(os.path.join(LOG_FOLDER, folder, "duration_data.pkl"), "wb") as f:
+            pickle.dump(particleTracker.duration_training_data, f, pickle.HIGHEST_PROTOCOL)
 
     # --- Evaluate results ---
     print(

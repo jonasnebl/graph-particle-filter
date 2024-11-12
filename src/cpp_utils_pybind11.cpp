@@ -23,8 +23,8 @@ PYBIND11_MODULE(cpp_utils, m) {
              "Estimate the number of humans", pybind11::arg("N_perceived"))
         .def("add_one_track", &ParticleTracker::add_one_track)
         .def("remove_one_track", &ParticleTracker::remove_one_track)
-        .def("edge_change_training_data", &ParticleTracker::edge_change_training_data,
-             "Get the edge change training data")
+        .def("calc_training_data", &ParticleTracker::calc_training_data,
+             "Calculate the training data for the edge changes and duration")
         .def("predict", &ParticleTracker::predict, "Predict by one T_step");
 
     pybind11::class_<Agent>(m, "Agent")

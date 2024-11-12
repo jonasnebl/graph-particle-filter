@@ -23,8 +23,8 @@ const double HUMAN_VELOCITY_STDDEV = 0.1;
 
 const double PAUSE_VELOCITY = 0.1;
 const double OUT_OF_WAREHOUSE_VELOCITY =
-    0.0005;  // the smaller, the longer the agent stays out of the warehouse
-const double LEAVE_WAREHOUSE_PROBABILITY = 0.04;
+    0.0006;  // the smaller, the longer the agent stays out of the warehouse
+const double LEAVE_WAREHOUSE_PROBABILITY = 0.02;
 
 const double SMOOTHING_STRENGTH = 0.1;
 const double SMOOTHING_ITERATIONS = 5;

@@ -46,8 +46,8 @@ def get_belonging_edges(folder: str) -> tuple[list[list[int]], float]:
     return human_belonging_edges, T_step
 
 
-def get_magic_successor_edge_data(folder: str):
-    """Directly extracts the successor edge samples from a simulation log (magically).
+def get_magic_edge_change_data(folder: str):
+    """Directly extracts the edge change samples from a simulation log (magically).
 
     :param folder: Path to the folder with the simulation log
         Training data is a list of tuples (edge, next_edge)
@@ -66,10 +66,10 @@ def get_magic_successor_edge_data(folder: str):
     )
 
     # --- save generated edge change training data ---
-    with open(os.path.join(LOG_FOLDER, folder, "edge_change_training_data_magic.pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "edge_change_data_magic.pkl"), "wb") as f:
         pickle.dump(edge_change_training_data, f, pickle.HIGHEST_PROTOCOL)
     print(
-        f"{len(edge_change_training_data)} edge change samples saved to {folder}/edge_change_training_data.pkl."
+        f"{len(edge_change_training_data)} edge change samples saved to {folder}/edge_change_data_magic.pkl."
     )
 
 
@@ -102,10 +102,10 @@ def get_magic_duration_data(folder: str):
     )
 
     # --- save generated training data ---
-    with open(os.path.join(LOG_FOLDER, folder, "duration_training_data_magic.pkl"), "wb") as f:
+    with open(os.path.join(LOG_FOLDER, folder, "duration_data_magic.pkl"), "wb") as f:
         pickle.dump(duration_training_data, f, pickle.HIGHEST_PROTOCOL)
     print(
-        f"{len(duration_training_data)} duration data samples saved to {folder}/duration_training_data.pkl."
+        f"{len(duration_training_data)} duration data samples saved to {folder}/duration_data_magic.pkl."
     )
 
 
@@ -118,11 +118,9 @@ def train_successor_edge_probabilities(folders: list[str], use_magic_data: bool 
     """
     edge_change_training_data = []
     for folder in folders:
-        if use_magic_data:
-            filename = "duration_training_data_magic.pkl"
-        else:
-            "duration_training_data.pkl"
-        with open(os.path.join(LOG_FOLDER, folder, filename), "rb") as f:
+        with open(
+            os.path.join(LOG_FOLDER, folder, edge_change_data_filename(use_magic_data)), "rb"
+        ) as f:
             edge_change_training_data += pickle.load(f)
 
     successor_edge_probabilties = [
@@ -168,11 +166,9 @@ def train_durations(folders: list[str], use_magic_data: bool = False):
     """
     duration_training_data = []
     for folder in folders:
-        if use_magic_data:
-            filename = "duration_training_data_magic.pkl"
-        else:
-            "duration_training_data.pkl"
-        with open(os.path.join(LOG_FOLDER, folder, filename), "rb") as f:
+        with open(
+            os.path.join(LOG_FOLDER, folder, duration_data_filename(use_magic_data)), "rb"
+        ) as f:
             duration_training_data += pickle.load(f)
     print(duration_training_data)
 
@@ -224,10 +220,11 @@ def train_likelihood_matrix(folders: list[str]):
 
 
 if __name__ == "__main__":
-    folder = "24hours_4humans_4robots_100part_2"
+    folder = "24h_4humans_4robots_100part"
     # get_magic_successor_edge_data(folder)
+    get_magic_edge_change_data(folder)
     get_magic_duration_data(folder)
-    train_durations([folder], use_magic_data=True)
+    # train_durations([folder], use_magic_data=True)
     # train_successor_edge_probabilities([folder])
     # train_likelihood_matrix(
     #     [

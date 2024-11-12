@@ -94,22 +94,45 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     return calc_edge_probabilities();
 }
 
-std::vector<std::pair<int, int>> ParticleTracker::edge_change_training_data() {
-    std::vector<std::pair<int, int>> new_training_data;
+std::pair<std::vector<std::pair<int, int>>, std::vector<std::pair<int, double>>>
+ParticleTracker::calc_training_data() {
+    // --- calculate edge change data ---
+    std::vector<std::pair<int, int>> new_edge_change_data;
     std::vector<double> edge_probabilities = calc_edge_probabilities();
     for (int i = 0; i < graph.edges.size(); i++) {
         if (previous_edge_probabilities[i] > EDGE_CHANGE_THRESHOLD &&
             edge_probabilities[i] < EDGE_CHANGE_THRESHOLD) {
             for (const auto& successor_edge : graph.successor_edges[i]) {
                 if (edge_probabilities[successor_edge] > EDGE_CHANGE_THRESHOLD) {
-                    new_training_data.push_back(std::make_pair(i, successor_edge));
+                    new_edge_change_data.push_back(std::make_pair(i, successor_edge));
                     break;
                 }
             }
         }
     }
     previous_edge_probabilities = edge_probabilities;
-    return new_training_data;
+
+    // --- calculate duration data ---
+    std::vector<std::pair<int, double>> new_duration_data;
+    for (const std::pair<int, int>& edge_change : new_edge_change_data) {
+        int edge = edge_change.first;
+        int successor_edge = edge_change.second;
+        edge_since_last_change_over_threshold[successor_edge] = true;
+        edge_time_since_last_change[successor_edge] = 0.0;
+        if (edge_since_last_change_over_threshold[edge]) {
+            new_duration_data.push_back(std::make_pair(edge, edge_time_since_last_change[edge]));
+        }
+    }
+    for (int i = 0; i < graph.edges.size(); i++) {
+        if (edge_probabilities[i] < EDGE_CHANGE_THRESHOLD) {
+            edge_since_last_change_over_threshold[i] = false;
+        }
+    }
+    for (int i = 0; i < graph.edges.size(); i++) {
+        edge_time_since_last_change[i] += T_step;
+    }
+
+    return std::make_pair(new_edge_change_data, new_duration_data);
 }
 
 int ParticleTracker::estimate_N_humans(int N_perceived) {
