@@ -3,7 +3,7 @@
 # Run this shell file to copy all the generated figures to the windows folder with the latex project
 
 SOURCE_DIR="./figures"
-FILE_EXTENSION=".svg"
+FILE_EXTENSION=".pdf"
 TARGET_DIR="/mnt/c/users/jonas/repos/SA/figures"
 
 # Find and copy all files with the specified extension

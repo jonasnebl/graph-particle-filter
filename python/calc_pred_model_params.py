@@ -128,7 +128,11 @@ def train_successor_edge_probabilities(folders: list[str], use_magic_data: bool 
     ]  # same shape as successor_edges but with float entries
 
     for i, edge_start_and_end_node in enumerate(edges):
-        relevant_samples = [sample for sample in edge_change_training_data if sample[0] == i]
+        relevant_samples = [
+            sample
+            for sample in edge_change_training_data
+            if sample[0] == i and sample[1] in successor_edges[i]
+        ]
 
         # calculate the successor edge probabilities for every possible successor edge
         e = 0.01
@@ -223,9 +227,9 @@ if __name__ == "__main__":
     folder = "24h_4humans_4robots_100part"
     # get_magic_successor_edge_data(folder)
     get_magic_edge_change_data(folder)
-    get_magic_duration_data(folder)
+    # get_magic_duration_data(folder)
     # train_durations([folder], use_magic_data=True)
-    # train_successor_edge_probabilities([folder])
+    train_successor_edge_probabilities([folder], use_magic_data=True)
     # train_likelihood_matrix(
     #     [
     #         "1h_1humans_4robots_noleaving",

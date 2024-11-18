@@ -254,8 +254,8 @@ class Plotter:
                 fps=fps,
             )
 
-    def savefig(self, filename: str, format: str = "svg"):
-        """Save the currently displayed warehouse as a pdf figure"""
+    def savefig(self, filename: str, format: str = "pdf"):
+        """Save the currently displayed warehouse as a figure"""
         if format not in ["pdf", "svg", "png"]:
             raise ValueError(f"Invalid format: {format}. Use 'pdf', 'svg', or 'png' instead.")
         if not filename.endswith("." + format):
@@ -286,40 +286,27 @@ class Plotter:
                 zorder=3,
             )
 
-    def display_edge_change_data_distribution(
-        self, edge_change_data: list[tuple[int, int]], scale: float = -1
+    def node_weight_plot(
+        self,
+        node_weights: list[float],
+        title: str,
+        scale: float = -1,
     ):
         """Display the edge change data on the warehouse plot
 
-        :param edge_change_data: List of tuples containing the edge index and the successor edge index
+        :param node_weights: List of node weights corresponding to the area of the plotted dots
+        :param title: str, title of the plot
         :param scale: float, scale the size of the displayed dots, -1: auto scale
         """
-        edge_change_data_distribution_edges = [
-            len([sample for sample in edge_change_data if sample[0] == i])
-            for i in range(len(self.edges))
-        ]
-
-        edge_change_data_distribution = []
-        for i in range(len(self.nodes)):
-            edge_change_data_distribution.append(0)
-            for j in range(len(self.edges)):
-                if self.edges[j][1] == i:
-                    edge_change_data_distribution[-1] += edge_change_data_distribution_edges[j]
-
         # Scale the edge change data for a nice scatter plot
-        scale = scale if scale > 0 else 2.5e4 / max(edge_change_data_distribution)
-        sizes = [scale * count for count in edge_change_data_distribution]
+        scale = scale if scale > 0 else 2.5e4 / max(node_weights)
+        sizes = [scale * count for count in node_weights]
 
         # Plot the scatter points at the tip of each edge
         for node, size in zip(self.nodes, sizes):
             plt.scatter(node["x"], node["y"], s=size, c="red", alpha=0.6, zorder=-1)
 
-        plt.title(
-            "Edge Change Data Distribution\n"
-            + "Total number of edge change samples: "
-            + str(len(edge_change_data)),
-            fontsize=24,
-        )
+        plt.title(title, fontsize=24)
 
     def display_duration_data_distribution(
         self, duration_data: list[tuple[int, float]], scale: float = -1

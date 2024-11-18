@@ -229,13 +229,58 @@ def plot_edge_change_data_distribution(
     :param folder: Folder name of the simulation to be used.
     :param scale: float, scale the size of the displayed dots, -1: auto scale
     """
+    nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
     with open(
         os.path.join(LOG_FOLDER, folder, edge_change_data_filename(use_magic_data)), "rb"
     ) as f:
         edge_change_data = pickle.load(f)
+
+    edge_change_data_distribution_edges = [
+        len([sample for sample in edge_change_data if sample[0] == i]) for i in range(len(edges))
+    ]
+    edge_change_data_distribution = []
+    for i in range(len(nodes)):
+        edge_change_data_distribution.append(0)
+        for j in range(len(edges)):
+            if edges[j][1] == i:
+                edge_change_data_distribution[-1] += edge_change_data_distribution_edges[j]
+
     plotter = Plotter()
-    plotter.display_edge_change_data_distribution(edge_change_data, scale=scale)
-    plotter.savefig("edge_change_data_distribution.pdf")
+    plotter.node_weight_plot(
+        edge_change_data_distribution,
+        title="Edge change data distribution\nbased on {} samples".format(len(edge_change_data)),
+        scale=scale,
+    )
+    filename = (
+        "edge_change_distribution_magic.pdf" if use_magic_data else "edge_change_distribution.pdf"
+    )
+    plotter.savefig(filename, format="pdf")
+    plotter.show(blocking=True)
+
+
+def plot_edge_change_model_difference(filename1, filename2):
+    """Plot the relative difference distribution between two models.
+
+    :param filename1: json filename of the successor_edge_probabilities of the first model
+    :param filename2: json filename of the successor_edge_probabilities of the second model
+    """
+    with open(os.path.join(MODEL_PATH, filename1), "rb") as f:
+        successor_edge_probabilities1 = json.load(f)
+    with open(os.path.join(MODEL_PATH, filename2), "rb") as f:
+        successor_edge_probabilities2 = json.load(f)
+
+    mean_differences = []
+    for i, (probabilities1, probabilities2) in enumerate(
+        zip(successor_edge_probabilities1, successor_edge_probabilities2)
+    ):
+        mean_differences.append(
+            np.mean(np.abs(np.array(probabilities1) - np.array(probabilities2)))
+        )
+    plotter = Plotter()
+    plotter.node_weight_plot(
+        mean_differences, title="Distribution of differences between edge change models"
+    )
+    plotter.savefig("edge_change_model_difference", format="pdf")
     plotter.show(blocking=True)
 
 
@@ -249,17 +294,22 @@ def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, s
         duration_data = pickle.load(f)
     plotter = Plotter()
     plotter.display_duration_data_distribution(duration_data, scale=scale)
-    plotter.savefig("duration_data_distribution.pdf")
+    filename = "duration_distribution_magic.pdf" if use_magic_data else "duration_distribution.pdf"
+    plotter.savefig(filename, format="pdf")
     plotter.show(blocking=True)
 
 
 if __name__ == "__main__":
     folder = "24h_4humans_4robots_100part"
 
-    plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
+    # plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
     plot_edge_change_data_distribution(folder, scale=8)
-    plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
-    plot_duration_data_distribution(folder, scale=0.1)
+    # plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
+    # plot_duration_data_distribution(folder, scale=0.1)
+
+    # plot_edge_change_model_difference(
+    #     "successor_edge_probabilities.json", "successor_edge_probabilities_magic.json"
+    # )
 
     # plot_detection_probability()
 
