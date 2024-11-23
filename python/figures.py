@@ -23,16 +23,19 @@ matplotlib.use("TkAgg")
 plt.style.use("default")
 
 
-def plot_pred_model(edge):
+def plot_edge_change_model(edge, use_magic_data: bool = False):
     """
     Plot the prediction model for the given edge.
     """
-    with open(os.path.join(MODEL_PATH, "pred_model_params.json"), "r") as f:
+    filename = (
+        "successor_edge_probabilities_magic.json"
+        if use_magic_data
+        else "successor_edge_probabilities.json"
+    )
+    with open(os.path.join(MODEL_PATH, filename), "r") as f:
         pred_model_params = json.load(f)
 
-    nodes, edges, edge_weights, polygons, staging_nodes, storage_nodes, exit_nodes = (
-        load_warehouse_data_from_json()
-    )
+    nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
     successor_edges = get_successor_edges(edges)
 
     N_successors = len(pred_model_params[edge])
@@ -280,7 +283,7 @@ def plot_edge_change_model_difference(filename1, filename2):
     plotter.node_weight_plot(
         mean_differences, title="Distribution of differences between edge change models"
     )
-    plotter.savefig("edge_change_model_difference", format="pdf")
+    plotter.savefig("edge_change_model_difference.pdf", format="pdf")
     plotter.show(blocking=True)
 
 
@@ -290,10 +293,20 @@ def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, s
     :param folder: Folder name of the simulation to be used.
     :param scale: float, scale the width of the displayed lines, -1: auto scale
     """
+    _, edges, _, _, _, _, _ = load_warehouse_data_from_json()
     with open(os.path.join(LOG_FOLDER, folder, duration_data_filename(use_magic_data)), "rb") as f:
         duration_data = pickle.load(f)
+
+    duration_data_distribution = [
+        len([sample for sample in duration_data if sample[0] == i]) for i in range(len(edges))
+    ]
+
     plotter = Plotter()
-    plotter.display_duration_data_distribution(duration_data, scale=scale)
+    plotter.edge_weight_plot(
+        duration_data_distribution,
+        title="Edge change data distribution\nbased on {} samples".format(len(duration_data)),
+        scale=scale,
+    )
     filename = "duration_distribution_magic.pdf" if use_magic_data else "duration_distribution.pdf"
     plotter.savefig(filename, format="pdf")
     plotter.show(blocking=True)
@@ -303,7 +316,7 @@ if __name__ == "__main__":
     folder = "24h_4humans_4robots_100part"
 
     # plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
-    plot_edge_change_data_distribution(folder, scale=8)
+    # plot_edge_change_data_distribution(folder, scale=8)
     # plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
     # plot_duration_data_distribution(folder, scale=0.1)
 
@@ -313,7 +326,7 @@ if __name__ == "__main__":
 
     # plot_detection_probability()
 
-    # plot_pred_model(int(sys.argv[1]))
+    plot_edge_change_model(int(sys.argv[1]))
 
     # --- plot number of perceived humans comparison ---
     # plot_N_humans_in_warehouse(folder)

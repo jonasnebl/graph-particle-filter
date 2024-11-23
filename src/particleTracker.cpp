@@ -327,7 +327,7 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
                 cost_matrix[i][j] =
                     static_cast<int>(1e4 * assignment_cost);  // library expects integers
             } else {
-                cost_matrix[i][j] = 1e8;
+                cost_matrix[i][j] = 0;  // cost=0 for assigning no perception to track
             }
         }
     }
@@ -341,10 +341,10 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
     for (int i = 0; i < N_tracks; i++) {
         for (int j = 0; j < N_tracks; j++) {
             if (prob.assignment[i][j] == 1) {
-                if (cost_matrix[i][j] < 0.5e8) {
-                    perceived_human_per_internal_human[i] = j;
-                } else {
+                if (cost_matrix[i][j] == 0) {
                     perceived_human_per_internal_human[j] = -1;
+                } else {
+                    perceived_human_per_internal_human[i] = j;
                 }
                 break;
             }

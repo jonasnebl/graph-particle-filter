@@ -286,19 +286,14 @@ class Plotter:
                 zorder=3,
             )
 
-    def node_weight_plot(
-        self,
-        node_weights: list[float],
-        title: str,
-        scale: float = -1,
-    ):
-        """Display the edge change data on the warehouse plot
+    def node_weight_plot(self, node_weights: list[float], title: str, scale: float = -1):
+        """Display relative node weights on the warehouse plot
 
         :param node_weights: List of node weights corresponding to the area of the plotted dots
         :param title: str, title of the plot
         :param scale: float, scale the size of the displayed dots, -1: auto scale
         """
-        # Scale the edge change data for a nice scatter plot
+        # Scale the node weights for a nice scatter plot
         scale = scale if scale > 0 else 2.5e4 / max(node_weights)
         sizes = [scale * count for count in node_weights]
 
@@ -308,24 +303,18 @@ class Plotter:
 
         plt.title(title, fontsize=24)
 
-    def display_duration_data_distribution(
-        self, duration_data: list[tuple[int, float]], scale: float = -1
-    ):
-        """Display the duration data on the warehouse plot
+    def edge_weight_plot(self, edge_weights: list[float], title: str, scale: float = -1):
+        """Display relative edge weights on the warehouse plot
 
-        :param duration_data: List of tuples containing the edge index and the spent time
-        :param scale: float, scale the size of the displayed widths, -1: auto scale
+        :param edge_weights: List of edge weights corresponding to the area/thickness of the plotted lines
+        :param title: str, title of the plot
+        :param scale: float, scale the area/thickness of the displayed lines, -1: auto scale
         """
-        duration_data_distribution = [
-            len([sample for sample in duration_data if sample[0] == i])
-            for i in range(len(self.edges))
-        ]
+        # Normalize the edge weights for scatter plot sizes
+        scale = scale if scale > 0 else 5e1 / max(edge_weights)
+        widths = [scale * count for count in edge_weights]
 
-        # Normalize the duration data distribution for scatter plot sizes
-        scale = scale if scale > 0 else 5e1 / max(duration_data_distribution)
-        widths = [scale * count for count in duration_data_distribution]
-
-        # Plot the edges with varying width based on the duration data
+        # Plot the edges with varying width based on the egde weights
         for i, edge in enumerate(self.edges):
             start, end = edge
             start_pos = self.node_positions[start]
@@ -341,9 +330,4 @@ class Plotter:
                 solid_capstyle="butt",
             )
 
-        plt.title(
-            "Duration Data Distribution\n"
-            + "Total number of duration data samples: "
-            + str(len(duration_data)),
-            fontsize=24,
-        )
+        plt.title(title, fontsize=24)
