@@ -81,10 +81,11 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
                     particles[j][random_source_particle_index]);
             }
         }
-        // --- copy weight ---
-        particle_weights[i] = particle_weights[random_source_particle_index];
+        // --- adjust weights ---
+        double new_weight = 0.5 * (particle_weights[i] + particle_weights[random_source_particle_index]);
+        particle_weights[i] = new_weight;
+        particle_weights[random_source_particle_index] = new_weight;
     }
-    normalize_weights();
 
     // // --- print effective sample size for debugging purposes ---
     // std::cout << "Effective sample size: " << calc_effective_sample_size()
