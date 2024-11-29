@@ -45,4 +45,4 @@ class Simulation {
     std::normal_distribution<double> trajectory_xy_noise;
 };
 
-#endif
+#endif  // WAREHOUSESIM_SRC_SIMULATION_H

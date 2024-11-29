@@ -12,9 +12,9 @@ class Simulation;
 
 using Point = std::pair<double, double>;
 
-const double D_MIN = 10.0;
-const double D_MAX = 20.0;
-const double DETECTION_PROBABILITY_IN_RANGE = 0.999;
+const double D_MIN = 7.5;
+const double D_MAX = 15.0;
+const double DETECTION_PROBABILITY_IN_RANGE = 0.95;
 const double XY_STDDEV = 0.02;
 const double HEADING_STDDEV = 15.0 * M_PI / 180.0;
 const double ROBOT_VELOCITY = 2.2;
@@ -26,7 +26,7 @@ const double OUT_OF_WAREHOUSE_VELOCITY =
     0.0006;  // the smaller, the longer the agent stays out of the warehouse
 const double LEAVE_WAREHOUSE_PROBABILITY = 0.02;
 
-const double SMOOTHING_STRENGTH = 0.1;
+const double SMOOTHING_STRENGTH = 0.035;
 const double SMOOTHING_ITERATIONS = 5;
 
 enum class AgentType { HUMAN, ROBOT };
@@ -49,7 +49,7 @@ class Agent {
 
     Point position;
     double heading = 0.0;
-    double velocity = 2.0;
+    double velocity = 0.0;
     std::normal_distribution<double> velocity_distribution;
     double get_random_velocity();
 
@@ -72,4 +72,4 @@ class Agent {
     bool random_check_viewrange(Point pos1, Point pos2);
 };
 
-#endif
+#endif  // WAREHOUSESIM_SRC_AGENT_H

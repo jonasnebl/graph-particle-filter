@@ -119,7 +119,7 @@ std::tuple<double, double> Particle::edge_to_pose_distance_and_t(int edge, Point
     double heading_dist = ParticleTracker::heading_distance(heading, edge_heading);
 
     // --- return weighted sum of cartesian distance and heading difference ---
-    return std::make_tuple(cartesian_distance + ParticleTracker::HEADING_WEIGHT * heading_dist, t);
+    return std::make_tuple(cartesian_distance + HEADING_WEIGHT * heading_dist, t);
 }
 
 void Particle::predict(double T_step) {
@@ -152,6 +152,5 @@ bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_inpu
 double Particle::assignment_cost(Point position, double heading) {
     // assignment cost is a weighted sum of the cartesian distance and the heading difference
     return Agent::euclidean_distance(get_position(), position) +
-           ParticleTracker::HEADING_WEIGHT *
-               ParticleTracker::heading_distance(heading, get_heading());
+           HEADING_WEIGHT * ParticleTracker::heading_distance(heading, get_heading());
 }

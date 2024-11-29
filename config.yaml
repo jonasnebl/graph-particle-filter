@@ -4,11 +4,11 @@
 # if True, loads a previous simulation from the folder
 # if False, runs and saves new simulation under the folder
 run_new_simulation: True
-folder: "24h_4humans_4robots_100part"  # if empty, uses the current date and time
+folder:   # if empty, uses the current date and time
 
 # --- Simulation parameters (only relevant when running a new simulation) ---
 # if a previous simulation is used the parameters come from the previous simulation
-T_simulation: 86400 # seconds
+T_simulation: 60 # seconds
 T_step: 0.5 # seconds
 N_humans: 4
 N_robots: 4
@@ -20,12 +20,12 @@ N_robots: 4
 run_tracker: True
 
 # --- Tracker parameters ---
-N_particles: 100
+N_particles: 1000
 N_tracks_init: 4
-record_training_data: True
+record_training_data: False
 
 # --- Plotting parameters ---
-plot: False
+plot: True
 record_video: False # sets plot to True
 playback_speed: 1 # 1 is normal speed
 # maximum probability to consider an edge cleared

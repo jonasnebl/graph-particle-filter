@@ -8,11 +8,13 @@ import sys
 from paths import *
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.legend_handler import HandlerTuple
 import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
 from evaluator import *
 from plotter import Plotter
+import math
 
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import Agent
@@ -40,7 +42,7 @@ def plot_edge_change_model(edge, use_magic_data: bool = False):
 
     N_successors = len(successor_edge_probabilities[edge])
     fig, axs = plt.subplots(1, N_successors, figsize=(2.5 * N_successors, 2.5))
-    fig.suptitle(f"Wahrscheinlichkeit für Folgekanten von Kante {edge}")
+    fig.suptitle(f"Wahrscheinlichkeiten für Folgekanten von Kante {edge}", fontsize=18)
 
     for i, successor_edge_probability in enumerate(successor_edge_probabilities[edge]):
         ax = axs[i]
@@ -105,43 +107,67 @@ def plot_edge_change_model(edge, use_magic_data: bool = False):
     plt.show()
 
 
-def plot_results_multiple_thresholds(thresholds, false_negative_rates, cleared_edges_rates):
+def plot_results_multiple_thresholds(
+    thresholds: list[float],
+    false_negative_rates_list: list[list[float]],
+    list_legends: list[str],
+    cleared_edges_rates: list[float],
+):
     """Plot the results for the ParticleTracker for multiple thresholds.
 
     :param thresholds: List of thresholds.
-    :param false_negative_rates: List of false negative rates.
+    :param false_negative_rates: List of list of false negative rates.
     :param cleared_edges_rates: List of cleared edges rates.
     """
-    e = 1e-10
+    e = 1e-10  # add e becasue 0 cannot be displayed on a log scale
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    for i in range(len(thresholds)):
-        ax.scatter(
-            cleared_edges_rates[i],
-            false_negative_rates[i] + e,
-            label="$p_{{lim}}=${:.10g}%".format(100 * thresholds[i]),
-            marker="o",
-        )
-        # ax.annotate(annotation_text, (cleared_edges_rates[i], false_negative_rates[i]))
-        if i > 0:
-            ax.plot(
-                [cleared_edges_rates[i - 1], cleared_edges_rates[i]],
-                [false_negative_rates[i - 1] + e, false_negative_rates[i] + e],
-                color="gray",
-                zorder=-10,
+    line_colors = ["blue", "orange", "green", "red", "purple", "brown"]
+    point_colors = ["brown", "blue", "orange", "green", "purple", "lime"]
+    lines = []
+    points = []
+    for i, false_negative_rates in enumerate(false_negative_rates_list):
+        for j in range(len(thresholds)):
+            scatter_point = ax.scatter(
+                cleared_edges_rates[j],
+                false_negative_rates[j] + e,
+                marker="o",
+                zorder=10,
+                color=point_colors[j],
             )
-    ax.set_title(
-        "Anteil von freigegebenen Kanten $r_{n}$ und davon \n "
-        + "fälschlicherweise freigegebenen Kanten $r_{fn}$ für verschiedene Schwellwerte $p_{lim}$"
-    )
-    ax.set_xlabel("Anteil von freigegebenen Kanten $r_{n}$")
+            if i == 0:
+                points.append(scatter_point)
+            # ax.annotate(annotation_text, (cleared_edges_rates[i], false_negative_rates[i]))
+            if j > 0:
+                lines.append(
+                    ax.plot(
+                        [cleared_edges_rates[j - 1], cleared_edges_rates[j]],
+                        [false_negative_rates[j - 1] + e, false_negative_rates[j] + e],
+                        color=line_colors[i],
+                        zorder=-10,
+                    )
+                )
+    ax.set_title("Negativ-Rate $r_{n}$ und Falsch-Negativ-Rate $r_{fn}$", fontsize=18)
+    ax.set_xlabel("Negativ-Rate $r_{n}$", fontsize=14)
     ax.set_xlim([0, 1.01])
     ax.set_yscale("log")
     ax.grid(which="both")
-    ax.set_ylabel("Anteil von fälschlicherweise freigegebenen Kanten $r_{fn}$")
+    ax.set_ylabel("Falsch-Negativ-Rate $r_{fn}$", fontsize=14)
     ax.set_ylim(ax.get_ylim()[::-1])
     # ax.set_yticks([1e-2, 1e-1, 1])
     ax.set_yticklabels(["{:g}%".format(100 * x) for x in ax.get_yticks()])
-    ax.legend(loc="lower left")
+
+    ax.legend(
+        points,
+        ["$p_{{lim}}=${:.10g}%".format(100 * threshold) for threshold in thresholds],
+        loc="lower left",
+    )
+    ax2 = ax.twinx()
+    for i, legend in enumerate(list_legends):
+        ax2.plot(np.NaN, np.NaN, label=legend, color=line_colors[i])
+    ax2.get_xaxis().set_visible(False)
+    ax2.get_yaxis().set_visible(False)
+    ax2.legend(loc="upper right")
+
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "results_multiple_thresholds.pdf"))
     plt.show()
@@ -158,16 +184,21 @@ def plot_detection_probability():
     ax.set_xlim([0, 25])
     ax.axhline(1.0, color="gray", linestyle="--")
     ax.axhline(0.0, color="gray", linestyle="--")
-    ax.set_title("Detektionswahrscheinlichkeit $ p_{Detektion}(d) $ in Abhängigkeit der Entfernung")
+    ax.set_title("Detektionswahrscheinlichkeit $ p_{Detektion}(d) $ eines Menschen", fontsize=14)
     ax.set_xlabel("Entfernung $ d $ in Metern")
-    ax.set_ylabel("Detektionswahrscheinlichkeit")
+    ax.set_ylabel("$ p_{Detektion}(d) $")
+    ax.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "detection_probability.pdf"))
     plt.show()
 
 
-def plot_N_humans_in_warehouse(folder: str):
-    """Plot the number of humans in the warehouse over time."""
+def plot_N_humans_in_warehouse(folder: str, specifier: str = ""):
+    """Plot the number of humans in the warehouse over time.
+
+    :param folder: Folder name of the simulation to be used.
+    :param specifier: Additional specifier for the filename under which the figure is saved.
+    """
     with open(os.path.join(LOG_FOLDER, folder, "N_estimated.pkl"), "rb") as f:
         N_estimated_log = np.array(pickle.load(f))
     with open(os.path.join(LOG_FOLDER, folder, "log.pkl"), "rb") as f:
@@ -186,19 +217,19 @@ def plot_N_humans_in_warehouse(folder: str):
     timevec = np.arange(0, len(sim_log["sim_states"]) * sim_log["T_step"], sim_log["T_step"])
     timevec_minutes = timevec / 60
 
-    fig, ax = plt.subplots(1, 1, figsize=(16, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(12, 3))
     ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{Schätzung}$")
     ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
     ax.plot(timevec_minutes, N_tracks_log, label="$N_{Tracks}$")
     ax.legend()
-    ax.set_title("Anzahl der wahrgenommenen Menschen im Lager")
-    ax.set_xlabel("Zeit in Minuten")
+    ax.set_title("Schätzung der Anzahl der Menschen im Lager", fontsize=18)
+    ax.set_xlabel("Zeit in Minuten", fontsize=14)
     ax.set_xlim([0, timevec_minutes[-1]])
-    ax.set_ylabel("Anzahl der wahrgenommenen Menschen")
+    ax.set_ylabel("$ N_{humans} $", fontsize=14)
     ax.set_ylim([0, max(N_tracks_log) + 0.1])
     ax.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(FIGURE_PATH, "N_estimated.pdf"))
+    plt.savefig(os.path.join(FIGURE_PATH, "N_estimated" + specifier + ".pdf"))
     plt.show()
 
 
@@ -232,14 +263,12 @@ def plot_edge_change_data_distribution(
         title="Edge change data distribution\nbased on {} samples".format(len(edge_change_data)),
         scale=scale,
     )
-    filename = (
-        "edge_change_distribution_magic.pdf" if use_magic_data else "edge_change_distribution.pdf"
-    )
-    plotter.savefig(filename, format="pdf")
+    filename = "edge_change_distribution_magic" if use_magic_data else "edge_change_distribution"
+    plotter.savefig(filename, format="svg")
     plotter.show(blocking=True)
 
 
-def plot_edge_change_model_difference(filename1, filename2):
+def plot_edge_change_model_difference(filename1, filename2, filename3, filename4):
     """Plot the relative difference distribution between two models.
 
     :param filename1: json filename of the successor_edge_probabilities of the first model
@@ -249,20 +278,91 @@ def plot_edge_change_model_difference(filename1, filename2):
         successor_edge_probabilities1 = json.load(f)
     with open(os.path.join(MODEL_PATH, filename2), "rb") as f:
         successor_edge_probabilities2 = json.load(f)
+    with open(os.path.join(MODEL_PATH, filename3), "rb") as f:
+        duration_params1 = json.load(f)
+    with open(os.path.join(MODEL_PATH, filename4), "rb") as f:
+        duration_params2 = json.load(f)
 
-    mean_differences = []
-    for i, (probabilities1, probabilities2) in enumerate(
-        zip(successor_edge_probabilities1, successor_edge_probabilities2)
-    ):
-        mean_differences.append(
-            np.mean(np.abs(np.array(probabilities1) - np.array(probabilities2)))
-        )
-    plotter = Plotter()
-    plotter.node_weight_plot(
-        mean_differences, title="Distribution of differences between edge change models"
+    # mean_differences = []
+    # for probabilities1, probabilities2 in zip(
+    #     successor_edge_probabilities1, successor_edge_probabilities2
+    # ):
+    #     mean_differences.append(
+    #         np.mean(np.abs(np.array(probabilities1) - np.array(probabilities2)))
+    #     )
+
+    # nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
+    # with open(
+    #     os.path.join(LOG_FOLDER, "24h_4humans_4robots_100part", edge_change_data_filename(False)),
+    #     "rb",
+    # ) as f:
+    #     edge_change_data = pickle.load(f)
+    # node_weights = [
+    #     len([sample for sample in edge_change_data if sample[0] == i]) for i in range(len(edges))
+    # ]
+
+    # fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    # axs[0].hist(mean_differences, bins=30)
+    # axs[0].set_xlabel("Mean difference")
+    # axs[0].set_title("Edge change model differences")
+    # axs[0].grid()
+    # axs[1].hist(mean_differences, weights=node_weights, bins=30)
+    # axs[1].set_xlabel("Mean difference")
+    # axs[1].set_title("Edge change model differences weighted")
+    # axs[1].grid()
+    # plt.show()
+
+    # plotter = Plotter()
+    # plotter.node_weight_plot(
+    #     mean_differences, title="Distribution of differences between edge change models"
+    # )
+    # plotter.savefig("edge_change_model_difference", format="pdf")
+    # plotter.show(blocking=True)
+
+    expected_value = lambda alpha, beta: alpha * math.gamma(1 + 1 / beta)
+    standard_deviation = lambda alpha, beta: alpha**2 * (
+        math.gamma(1 + 2 / beta) - math.gamma(1 + 1 / beta) ** 2
     )
-    plotter.savefig("edge_change_model_difference.pdf", format="pdf")
-    plotter.show(blocking=True)
+
+    nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
+    with open(
+        os.path.join(LOG_FOLDER, "24h_4humans_4robots_100part", duration_data_filename(False)),
+        "rb",
+    ) as f:
+        edge_change_data = pickle.load(f)
+
+    expected_value_differences = []
+    node_weights = []
+    standard_deviation_differences = []
+    for (
+        i,
+        ((alpha1, beta1), (alpha2, beta2)),
+    ) in enumerate(zip(duration_params1, duration_params2)):
+        expected_value_difference = expected_value(alpha1, beta1) - expected_value(alpha2, beta2)
+        if np.abs(expected_value_difference) < 10:
+            expected_value_differences.append(expected_value_difference)
+            node_weights.append(len([sample for sample in edge_change_data if sample[0] == i]))
+        standard_deviation_differences.append(
+            standard_deviation(alpha1, beta1) - standard_deviation(alpha2, beta2)
+        )
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    axs[0].hist(expected_value_differences, bins=30)
+    axs[0].set_xlabel("Expected duration difference")
+    axs[0].set_title("Expected duration differences")
+    axs[0].grid()
+    axs[1].hist(expected_value_differences, weights=node_weights, bins=30)
+    axs[1].set_xlabel("Expected duration difference")
+    axs[1].set_title("Expected duration differences weighted")
+    axs[1].grid()
+    plt.show()
+
+    # plotter = Plotter()
+    # plotter.node_weight_plot(
+    #     mean_differences, title="Distribution of differences between edge change models"
+    # )
+    # plotter.savefig("edge_change_model_difference", format="pdf")
+    # plotter.show(blocking=True)
 
 
 def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, scale: float = -1):
@@ -285,38 +385,49 @@ def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, s
         title="Edge change data distribution\nbased on {} samples".format(len(duration_data)),
         scale=scale,
     )
-    filename = "duration_distribution_magic.pdf" if use_magic_data else "duration_distribution.pdf"
-    plotter.savefig(filename, format="pdf")
+    filename = "duration_distribution_magic" if use_magic_data else "duration_distribution"
+    plotter.savefig(filename, format="svg")
     plotter.show(blocking=True)
 
 
 if __name__ == "__main__":
-    folder = "24h_4humans_4robots_100part"
+    # # --- figures for chapters 1-3 ---
+    plot_detection_probability()
+    # plot_edge_change_model(25)
 
+    # # -- plot number of perceived humans comparison ---
+    # folder = "3h_4humans_4robots_1_part_3min"
+    # folder = "3h_4humans_4robots_5minwindow_bugfix"
+    # plot_N_humans_in_warehouse(folder, "_3min")
+    # folder = "3h_4humans_4robots__1part_10min"
+    # folder = "3h_4humans_4robots_5minwindow_bugfix"
+    # plot_N_humans_in_warehouse(folder, "_10min")
+    # plot_edge_change_model_difference(
+    #     "successor_edge_probabilities.json",
+    #     "successor_edge_probabilities_magic.json",
+    #     "duration_params.json",
+    #     "duration_params_magic.json",
+    # )
+
+    # # --- plot training data distributions and comparisons ---
+    # folder = "24h_4humans_4robots_100part"
     # plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
     # plot_edge_change_data_distribution(folder, scale=8)
     # plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
     # plot_duration_data_distribution(folder, scale=0.1)
-
     # plot_edge_change_model_difference(
     #     "successor_edge_probabilities.json", "successor_edge_probabilities_magic.json"
     # )
 
-    # plot_detection_probability()
-
-    plot_edge_change_model(int(sys.argv[1]))
-
-    # --- plot number of perceived humans comparison ---
-    # plot_N_humans_in_warehouse(folder)
-
-    # # --- Plot result metrics ---
+    # # --- Plot overall result metrics ---
+    # folder = "8h_4humans_4robots_10000part"
     # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
     # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
     #     evaluate_multiple_thresholds(thresholds, folder)
     # )
     # plot_results_multiple_thresholds(
-    #     thresholds, false_negative_rates_human_centric, cleared_edges_rates
-    # )
-    # plot_results_multiple_thresholds(
-    #     thresholds, false_negative_rates_edge_centric, cleared_edges_rates
+    #     thresholds,
+    #     [false_negative_rates_human_centric, false_negative_rates_edge_centric],
+    #     ["Mensch-zentriert", "Kanten-zentriert"],
+    #     cleared_edges_rates,
     # )

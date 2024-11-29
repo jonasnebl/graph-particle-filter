@@ -106,7 +106,7 @@ void Agent::add_new_double_cycle_to_deque() {
     // one double cycle consists of legs:
     // 1. random node in staging -> random node in storage
     // 2. random node in storage -> another random node in storage
-    // 3. another random node in storage -> random node in storage
+    // 3. another random node in storage -> another random node in staging
 
     int path_length_before_new_double_cycle = path.size();
 
@@ -192,11 +192,8 @@ void Agent::smooth_path(int start, int end, double strength) {
         double distance = std::hypot(x_current - x_projection, y_current - y_projection);
 
         // Move the current point closer to the projection
-        double move_x = (x_projection - x_current) * strength;
-        double move_y = (y_projection - y_current) * strength;
-
-        path[i].first.first += move_x;
-        path[i].first.second += move_y;
+        path[i].first.first += (x_projection - x_current) * strength * distance;
+        path[i].first.second += (y_projection - y_current) * strength * distance;
     }
 }
 
@@ -270,10 +267,9 @@ bool Agent::random_check_viewrange(Point pos1, Point pos2) {
 double Agent::probability_in_viewrange(double dist) {
     if (dist < D_MIN) {
         return DETECTION_PROBABILITY_IN_RANGE;
-    } else if (dist >= D_MIN && dist < D_MAX) {
+    } else if (D_MIN <= dist && dist < D_MAX) {
         return DETECTION_PROBABILITY_IN_RANGE * (D_MAX - dist) / (D_MAX - D_MIN);
-    } else if (dist >= D_MAX) {
+    } else {  // (D_MAX <= dist)
         return 0.0;
     }
-    return 0.0;  // should never be reached, to prevent compiler warning
 }

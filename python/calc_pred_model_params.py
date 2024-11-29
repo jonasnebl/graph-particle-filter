@@ -86,7 +86,7 @@ def get_magic_duration_data(folder: str):
     duration_training_data = []
 
     for belonging_edges_one_human in belonging_edges:
-        simulation_time = 0
+        simulation_time = T_step
         last_time_changed = -1
         for j in range(1, len(belonging_edges_one_human)):
             if belonging_edges_one_human[j - 1] != belonging_edges_one_human[j]:
@@ -122,6 +122,8 @@ def train_successor_edge_probabilities(folders: list[str], use_magic_data: bool 
             os.path.join(LOG_FOLDER, folder, edge_change_data_filename(use_magic_data)), "rb"
         ) as f:
             edge_change_training_data += pickle.load(f)
+
+    print("N_samples:", len(edge_change_training_data))
 
     successor_edge_probabilties = [
         [float(el) for el in list_] for list_ in successor_edges
@@ -174,22 +176,22 @@ def train_durations(folders: list[str], use_magic_data: bool = False):
             os.path.join(LOG_FOLDER, folder, duration_data_filename(use_magic_data)), "rb"
         ) as f:
             duration_training_data += pickle.load(f)
-    print(duration_training_data)
+
+    print("N_samples:", len(duration_training_data))
 
     start = time.time()
     duration_params = []
     for i in range(len(edges)):
         durations = [sample[1] for sample in duration_training_data if sample[0] == i]
 
-        if len(durations) < 2:
-            # not enough samples to fit a distribution
-            duration_params.append([4.0, 1.5])
-        else:
-            # fit a Weibull distribution to the durations
+        # fit a Weibull distribution to the durations
+        try:
             fitted_weibull = Fit_Weibull_2P(
                 failures=durations, show_probability_plot=False, print_results=False
             )
             duration_params.append([fitted_weibull.alpha, fitted_weibull.beta])
+        except Exception as e:  # not enough data to fit a Weibull distribution
+            duration_params.append([4.5, 2.0])
 
         print(
             f"Calculated duration distribution parameters for edge {i} "
@@ -224,12 +226,11 @@ def train_likelihood_matrix(folders: list[str]):
 
 
 if __name__ == "__main__":
-    folder = "24h_4humans_4robots_100part"
-    # get_magic_successor_edge_data(folder)
-    get_magic_edge_change_data(folder)
+    folder = "8h_4humans_4robots_1s_100part"
+    # get_magic_edge_change_data(folder)
     # get_magic_duration_data(folder)
-    # train_durations([folder], use_magic_data=True)
-    train_successor_edge_probabilities([folder], use_magic_data=True)
+    train_durations([folder], use_magic_data=False)
+    train_successor_edge_probabilities([folder], use_magic_data=False)
     # train_likelihood_matrix(
     #     [
     #         "1h_1humans_4robots_noleaving",

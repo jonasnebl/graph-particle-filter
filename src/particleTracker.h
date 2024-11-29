@@ -16,6 +16,9 @@
 
 const double T_WINDOW = 7 * 60;
 const double EDGE_CHANGE_THRESHOLD = 0.9;
+const double N_SIGMA = 4.0;
+const double HEADING_WEIGHT = 0.5;
+const double REL_RESAMPLE_THRESHOLD = 0.01;
 
 using Point = std::pair<double, double>;
 
@@ -37,7 +40,6 @@ class ParticleTracker {
     graph_struct graph;
 
     // helper function for simulation
-    static constexpr double HEADING_WEIGHT = 0.5;
     static double heading_distance(double h1, double h2);
 
    private:

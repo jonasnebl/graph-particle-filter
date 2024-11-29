@@ -69,7 +69,7 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     normalize_weights();
 
     // --- resample particles ---
-    const double resample_threshold = 1e-2 / static_cast<double>(N_particles);
+    const double resample_threshold = REL_RESAMPLE_THRESHOLD / static_cast<double>(N_particles);
     std::discrete_distribution<int> resample_distribution(particle_weights.begin(),
                                                           particle_weights.end());
     for (int i = 0; i < N_particles; i++) {
@@ -208,9 +208,11 @@ std::pair<std::vector<pybind11::dict>, std::vector<Point>> ParticleTracker::merg
 
                 double eucl_distance = Agent::euclidean_distance(perceived_pos, merged_pos);
                 double head_distance = heading_distance(perceived_heading, merged_heading);
-                if (eucl_distance < 4 * (std::sqrt(merged_pos_variance + perceived_pos_variance)) &&
+                if (eucl_distance <
+                        N_SIGMA * std::sqrt(merged_pos_variance + perceived_pos_variance) &&
                     head_distance <
-                        4 * (std::sqrt(merged_heading_variance + perceived_heading_variance))) {
+                        N_SIGMA * std::sqrt(merged_heading_variance + perceived_heading_variance)) {
+                    matching_perception_found = true;
                     // update position and heading
                     Point updated_position;
                     updated_position.first = (merged_pos_variance * perceived_pos.first +
@@ -231,7 +233,6 @@ std::pair<std::vector<pybind11::dict>, std::vector<Point>> ParticleTracker::merg
                     merged_human["heading_stddev"] =
                         std::sqrt(merged_heading_variance * perceived_heading_variance /
                                   (merged_heading_variance + perceived_heading_variance));
-                    matching_perception_found = true;
                     break;
                 }
             }
@@ -327,7 +328,7 @@ std::vector<int> ParticleTracker::assign_perceived_humans_to_internal_humans(
                 cost_matrix[i][j] =
                     static_cast<int>(1e4 * assignment_cost);  // library expects integers
             } else {
-                cost_matrix[i][j] = 0;  // cost=0 for assigning no perception to track
+                cost_matrix[i][j] = 0;  // cost = 0 for assigning no perception to track
             }
         }
     }
