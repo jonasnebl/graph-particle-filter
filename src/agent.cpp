@@ -110,8 +110,8 @@ void Agent::add_new_double_cycle_to_deque() {
 
     int path_length_before_new_double_cycle = path.size();
 
-    if (random_leave_warehouse() &&
-        type == AgentType::HUMAN) {  // only humans can leave the warehouse
+    if (random_leave_warehouse() && type == AgentType::HUMAN &&
+        simulation->_allow_warehouse_leaving) {
         // --- 1. leg ---
         int target_exit_node = simulation->graph.exit_nodes[0];
         std::vector<int> path_to_target =

@@ -22,11 +22,12 @@ const double TRAJECTORY_XY_STDDEV = 0.4;  // meters
 
 class Simulation {
    public:
-    Simulation(double T_step, int N_humans, int N_robots);
+    Simulation(double T_step, int N_humans, int N_robots, bool allow_warehouse_leaving);
     // agent attributes
     const int _N_humans;
     const int _N_robots;
     const double _T_step;
+    const bool _allow_warehouse_leaving;
     std::vector<Agent> agents;
 
     // warehouse structure

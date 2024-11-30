@@ -11,8 +11,11 @@
 #include "agent.h"
 #include "warehouse_data.h"
 
-Simulation::Simulation(double T_step, int N_humans, int N_robots)
-    : _T_step(T_step), _N_humans(N_humans), _N_robots(N_robots) {
+Simulation::Simulation(double T_step, int N_humans, int N_robots, bool allow_warehouse_leaving)
+    : _T_step(T_step),
+      _N_humans(N_humans),
+      _N_robots(N_robots),
+      _allow_warehouse_leaving(allow_warehouse_leaving) {
     // random node index generator
     std::random_device rd;
     mt = std::mt19937(rd());

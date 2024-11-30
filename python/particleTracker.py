@@ -13,17 +13,14 @@ sys.path.append("build/")  # allows to import cpp_utils
 from cpp_utils import ParticleTracker as ParticleTracker_cpp
 
 
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-
 class ParticleTracker:
     def __init__(
         self,
         T_step: float,
         N_tracks_init: int,
         N_particles: int,
-        record_training_data: bool = config["record_training_data"],
+        record_training_data: bool,
+        clear_threshold: float,
     ):
         """Initialize the ParticleTracker.
 
@@ -33,6 +30,7 @@ class ParticleTracker:
         :return: ParticleTracker object.
         """
         self.tracker = ParticleTracker_cpp(T_step, N_tracks_init, N_particles)
+        self.clear_threshold = clear_threshold
         (
             self.nodes,
             self.edges,
@@ -149,5 +147,4 @@ class ParticleTracker:
         :param probabilities: (N_edges,) np.ndarray of edge probabilities.
         :return: (N_edges,) np.ndarray of cleared edge probabilities.
         """
-        clear_threshold = config["clear_threshold"]
-        return self.static_get_cleared_edges(probabilities, clear_threshold, self.edges)
+        return self.static_get_cleared_edges(probabilities, self.clear_threshold, self.edges)

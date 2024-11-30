@@ -10,7 +10,9 @@ from cpp_utils import Simulation as Simulation_cpp
 
 
 class Simulation:
-    def __init__(self, T_step: float, N_humans: int, N_robots: int):
+    def __init__(
+        self, T_step: float, N_humans: int, N_robots: int, allow_warehouse_leaving: bool = False
+    ):
         """Initialize the simulation.
 
         :param T_step: double, step time of the simulation.
@@ -21,7 +23,7 @@ class Simulation:
         self.T_step = T_step
         self.N_humans = N_humans
         self.N_robots = N_robots
-        self.sim = Simulation_cpp(T_step, N_humans, N_robots)
+        self.sim = Simulation_cpp(T_step, N_humans, N_robots, allow_warehouse_leaving)
 
     def step(self, N_steps: int) -> list[dict]:
         """Run the simulation for N_steps steps.

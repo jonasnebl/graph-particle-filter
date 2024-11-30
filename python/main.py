@@ -1,3 +1,4 @@
+import argparse
 from tqdm import tqdm
 import numpy as np
 import pickle
@@ -10,15 +11,28 @@ from simulation import Simulation
 from paths import *
 from evaluator import *
 
+# --- Load config and parse arguments ---
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
+parser = argparse.ArgumentParser()
+for key, value in config.items():
+    if isinstance(value, bool):
+        parser.add_argument(f"--{key}", type=lambda x: (str(x).lower() == "true"), default=value)
+    else:
+        parser.add_argument(f"--{key}", type=type(value), default=value)
+args = parser.parse_args()
+for key in config.keys():
+    config[key] = getattr(args, key)
 
 
 # --- Run new simulation ---
 if config["run_new_simulation"]:
     T_simulation = config["T_simulation"]
     sim = Simulation(
-        T_step=config["T_step"], N_humans=config["N_humans"], N_robots=config["N_robots"]
+        T_step=config["T_step"],
+        N_humans=config["N_humans"],
+        N_robots=config["N_robots"],
+        allow_warehouse_leaving=config["allow_warehouse_leaving"],
     )
     sim_states = []
     N_minutes = int(T_simulation / 60)
@@ -42,7 +56,7 @@ if config["run_new_simulation"]:
         "sim_states": sim_states,
     }
 
-    if config["folder"] is None:
+    if config["folder"] == "":
         folder = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     else:
         folder = config["folder"]
@@ -74,7 +88,11 @@ if config["run_tracker"]:
         plotter = Plotter(print_probabilites=True, clear_threshold=config["clear_threshold"])
 
     particleTracker = ParticleTracker(
-        T_step=T_step, N_tracks_init=config["N_tracks_init"], N_particles=config["N_particles"]
+        T_step=T_step,
+        N_tracks_init=config["N_tracks_init"],
+        N_particles=config["N_particles"],
+        record_training_data=config["record_training_data"],
+        clear_threshold=config["clear_threshold"],
     )
 
     pbar = tqdm(range(0, int(len(sim_states))), desc="Tracker")

@@ -2,13 +2,13 @@
 Functions to generate figures for the final project report.
 """
 
+import argparse
 import pickle
 import os
 import sys
 from paths import *
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib.legend_handler import HandlerTuple
 import json
 import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
@@ -391,43 +391,36 @@ def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, s
 
 
 if __name__ == "__main__":
-    # # --- figures for chapters 1-3 ---
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--N_humans_folder", type=str)
+    parser.add_argument("--training_folder", type=str)
+    parser.add_argument("--results_folder", type=str)
+    args = parser.parse_args()
+
+    # --- figures for chapters 1-3 ---
     plot_detection_probability()
-    # plot_edge_change_model(25)
+    plot_edge_change_model(25)
 
-    # # -- plot number of perceived humans comparison ---
-    # folder = "3h_4humans_4robots_1_part_3min"
-    # folder = "3h_4humans_4robots_5minwindow_bugfix"
-    # plot_N_humans_in_warehouse(folder, "_3min")
-    # folder = "3h_4humans_4robots__1part_10min"
-    # folder = "3h_4humans_4robots_5minwindow_bugfix"
-    # plot_N_humans_in_warehouse(folder, "_10min")
-    # plot_edge_change_model_difference(
-    #     "successor_edge_probabilities.json",
-    #     "successor_edge_probabilities_magic.json",
-    #     "duration_params.json",
-    #     "duration_params_magic.json",
-    # )
+    # -- plot number of perceived humans comparison ---
+    plot_N_humans_in_warehouse(args.N_humans_folder, "")
 
-    # # --- plot training data distributions and comparisons ---
-    # folder = "24h_4humans_4robots_100part"
-    # plot_edge_change_data_distribution(folder, use_magic_data=True, scale=8)
-    # plot_edge_change_data_distribution(folder, scale=8)
-    # plot_duration_data_distribution(folder, use_magic_data=True, scale=0.1)
-    # plot_duration_data_distribution(folder, scale=0.1)
+    # --- plot training data distributions and comparisons ---
+    plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=8)
+    plot_edge_change_data_distribution(args.training_folder, scale=8)
+    plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.1)
+    plot_duration_data_distribution(args.training_folder, scale=0.1)
     # plot_edge_change_model_difference(
     #     "successor_edge_probabilities.json", "successor_edge_probabilities_magic.json"
     # )
 
-    # # --- Plot overall result metrics ---
-    # folder = "8h_4humans_4robots_10000part"
-    # thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    # false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-    #     evaluate_multiple_thresholds(thresholds, folder)
-    # )
-    # plot_results_multiple_thresholds(
-    #     thresholds,
-    #     [false_negative_rates_human_centric, false_negative_rates_edge_centric],
-    #     ["Mensch-zentriert", "Kanten-zentriert"],
-    #     cleared_edges_rates,
-    # )
+    # --- Plot overall result metrics ---
+    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
+    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
+        evaluate_multiple_thresholds(thresholds, args.results_folder)
+    )
+    plot_results_multiple_thresholds(
+        thresholds,
+        [false_negative_rates_human_centric, false_negative_rates_edge_centric],
+        ["Mensch-zentriert", "Kanten-zentriert"],
+        cleared_edges_rates,
+    )

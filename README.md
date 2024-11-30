@@ -18,20 +18,33 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
-Generate a Header-File containing the topological information about the warehouse
-as well as the model parameters for the ParticleTracker's prediction model.
-```
-$ python python/prepare_warehouse_data.py
-```
-Make a build folder and build the project using CMake.
 Make sure you have the required dependencies `pybind11` and `libhungarian` (`hungarian` from vckpg) installed.
-Vcpkg is recommended for dependency management.
+The `CMakeLists.txt` is designed to use vcpkg which is recommended.
+You will have to modify the `CMAKE_TOOLCHAIN_FILE` in `CMakeLists.txt`
+to fit your vcpkg installation.
+If you don't use vckpg you may have to change more in `CMakeLists.txt`
+so you are able to build the code.
+
+When you have the dependencies installed,
+you can create a `build` folder and run `1_setup_likelihood_matrix.sh`.
+It will build the simulation and tracker and already
+train the likelihood matrix for later use.
 ```
-$ mkdir build && cd build && cmake .. && make && cd ..
+$ bash 1_setup_likelihood_matrix.sh
 ```
-Now you can run the simulation. Use `config.yaml` to set simulation parameters.
+To train the prediction model, run `2_train_pred_model.sh`.
+```
+$ bash 2_train_pred_model.sh
+```
+Now everything is trained and you can modify `config.yaml` to 
+run simulations to your liking.
 ```
 $ python python/main.py
+```
+If you want to generate the evaluation plots that are also in the report,
+run `3_final_eval.sh`.
+```
+$ bash 3_final_eval.sh
 ```
 
 ## Formatting

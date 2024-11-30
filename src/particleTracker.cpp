@@ -82,7 +82,8 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
             }
         }
         // --- adjust weights ---
-        double new_weight = 0.5 * (particle_weights[i] + particle_weights[random_source_particle_index]);
+        double new_weight =
+            0.5 * (particle_weights[i] + particle_weights[random_source_particle_index]);
         particle_weights[i] = new_weight;
         particle_weights[random_source_particle_index] = new_weight;
     }
