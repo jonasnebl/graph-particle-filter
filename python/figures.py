@@ -104,7 +104,7 @@ def plot_edge_change_model(edge, use_magic_data: bool = False):
 
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, f"edge_change_model_{edge}.pdf"))
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_results_multiple_thresholds(
@@ -170,7 +170,7 @@ def plot_results_multiple_thresholds(
 
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "results_multiple_thresholds.pdf"))
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_detection_probability():
@@ -190,7 +190,7 @@ def plot_detection_probability():
     ax.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "detection_probability.pdf"))
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_N_humans_in_warehouse(folder: str, specifier: str = ""):
@@ -218,7 +218,7 @@ def plot_N_humans_in_warehouse(folder: str, specifier: str = ""):
     timevec_minutes = timevec / 60
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 3))
-    ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{Schätzung}$")
+    ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{humans,est}$")
     ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
     ax.plot(timevec_minutes, N_tracks_log, label="$N_{Tracks}$")
     ax.legend()
@@ -230,7 +230,7 @@ def plot_N_humans_in_warehouse(folder: str, specifier: str = ""):
     ax.grid()
     plt.tight_layout()
     plt.savefig(os.path.join(FIGURE_PATH, "N_estimated" + specifier + ".pdf"))
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_edge_change_data_distribution(
@@ -265,104 +265,65 @@ def plot_edge_change_data_distribution(
     )
     filename = "edge_change_distribution_magic" if use_magic_data else "edge_change_distribution"
     plotter.savefig(filename, format="svg")
-    plotter.show(blocking=True)
+    plotter.show(blocking=False)
 
 
-def plot_edge_change_model_difference(filename1, filename2, filename3, filename4):
-    """Plot the relative difference distribution between two models.
+def plot_model_difference():
+    """Plot the relative difference distribution between two models."""
+    with open(os.path.join(MODEL_PATH, "successor_edge_probabilities.json"), "rb") as f:
+        successor_edge_probabilities = json.load(f)
+    with open(os.path.join(MODEL_PATH, "successor_edge_probabilities_magic.json"), "rb") as f:
+        successor_edge_probabilities_magic = json.load(f)
+    with open(os.path.join(MODEL_PATH, "duration_params.json"), "rb") as f:
+        duration_params = json.load(f)
+    with open(os.path.join(MODEL_PATH, "duration_params_magic.json"), "rb") as f:
+        duration_params_magic = json.load(f)
 
-    :param filename1: json filename of the successor_edge_probabilities of the first model
-    :param filename2: json filename of the successor_edge_probabilities of the second model
-    """
-    with open(os.path.join(MODEL_PATH, filename1), "rb") as f:
-        successor_edge_probabilities1 = json.load(f)
-    with open(os.path.join(MODEL_PATH, filename2), "rb") as f:
-        successor_edge_probabilities2 = json.load(f)
-    with open(os.path.join(MODEL_PATH, filename3), "rb") as f:
-        duration_params1 = json.load(f)
-    with open(os.path.join(MODEL_PATH, filename4), "rb") as f:
-        duration_params2 = json.load(f)
+    # --- edge change model differences ---
+    mean_differences = []
+    for probabilities1, probabilities2 in zip(
+        successor_edge_probabilities, successor_edge_probabilities_magic
+    ):
+        mean_differences.append(
+            np.mean(np.abs(np.array(probabilities1) - np.array(probabilities2)))
+        )
 
-    # mean_differences = []
-    # for probabilities1, probabilities2 in zip(
-    #     successor_edge_probabilities1, successor_edge_probabilities2
-    # ):
-    #     mean_differences.append(
-    #         np.mean(np.abs(np.array(probabilities1) - np.array(probabilities2)))
-    #     )
+    fig, axs = plt.subplots(1, 2, figsize=(8, 3))
+    axs[0].hist(mean_differences, bins=30)
+    axs[0].set_xlabel("$\Delta \\overline{p}_i$")
+    axs[0].set_title("Nachfolgekanten")
+    axs[0].grid()
+    fig.savefig(os.path.join(FIGURE_PATH, "edge_change_model_differences.pdf"))
 
-    # nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
-    # with open(
-    #     os.path.join(LOG_FOLDER, "24h_4humans_4robots_100part", edge_change_data_filename(False)),
-    #     "rb",
-    # ) as f:
-    #     edge_change_data = pickle.load(f)
-    # node_weights = [
-    #     len([sample for sample in edge_change_data if sample[0] == i]) for i in range(len(edges))
-    # ]
-
-    # fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    # axs[0].hist(mean_differences, bins=30)
-    # axs[0].set_xlabel("Mean difference")
-    # axs[0].set_title("Edge change model differences")
-    # axs[0].grid()
-    # axs[1].hist(mean_differences, weights=node_weights, bins=30)
-    # axs[1].set_xlabel("Mean difference")
-    # axs[1].set_title("Edge change model differences weighted")
-    # axs[1].grid()
-    # plt.show()
-
-    # plotter = Plotter()
-    # plotter.node_weight_plot(
-    #     mean_differences, title="Distribution of differences between edge change models"
-    # )
-    # plotter.savefig("edge_change_model_difference", format="pdf")
-    # plotter.show(blocking=True)
-
+    # --- duration model differences ---
     expected_value = lambda alpha, beta: alpha * math.gamma(1 + 1 / beta)
     standard_deviation = lambda alpha, beta: alpha**2 * (
         math.gamma(1 + 2 / beta) - math.gamma(1 + 1 / beta) ** 2
     )
 
-    nodes, edges, _, _, _, _, _ = load_warehouse_data_from_json()
-    with open(
-        os.path.join(LOG_FOLDER, "24h_4humans_4robots_100part", duration_data_filename(False)),
-        "rb",
-    ) as f:
-        edge_change_data = pickle.load(f)
-
     expected_value_differences = []
-    node_weights = []
     standard_deviation_differences = []
     for (
         i,
-        ((alpha1, beta1), (alpha2, beta2)),
-    ) in enumerate(zip(duration_params1, duration_params2)):
-        expected_value_difference = expected_value(alpha1, beta1) - expected_value(alpha2, beta2)
-        if np.abs(expected_value_difference) < 10:
+        ((alpha, beta), (alpha_magic, beta_magic)),
+    ) in enumerate(zip(duration_params, duration_params_magic)):
+        expected_value_difference = expected_value(alpha, beta) - expected_value(
+            alpha_magic, beta_magic
+        )
+        # ignore outliers that correspond to the out of warehouse edge
+        if np.abs(expected_value_difference) < 100:
             expected_value_differences.append(expected_value_difference)
-            node_weights.append(len([sample for sample in edge_change_data if sample[0] == i]))
         standard_deviation_differences.append(
-            standard_deviation(alpha1, beta1) - standard_deviation(alpha2, beta2)
+            standard_deviation(alpha, beta) - standard_deviation(alpha_magic, beta_magic)
         )
 
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    axs[0].hist(expected_value_differences, bins=30)
-    axs[0].set_xlabel("Expected duration difference")
-    axs[0].set_title("Expected duration differences")
-    axs[0].grid()
-    axs[1].hist(expected_value_differences, weights=node_weights, bins=30)
-    axs[1].set_xlabel("Expected duration difference")
-    axs[1].set_title("Expected duration differences weighted")
+    axs[1].hist(expected_value_differences, bins=30)
+    axs[1].set_xlabel("$\Delta E[t_{[e_i]}]$ in Sekunden")
+    axs[1].set_title("Aufenthaltszeiten")
     axs[1].grid()
-    plt.show()
-
-    # plotter = Plotter()
-    # plotter.node_weight_plot(
-    #     mean_differences, title="Distribution of differences between edge change models"
-    # )
-    # plotter.savefig("edge_change_model_difference", format="pdf")
-    # plotter.show(blocking=True)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIGURE_PATH, "model_differences.pdf"))
+    plt.show(block=False)
 
 
 def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, scale: float = -1):
@@ -387,12 +348,13 @@ def plot_duration_data_distribution(folder: str, use_magic_data: bool = False, s
     )
     filename = "duration_distribution_magic" if use_magic_data else "duration_distribution"
     plotter.savefig(filename, format="svg")
-    plotter.show(blocking=True)
+    plotter.show(blocking=False)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--N_humans_folder", type=str)
+    parser.add_argument("--N_humans_folder_short", type=str)
+    parser.add_argument("--N_humans_folder_long", type=str)
     parser.add_argument("--training_folder", type=str)
     parser.add_argument("--results_folder", type=str)
     args = parser.parse_args()
@@ -402,16 +364,15 @@ if __name__ == "__main__":
     plot_edge_change_model(25)
 
     # -- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse(args.N_humans_folder, "")
+    plot_N_humans_in_warehouse(args.N_humans_folder_short, "_5min")
+    plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
 
     # --- plot training data distributions and comparisons ---
     plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=8)
-    plot_edge_change_data_distribution(args.training_folder, scale=8)
+    plot_edge_change_data_distribution(args.training_folder, scale=5)
     plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.1)
-    plot_duration_data_distribution(args.training_folder, scale=0.1)
-    # plot_edge_change_model_difference(
-    #     "successor_edge_probabilities.json", "successor_edge_probabilities_magic.json"
-    # )
+    plot_duration_data_distribution(args.training_folder, scale=0.07)
+    plot_model_difference()
 
     # --- Plot overall result metrics ---
     thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]

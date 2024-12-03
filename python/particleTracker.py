@@ -19,6 +19,7 @@ class ParticleTracker:
         T_step: float,
         N_tracks_init: int,
         N_particles: int,
+        window_length: int,
         record_training_data: bool,
         clear_threshold: float,
     ):
@@ -27,9 +28,12 @@ class ParticleTracker:
         :param T_step: double, step time of the tracker.
         :param N_tracks_init: int, Maximum number of tracked humans in the tracker.
         :param N_particles: int, Number of particles to use in the tracker.
+        :param window_length: int, Number of seconds to consider for the number of humans estimation window.
+        :param record_training_data: bool, Whether to record training data.
+        :param clear_threshold: float, Threshold for clearing edges.
         :return: ParticleTracker object.
         """
-        self.tracker = ParticleTracker_cpp(T_step, N_tracks_init, N_particles)
+        self.tracker = ParticleTracker_cpp(T_step, N_tracks_init, N_particles, window_length)
         self.clear_threshold = clear_threshold
         (
             self.nodes,
@@ -128,8 +132,8 @@ class ParticleTracker:
         cleared_edges = np.zeros_like(probabilities, dtype=bool)
         for i in range(len(probabilities)):
             if (
-                probabilities[i] < clear_threshold
-                and opposing_edge_probabilities[i] < clear_threshold
+                probabilities[i] <= clear_threshold
+                and opposing_edge_probabilities[i] <= clear_threshold
             ):
                 cleared_edges[i] = True  # edge is cleared
             else:

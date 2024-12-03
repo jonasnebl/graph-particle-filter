@@ -320,14 +320,15 @@ class Plotter:
             start_pos = self.node_positions[start]
             end_pos = self.node_positions[end]
             width = widths[i]
-            plt.plot(
-                [start_pos[0], end_pos[0]],
-                [start_pos[1], end_pos[1]],
-                c="red",
-                alpha=0.6,
-                linewidth=width,
-                zorder=10,
-                solid_capstyle="butt",
-            )
+            if width > 0:
+                plt.plot(
+                    [start_pos[0], end_pos[0]],
+                    [start_pos[1], end_pos[1]],
+                    c="red",
+                    alpha=0.6,
+                    linewidth=width,
+                    zorder=10,
+                    solid_capstyle="butt",
+                )
 
         plt.title(title, fontsize=24)

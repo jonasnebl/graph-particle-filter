@@ -14,7 +14,6 @@
 #include "particle.h"
 #include "warehouse_data.h"
 
-const double T_WINDOW = 7 * 60;
 const double EDGE_CHANGE_THRESHOLD = 0.9;
 const double N_SIGMA = 4.0;
 const double HEADING_WEIGHT = 0.5;
@@ -24,7 +23,7 @@ using Point = std::pair<double, double>;
 
 class ParticleTracker {
    public:
-    ParticleTracker(double T_step, int N_tracks_init, int N_particles);
+    ParticleTracker(double T_step, int N_tracks_init, int N_particles, int window_length);
     std::pair<std::vector<pybind11::dict>, std::vector<Point>> merge_perceptions(
         std::vector<pybind11::dict> robot_perceptions);
     std::vector<double> add_merged_perceptions(std::vector<pybind11::dict> perceived_humans,

@@ -18,7 +18,8 @@
 #include "simulation.h"
 #include "warehouse_data.h"
 
-ParticleTracker::ParticleTracker(double T_step, int N_tracks_init, int N_particles)
+ParticleTracker::ParticleTracker(double T_step, int N_tracks_init, int N_particles,
+                                 int window_length)
     : T_step(T_step), N_tracks(N_tracks_init), N_particles(N_particles) {
     // --- init particles ---
     for (int i = 0; i < N_tracks; i++) {
@@ -40,7 +41,7 @@ ParticleTracker::ParticleTracker(double T_step, int N_tracks_init, int N_particl
     std::discrete_distribution<int> N_perceived_distribution(
         graph.N_perceived_likelihood_matrix[N_tracks_init].begin(),
         graph.N_perceived_likelihood_matrix[N_tracks_init].end());
-    for (int i = 0; i < T_WINDOW / T_step; i++) {
+    for (int i = 0; i < static_cast<double>(window_length) / T_step; i++) {
         N_perceived_window.push_back(N_perceived_distribution(mt));
     }
 }
@@ -119,11 +120,11 @@ ParticleTracker::calc_training_data() {
     for (const std::pair<int, int>& edge_change : new_edge_change_data) {
         int edge = edge_change.first;
         int successor_edge = edge_change.second;
-        edge_since_last_change_over_threshold[successor_edge] = true;
-        edge_time_since_last_change[successor_edge] = 0.0;
         if (edge_since_last_change_over_threshold[edge]) {
             new_duration_data.push_back(std::make_pair(edge, edge_time_since_last_change[edge]));
         }
+        edge_since_last_change_over_threshold[successor_edge] = true;
+        edge_time_since_last_change[successor_edge] = 0.0;
     }
     for (int i = 0; i < graph.edges.size(); i++) {
         if (edge_probabilities[i] < EDGE_CHANGE_THRESHOLD) {

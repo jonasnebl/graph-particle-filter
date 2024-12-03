@@ -11,8 +11,9 @@ PYBIND11_MODULE(cpp_utils, m) {
         .def("step", &Simulation::step, "Perform simulation steps", pybind11::arg("N_steps"));
 
     pybind11::class_<ParticleTracker>(m, "ParticleTracker")
-        .def(pybind11::init<double, int, int>(), "Init the ParticleTracker",
-             pybind11::arg("T_step"), pybind11::arg("N_tracks"), pybind11::arg("N_particles"))
+        .def(pybind11::init<double, int, int, int>(), "Init the ParticleTracker",
+             pybind11::arg("T_step"), pybind11::arg("N_tracks"), pybind11::arg("N_particles"),
+             pybind11::arg("window_length"))
         .def("merge_perceptions", &ParticleTracker::merge_perceptions,
              pybind11::arg("robot_perceptions"), "Merge perceptions from different robots")
         .def("add_merged_perceptions", &ParticleTracker::add_merged_perceptions,

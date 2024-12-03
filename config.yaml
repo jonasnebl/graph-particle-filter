@@ -24,6 +24,7 @@ run_tracker: True
 N_particles: 1000
 N_tracks_init: 4
 record_training_data: False
+window_length: 600 # seconds
 
 # --- Plotting parameters ---
 plot: False

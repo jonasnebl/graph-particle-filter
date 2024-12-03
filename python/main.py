@@ -91,6 +91,7 @@ if config["run_tracker"]:
         T_step=T_step,
         N_tracks_init=config["N_tracks_init"],
         N_particles=config["N_particles"],
+        window_length=config["window_length"],
         record_training_data=config["record_training_data"],
         clear_threshold=config["clear_threshold"],
     )
