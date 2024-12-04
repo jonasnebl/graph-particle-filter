@@ -14,7 +14,7 @@ import numpy as np
 from utils import load_warehouse_data_from_json, get_successor_edges
 from evaluator import *
 from plotter import Plotter
-import math
+from math import gamma
 
 sys.path.append("build/")  # allos to import cpp_utils
 from cpp_utils import Agent
@@ -293,20 +293,16 @@ def plot_model_difference():
     axs[0].set_xlabel("$\Delta \\overline{p}_i$")
     axs[0].set_title("Nachfolgekanten")
     axs[0].grid()
-    fig.savefig(os.path.join(FIGURE_PATH, "edge_change_model_differences.pdf"))
 
     # --- duration model differences ---
-    expected_value = lambda alpha, beta: alpha * math.gamma(1 + 1 / beta)
+    expected_value = lambda alpha, beta: alpha * gamma(1 + 1 / beta)
     standard_deviation = lambda alpha, beta: alpha**2 * (
-        math.gamma(1 + 2 / beta) - math.gamma(1 + 1 / beta) ** 2
+        gamma(1 + 2 / beta) - gamma(1 + 1 / beta) ** 2
     )
 
     expected_value_differences = []
     standard_deviation_differences = []
-    for (
-        i,
-        ((alpha, beta), (alpha_magic, beta_magic)),
-    ) in enumerate(zip(duration_params, duration_params_magic)):
+    for (alpha, beta), (alpha_magic, beta_magic) in zip(duration_params, duration_params_magic):
         expected_value_difference = expected_value(alpha, beta) - expected_value(
             alpha_magic, beta_magic
         )
@@ -363,15 +359,15 @@ if __name__ == "__main__":
     plot_detection_probability()
     plot_edge_change_model(25)
 
-    # -- plot number of perceived humans comparison ---
-    plot_N_humans_in_warehouse(args.N_humans_folder_short, "_5min")
-    plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
+    # # -- plot number of perceived humans comparison ---
+    # plot_N_humans_in_warehouse(args.N_humans_folder_short, "_5min")
+    # plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
 
-    # --- plot training data distributions and comparisons ---
-    plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=5)
-    plot_edge_change_data_distribution(args.training_folder, scale=5)
-    plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.05)
-    plot_duration_data_distribution(args.training_folder, scale=0.05)
+    # # --- plot training data distributions and comparisons ---
+    # plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=5)
+    # plot_edge_change_data_distribution(args.training_folder, scale=5)
+    # plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.05)
+    # plot_duration_data_distribution(args.training_folder, scale=0.05)
     plot_model_difference()
 
     # --- Plot overall result metrics ---

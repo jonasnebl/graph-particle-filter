@@ -14,3 +14,5 @@ figures/*
 src/test_c_hungarian.c
 training_data/
 third-party/
+test 
+test.cpp

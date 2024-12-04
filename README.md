@@ -18,33 +18,18 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
-Make sure you have the required dependencies `pybind11` and `libhungarian` (`hungarian` from vckpg) installed.
+Make sure you have the required C++ dependencies `pybind11` and `libhungarian` (`hungarian` from vckpg) installed.
 The `CMakeLists.txt` is designed to use vcpkg which is recommended.
 You will have to modify the `CMAKE_TOOLCHAIN_FILE` in `CMakeLists.txt`
 to fit your vcpkg installation.
-If you don't use vckpg you may have to change more in `CMakeLists.txt`
-so you are able to build the code.
+If you don't use vckpg you may have to change more in `CMakeLists.txt` to build the program.
 
-When you have the dependencies installed,
-you can create a `build` folder and run `1_setup_likelihood_matrix.sh`.
-It will build the simulation and tracker and already
-train the likelihood matrix for later use.
+When you have the dependencies installed, you can run `gen_chap4.sh`.
+It will build the approach,
+train it from scratch, run all evaluations for the results chapter
+and produce the corresponding figures.
 ```
-$ bash 1_setup_likelihood_matrix.sh
-```
-To train the prediction model, run `2_train_pred_model.sh`.
-```
-$ bash 2_train_pred_model.sh
-```
-Now everything is trained and you can modify `config.yaml` to 
-run simulations to your liking.
-```
-$ python python/main.py
-```
-If you want to generate the evaluation plots that are also in the report,
-run `3_final_eval.sh`.
-```
-$ bash 3_final_eval.sh
+$ bash gen_chap4.sh
 ```
 
 ## Formatting
