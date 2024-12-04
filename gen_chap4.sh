@@ -59,14 +59,14 @@ python python/prepare_warehouse_data.py
 cd build && make && cd ..
 
 # final evaluation
-python python/main.py --T_simulation=10800 --N_particles=10000 --folder="4humans_4AMRs_1h_10000part"
+python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part"
 
 # generate figures to evaluate everything
 python python/figures.py \
     --N_humans_folder_short "4humans_4AMRs_3h_1part_5minwindow" \
     --N_humans_folder_long "4humans_4AMRs_3h_1part_10minwindow" \
     --training_folder "4humans_4AMRs_48h_100part" \
-    --results_folder "4humans_4AMRs_3h_10000part"
+    --results_folder "4humans_4AMRs_2h_10000part"
 
 # copy figures to windows folder for the report
 bash figures/copy_to_windows.sh
