@@ -368,10 +368,10 @@ if __name__ == "__main__":
     plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
 
     # --- plot training data distributions and comparisons ---
-    plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=8)
+    plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=5)
     plot_edge_change_data_distribution(args.training_folder, scale=5)
-    plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.1)
-    plot_duration_data_distribution(args.training_folder, scale=0.07)
+    plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.05)
+    plot_duration_data_distribution(args.training_folder, scale=0.05)
     plot_model_difference()
 
     # --- Plot overall result metrics ---
