@@ -132,11 +132,6 @@ void Agent::add_new_double_cycle_to_deque() {
             simulation->dijkstra(current_final_path_node, target_node_1, simulation->graph);
         add_path_to_deque(path_to_target, get_random_velocity());
         add_node_to_deque(target_node_1, PAUSE_VELOCITY);  // generates a pause
-        std::cout << "time_of_pause: "
-                  << Agent::euclidean_distance(path[path.size() - 1].first,
-                                               path[path.size() - 2].first) /
-                         path[path.size() - 1].second
-                  << std::endl;
         // --- 2. leg ---
         int target_node_2 = random_storage_node();
         path_to_target = simulation->dijkstra(target_node_1, target_node_2, simulation->graph);
