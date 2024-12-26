@@ -44,7 +44,13 @@ def plot_edge_change_model(edge, use_magic_data: bool = False):
     fig, axs = plt.subplots(1, N_successors, figsize=(2.5 * N_successors, 2.5))
     fig.suptitle(f"Wahrscheinlichkeiten für Folgekanten von Kante {edge}", fontsize=18)
 
-    for i, successor_edge_probability in enumerate(successor_edge_probabilities[edge]):
+    # make sure that the displayed probabilities sum up to 1 despite rounding
+    successor_edge_probabilities_one_edge = [
+        np.round(p, decimals=3) for p in successor_edge_probabilities[edge]
+    ]
+    successor_edge_probabilities_one_edge[-1] = 1 - sum(successor_edge_probabilities_one_edge[:-1])
+
+    for i, successor_edge_probability in enumerate(successor_edge_probabilities_one_edge):
         ax = axs[i]
 
         # Quiver plot for the input edge and successor edges
@@ -217,11 +223,11 @@ def plot_N_humans_in_warehouse(folder: str, specifier: str = ""):
     timevec = np.arange(0, len(sim_log["sim_states"]) * sim_log["T_step"], sim_log["T_step"])
     timevec_minutes = timevec / 60
 
-    fig, ax = plt.subplots(1, 1, figsize=(12, 3))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 3))
     ax.plot(timevec_minutes, N_estimated_log.astype(np.float64) + 0.01, label="$N_{humans,est}$")
     ax.plot(timevec_minutes, N_humans_true.astype(np.float64) - 0.02, label="$N_{wahr}$")
     ax.plot(timevec_minutes, N_tracks_log, label="$N_{Tracks}$")
-    ax.legend()
+    ax.legend(fontsize=12)
     ax.set_title("Schätzung der Anzahl der Menschen im Lager", fontsize=18)
     ax.set_xlabel("Zeit in Minuten", fontsize=14)
     ax.set_xlim([0, timevec_minutes[-1]])
@@ -291,6 +297,7 @@ def plot_model_difference():
     fig, axs = plt.subplots(1, 2, figsize=(8, 3))
     axs[0].hist(mean_differences, bins=30)
     axs[0].set_xlabel("$\Delta \\overline{p}_i$")
+    axs[0].set_ylabel("Wahrscheinlichkeitsdichte")
     axs[0].set_title("Nachfolgekanten")
     axs[0].grid()
 
@@ -316,6 +323,7 @@ def plot_model_difference():
     axs[1].hist(expected_value_differences, bins=30)
     axs[1].set_xlabel("$\Delta E[t_{[e_i]}]$ in Sekunden")
     axs[1].set_title("Aufenthaltszeiten")
+    axs[1].set_ylabel("Wahrscheinlichkeitsdichte")
     axs[1].grid()
     fig.tight_layout()
     fig.savefig(os.path.join(FIGURE_PATH, "model_differences.pdf"))
@@ -359,15 +367,15 @@ if __name__ == "__main__":
     plot_detection_probability()
     plot_edge_change_model(25)
 
-    # # -- plot number of perceived humans comparison ---
-    # plot_N_humans_in_warehouse(args.N_humans_folder_short, "_5min")
-    # plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
+    # -- plot number of perceived humans comparison ---
+    plot_N_humans_in_warehouse(args.N_humans_folder_short, "_5min")
+    plot_N_humans_in_warehouse(args.N_humans_folder_long, "_10min")
 
-    # # --- plot training data distributions and comparisons ---
-    # plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=5)
-    # plot_edge_change_data_distribution(args.training_folder, scale=5)
-    # plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.05)
-    # plot_duration_data_distribution(args.training_folder, scale=0.05)
+    # --- plot training data distributions and comparisons ---
+    plot_edge_change_data_distribution(args.training_folder, use_magic_data=True, scale=5)
+    plot_edge_change_data_distribution(args.training_folder, scale=5)
+    plot_duration_data_distribution(args.training_folder, use_magic_data=True, scale=0.05)
+    plot_duration_data_distribution(args.training_folder, scale=0.05)
     plot_model_difference()
 
     # --- Plot overall result metrics ---

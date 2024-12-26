@@ -69,4 +69,4 @@ python python/figures.py \
     --results_folder "4humans_4AMRs_2h_10000part"
 
 # copy figures to windows folder for the report
-bash figures/copy_to_windows.sh
+bash figures/copy_to_windows.she

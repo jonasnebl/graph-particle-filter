@@ -8,7 +8,7 @@ folder: ""  # if empty, uses the current date and time
 
 # --- Simulation parameters (only relevant when running a new simulation) ---
 # if a previous simulation is used the parameters come from the previous simulation
-T_simulation: 60 # seconds
+T_simulation: 3600 # seconds
 T_step: 0.5 # seconds
 N_humans: 4
 N_robots: 4
