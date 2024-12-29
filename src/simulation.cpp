@@ -20,7 +20,7 @@ Simulation::Simulation(double T_step, int N_humans, int N_robots, bool allow_war
     std::random_device rd;
     mt = std::mt19937(rd());
     random_node_index = std::uniform_int_distribution<int>(0, graph.nodes.size() - 1);
-    trajectory_xy_noise = std::normal_distribution<double>(0, TRAJECTORY_XY_STDDEV);
+    trajectory_xy_noise = std::normal_distribution<double>(0, PATH_XY_STDDEV);
 
     // initialize agents
     for (int i = 0; i < _N_humans; i++) {

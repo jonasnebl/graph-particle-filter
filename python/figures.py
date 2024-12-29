@@ -360,7 +360,10 @@ if __name__ == "__main__":
     parser.add_argument("--N_humans_folder_short", type=str)
     parser.add_argument("--N_humans_folder_long", type=str)
     parser.add_argument("--training_folder", type=str)
-    parser.add_argument("--results_folder", type=str)
+    parser.add_argument("--results_folder1", type=str)
+    parser.add_argument("--results_folder2", type=str)
+    parser.add_argument("--results_folder3", type=str)
+    parser.add_argument("--results_folder4", type=str)
     args = parser.parse_args()
 
     # --- figures for chapters 1-3 ---
@@ -379,10 +382,25 @@ if __name__ == "__main__":
     plot_model_difference()
 
     # --- Plot overall result metrics ---
-    thresholds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-    false_negative_rates_human_centric, false_negative_rates_edge_centric, cleared_edges_rates = (
-        evaluate_multiple_thresholds(thresholds, args.results_folder)
-    )
+    thresholds = np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1])
+    false_negative_rates_edge_centric = np.zeros_like(thresholds)
+    false_negative_rates_human_centric = np.zeros_like(thresholds)
+    cleared_edges_rates = np.zeros_like(thresholds)
+    for folder in [
+        args.results_folder1,
+        args.results_folder2,
+        args.results_folder3,
+        args.results_folder4,
+    ]:
+        (
+            false_negative_rates_human_centric_folder_i,
+            false_negative_rates_edge_centric_folder_i,
+            cleared_edges_rates_folder_i,
+        ) = evaluate_multiple_thresholds(thresholds, folder)
+        false_negative_rates_human_centric += 0.25 * np.array(false_negative_rates_human_centric_folder_i)
+        false_negative_rates_edge_centric += 0.25 * np.array(false_negative_rates_edge_centric_folder_i)
+        cleared_edges_rates += 0.25 * np.array(cleared_edges_rates_folder_i)
+
     plot_results_multiple_thresholds(
         thresholds,
         [false_negative_rates_human_centric, false_negative_rates_edge_centric],

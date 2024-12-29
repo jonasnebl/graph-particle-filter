@@ -3,7 +3,7 @@
 # This script run's everything to generate the chapter 4 results metrics and figures
 # It start's fully from scratch including the training of the likelihood matrix
 # and the training of the prediction model
-# Approximate runtime: 2 hours
+# Approximate runtime: 6.5 hours
 
 # clear old trained models and logs 
 # WILL DELETE ALL MODELS AND LOGS: IF IN DOUBT, COMMENT OUT
@@ -58,15 +58,24 @@ python python/calc_pred_model_params.py --folders "4humans_4AMRs_48h_100part" --
 python python/prepare_warehouse_data.py
 cd build && make && cd ..
 
-# final evaluation
-python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part"
+# final evaluation (8 hours split up into 4 parts)
+python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part1"
+python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part2"
+python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part3"
+python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part4"
+
+# video for the presentation (5min)
+python python/main.py --T_simulation=300 --N_particles=10000 --folder="4humans_4AMRs_5min_10000part" --record_video=true
 
 # generate figures to evaluate everything
 python python/figures.py \
     --N_humans_folder_short "4humans_4AMRs_3h_1part_5minwindow" \
     --N_humans_folder_long "4humans_4AMRs_3h_1part_10minwindow" \
     --training_folder "4humans_4AMRs_48h_100part" \
-    --results_folder "4humans_4AMRs_2h_10000part"
+    --results_folder1 "4humans_4AMRs_2h_10000part1" \
+    --results_folder2 "4humans_4AMRs_2h_10000part2" \
+    --results_folder3 "4humans_4AMRs_2h_10000part3" \
+    --results_folder4 "4humans_4AMRs_2h_10000part4" 
 
 # copy figures to windows folder for the report
-bash figures/copy_to_windows.she
+bash figures/copy_to_windows.sh

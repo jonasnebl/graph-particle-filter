@@ -18,7 +18,7 @@ class Agent;
 
 using Point = std::pair<double, double>;
 
-const double TRAJECTORY_XY_STDDEV = 0.4;  // meters
+const double PATH_XY_STDDEV = 0.4;  // meters
 
 class Simulation {
    public:
