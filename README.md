@@ -10,7 +10,7 @@ It contains a plotter allowing for live visualization of the warehouse state and
 Clone the repository.
 ```
 $ git clone https://gitlab.lrz.de/00000000014AA74B/warehousesim.git
-$ cd warehouseSim
+$ cd warehousesim
 ```
 Create a python virtual environment and install the required packages.
 ```

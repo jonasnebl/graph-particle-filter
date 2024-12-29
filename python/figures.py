@@ -128,8 +128,10 @@ def plot_results_multiple_thresholds(
 
     print("Thresholds: ", thresholds)
     for i, false_negative_rates in enumerate(false_negative_rates_list):
-        print("False negative rates {}: ".format(list_legends[i]), false_negative_rates)
-    print("Cleared edges rates: ", cleared_edges_rates)
+        print(
+            f"False negative rates {list_legends[i]}: {', '.join(f'{100 * rate:.7g}%' for rate in false_negative_rates)}"
+        )
+    print(f"Cleared edges rates: {', '.join(f'{100 * rate:.7g}%' for rate in cleared_edges_rates)}")
 
     e = 1e-10  # add e becasue 0 cannot be displayed on a log scale
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
