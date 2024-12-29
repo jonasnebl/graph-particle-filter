@@ -397,8 +397,12 @@ if __name__ == "__main__":
             false_negative_rates_edge_centric_folder_i,
             cleared_edges_rates_folder_i,
         ) = evaluate_multiple_thresholds(thresholds, folder)
-        false_negative_rates_human_centric += 0.25 * np.array(false_negative_rates_human_centric_folder_i)
-        false_negative_rates_edge_centric += 0.25 * np.array(false_negative_rates_edge_centric_folder_i)
+        false_negative_rates_human_centric += 0.25 * np.array(
+            false_negative_rates_human_centric_folder_i
+        )
+        false_negative_rates_edge_centric += 0.25 * np.array(
+            false_negative_rates_edge_centric_folder_i
+        )
         cleared_edges_rates += 0.25 * np.array(cleared_edges_rates_folder_i)
 
     plot_results_multiple_thresholds(

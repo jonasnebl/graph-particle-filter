@@ -18,19 +18,33 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
-Make sure you have the required C++ dependencies `pybind11` and `libhungarian` (`hungarian` from vckpg) installed.
-The `CMakeLists.txt` is designed to use vcpkg which is recommended.
-You will have to modify the `CMAKE_TOOLCHAIN_FILE` in `CMakeLists.txt`
+Make sure you have the required C++ dependencies `pybind11` and `libhungarian` (`hungarian` from vcpkg) installed.
+The `CMakeLists.txt` is designed to use vcpkg on Linux which is recommended.
+You will have to modify the `CMAKE_TOOLCHAIN_FILE` setting in `CMakeLists.txt`
 to fit your vcpkg installation.
 If you don't use vckpg you may have to change more in `CMakeLists.txt` to build the program.
 
 When you have the dependencies installed, you can run `gen_chap4.sh`.
 It will build the approach,
-train it from scratch, run all evaluations for the results chapter
+train it from scratch with newly generated training data, 
+run all evaluations for the results chapter
 and produce the corresponding figures.
 ```
 $ bash gen_chap4.sh
 ```
+
+## Run the simulation
+
+The script `python/main.py` is used to run the simulation.
+You can check `gen_chap4.sh` to see many examples of commands to run the simulation
+with different options.
+
+You can either set the options using a command line argument 
+(`--argument value` or `--argument=value`)
+or by modifying the `config.yaml` file.
+If a command line argument is set, its value takes precedence over
+the `config.yaml` value, but `config.yaml` remains unchanged.
+So the `config.yaml` can be understood as a set of default values.
 
 ## Formatting
 
