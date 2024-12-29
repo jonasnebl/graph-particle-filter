@@ -15,7 +15,8 @@ python python/calc_pred_model_params.py --train_likelihood_matrix=true
 python python/prepare_warehouse_data.py
 
 # fresh build to avoid "undefined symbol: _Py_RefTotal" error
-rm -r build && mkdir build && cd build && cmake .. && make && cd ..
+rm -r build
+mkdir build && cd build && cmake .. && make && cd ..
 
 # train likelihood matrix
 python python/main.py --N_humans=1 --folder="1humans_4AMRs_8h_1part_likemat" --allow_warehouse_leaving=false --T_simulation=28800 --N_particles=1 
