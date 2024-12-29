@@ -125,6 +125,12 @@ def plot_results_multiple_thresholds(
     :param false_negative_rates: List of list of false negative rates.
     :param cleared_edges_rates: List of cleared edges rates.
     """
+
+    print("Thresholds: ", thresholds)
+    for i, false_negative_rates in enumerate(false_negative_rates_list):
+        print("False negative rates {}: ".format(list_legends[i]), false_negative_rates)
+    print("Cleared edges rates: ", cleared_edges_rates)
+
     e = 1e-10  # add e becasue 0 cannot be displayed on a log scale
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     line_colors = ["blue", "orange", "green", "red", "purple", "brown"]
