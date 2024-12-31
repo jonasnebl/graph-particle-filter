@@ -67,6 +67,7 @@ void Particle::rewrite_from_perception(Point perceived_pos, double position_stdd
         get_belonging_edge(noisy_perceived_pos, noisy_perceived_heading, *graph);
     edge = std::get<0>(belonging_edge_and_t);
     double t = std::get<1>(belonging_edge_and_t);
+    time_of_edge_change = get_random_time_of_edge_change(edge);
     time_since_edge_change = t * time_of_edge_change;
 }
 

@@ -17,3 +17,5 @@ third-party/
 test 
 test.cpp
 pauses.txt
+*.zip
+*.tar.gz
