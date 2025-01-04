@@ -69,7 +69,7 @@ python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_
 python python/main.py --T_simulation=300 --N_particles=10000 --folder="4humans_4AMRs_5min_10000part" --record_video=true
 
 # generate figures to evaluate everything
-python python/figures.py \
+python -u python/figures.py \
     --N_humans_folder_short "4humans_4AMRs_3h_1part_5minwindow" \
     --N_humans_folder_long "4humans_4AMRs_3h_1part_10minwindow" \
     --training_folder "4humans_4AMRs_48h_100part" \
