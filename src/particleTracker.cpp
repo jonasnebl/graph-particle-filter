@@ -74,9 +74,9 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
     std::discrete_distribution<int> resample_distribution(particle_weights.begin(),
                                                           particle_weights.end());
     for (int i = 0; i < N_particles; i++) {
-        int random_source_particle_index = resample_distribution(mt);
         // --- copy particles ---
         if (particle_weights[i] < resample_threshold) {
+            int random_source_particle_index = resample_distribution(mt);
             for (int j = 0; j < N_tracks; j++) {
                 particles[j][i].rewrite_from_other_particle(
                     particles[j][random_source_particle_index]);
