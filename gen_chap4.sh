@@ -65,9 +65,6 @@ python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_
 python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part3"
 python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part4"
 
-# video for the presentation (5min)
-python python/main.py --T_simulation=300 --N_particles=10000 --folder="4humans_4AMRs_5min_10000part" --record_video=true
-
 # generate figures to evaluate everything
 python -u python/figures.py \
     --N_humans_folder_short "4humans_4AMRs_3h_1part_5minwindow" \
@@ -80,3 +77,6 @@ python -u python/figures.py \
 
 # copy figures to windows folder for the report
 bash figures/copy_to_windows.sh
+
+# 5min video for the presentation (optional)
+# python python/main.py --T_simulation=300 --N_particles=10000 --folder="4humans_4AMRs_5min_10000part" --record_video=true
