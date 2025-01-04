@@ -81,12 +81,13 @@ std::vector<double> ParticleTracker::add_merged_perceptions(
                 particles[j][i].rewrite_from_other_particle(
                     particles[j][random_source_particle_index]);
             }
+
+            // --- adjust weights ---
+            double new_weight =
+                0.5 * (particle_weights[i] + particle_weights[random_source_particle_index]);
+            particle_weights[i] = new_weight;
+            particle_weights[random_source_particle_index] = new_weight;
         }
-        // --- adjust weights ---
-        double new_weight =
-            0.5 * (particle_weights[i] + particle_weights[random_source_particle_index]);
-        particle_weights[i] = new_weight;
-        particle_weights[random_source_particle_index] = new_weight;
     }
 
     // // --- print effective sample size for debugging purposes ---
