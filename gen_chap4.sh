@@ -76,7 +76,7 @@ python python/figures.py \
     --results_folder1 "4humans_4AMRs_2h_10000part1" \
     --results_folder2 "4humans_4AMRs_2h_10000part2" \
     --results_folder3 "4humans_4AMRs_2h_10000part3" \
-    --results_folder4 "4humans_4AMRs_2h_10000part4" 
+    --results_folder4 "4humans_4AMRs_2h_10000part4" | tee logs/figures_chap4_log_output.txt
 
 # copy figures to windows folder for the report
 bash figures/copy_to_windows.sh
