@@ -135,8 +135,8 @@ def plot_results_multiple_thresholds(
 
     e = 1e-10  # add e becasue 0 cannot be displayed on a log scale
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    line_colors = ["blue", "orange", "green", "red", "purple", "brown"]
-    point_colors = ["brown", "blue", "orange", "green", "purple", "lime"]
+    line_colors = ["blue", "orange", "green", "red", "purple", "brown", "lime"]
+    point_colors = ["brown", "blue", "orange", "green", "purple", "lime", "red"]
     lines = []
     points = []
     for i, false_negative_rates in enumerate(false_negative_rates_list):
@@ -390,7 +390,7 @@ if __name__ == "__main__":
     plot_model_difference()
 
     # --- Plot overall result metrics ---
-    thresholds = np.array([1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1])
+    thresholds = np.array([1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1])
     false_negative_rates_edge_centric = np.zeros_like(thresholds)
     false_negative_rates_human_centric = np.zeros_like(thresholds)
     cleared_edges_rates = np.zeros_like(thresholds)
