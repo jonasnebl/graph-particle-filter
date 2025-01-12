@@ -34,7 +34,7 @@ Please ask me (`jonas.nebl@tum.de`) if you encounter any issues.
    ./vcpkg install pybind11
    ./vcpkg install hungarian
 
-2. **Adapt the `CMAKE_TOOLCHAIN_FILE` in `CMakeListstxt`**
+2. **Adapt the `CMAKE_TOOLCHAIN_FILE` in `CMakeLists.txt`**
 
     ```
    set(CMAKE_TOOLCHAIN_FILE "/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake")
