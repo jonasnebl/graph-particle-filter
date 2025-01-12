@@ -13,16 +13,16 @@ $ git clone https://gitlab.lrz.de/00000000014AA74B/warehousesim.git
 $ cd warehousesim
 ```
 Create a python virtual environment and install the required packages.
+Python version `3.10.12` was used for development.
 ```
 $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install -r requirements.txt
 ```
-Make sure you have the required C++ dependencies `pybind11` and `libhungarian` (`hungarian` from vcpkg) installed.
-The `CMakeLists.txt` is designed to use vcpkg on Linux which is recommended.
-You will have to modify the `CMAKE_TOOLCHAIN_FILE` setting in `CMakeLists.txt`
-to fit your vcpkg installation.
-If you don't use vckpg you may have to change more in `CMakeLists.txt` to build the program.
+If you want build the C++ code yourself, you will need `cmake`, `make` and the required C++ dependencies `pybind11` and `libhungarian` (`hungarian` from vcpkg).
+
+It is recommend to use Linux and vcpkg (https://vcpkg.io/en/index.html) to help with the dependencies. Both `pybind11` (Used version `2.11.1`) and `libhungarian` (Used version `0.1.3`, `hungarian` on vcpkg) can be installed with vcpkg.
+After that you only need to adapt the `CMAKE_TOOLCHAIN_FILE` in `CMakeLists.txt` to fit your local vcpkg installation.
 
 When you have the dependencies installed, you can run `gen_chap4.sh`.
 It will build the approach,

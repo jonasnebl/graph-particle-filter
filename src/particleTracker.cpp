@@ -8,7 +8,6 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <numeric>
 #include <random>
 #include <vector>
