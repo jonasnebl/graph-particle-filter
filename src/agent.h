@@ -14,7 +14,7 @@ using Point = std::pair<double, double>;
 
 const double D_MIN = 7.5;
 const double D_MAX = 15.0;
-const double DETECTION_PROBABILITY_IN_RANGE = 0.9999;  // < 1.0 to avoid singularities
+const double DETECTION_PROBABILITY_IN_RANGE = 0.99;  // < 1.0 to avoid singularities
 const double XY_STDDEV = 0.02;
 const double HEADING_STDDEV = 15.0 * M_PI / 180.0;
 const double ROBOT_VELOCITY = 2.2;

@@ -153,5 +153,5 @@ bool Particle::is_human_on_edge(int edge_input) const { return edge == edge_inpu
 double Particle::assignment_cost(Point position, double heading) {
     // assignment cost is a weighted sum of the cartesian distance and the heading difference
     return Agent::euclidean_distance(get_position(), position) +
-           HEADING_WEIGHT * ParticleTracker::heading_distance(heading, get_heading());
+           HEADING_WEIGHT * ParticleTracker::heading_distance(get_heading(), heading);
 }
