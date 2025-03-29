@@ -1,14 +1,10 @@
 #!/bin/bash
 
-# This script run's everything to generate the chapter 4 results metrics and figures
-# It start's fully from scratch including the training of the likelihood matrix
-# and the training of the prediction model
-# Approximate runtime: 6.5 hours
+# This script run's everything needed to train all learnable parameters
+# of the graph particle filter
 
 # clear old trained models and logs 
-# WILL DELETE ALL MODELS AND LOGS: IF IN DOUBT, COMMENT OUT
-rm -r logs && mkdir logs
-rm -r models && mkdir models
+mkdir logs
 
 # generate initial model params without training data
 python python/calc_pred_model_params.py --train_likelihood_matrix=true
@@ -58,25 +54,3 @@ python python/calc_pred_model_params.py --folders "4humans_4AMRs_48h_100part" --
 # build again with trained model
 python python/prepare_warehouse_data.py
 cd build && make && cd ..
-
-# final evaluation (8 hours split up into 4 parts)
-python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part1"
-python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part2"
-python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part3"
-python python/main.py --T_simulation=7200 --N_particles=10000 --folder="4humans_4AMRs_2h_10000part4"
-
-# generate figures to evaluate everything
-python -u python/figures.py \
-    --N_humans_folder_short "4humans_4AMRs_3h_1part_5minwindow" \
-    --N_humans_folder_long "4humans_4AMRs_3h_1part_10minwindow" \
-    --training_folder "4humans_4AMRs_48h_100part" \
-    --results_folder1 "4humans_4AMRs_2h_10000part1" \
-    --results_folder2 "4humans_4AMRs_2h_10000part2" \
-    --results_folder3 "4humans_4AMRs_2h_10000part3" \
-    --results_folder4 "4humans_4AMRs_2h_10000part4" | tee logs/figures_chap4_log_output.txt
-
-# copy figures to windows folder for the report
-bash figures/copy_to_windows.sh
-
-# 5min video for the presentation (optional)
-# python python/main.py --T_simulation=300 --N_particles=10000 --folder="4humans_4AMRs_5min_10000part" --record_video=true
